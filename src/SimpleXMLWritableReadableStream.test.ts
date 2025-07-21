@@ -33,3 +33,39 @@ test("outputs correct XML chunks", async ({ expect }) => {
     '</root>'
   ]);
 });
+
+test("handles empty text and attributes", async ({ expect }) => {
+  const stream = new SimpleXMLWritableReadableStream();
+  const reader = stream.getReader();
+
+  stream.startElement("x", {}, false);
+  stream.text("");
+  stream.endElement("x");
+  stream.end();
+
+  const out: string[] = [];
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    out.push(value!);
+  }
+
+  expect(out).toEqual(["<x>", "", "</x>"]);
+});
+
+test("correctly escapes quotes in attribute values", async ({ expect }) => {
+  const stream = new SimpleXMLWritableReadableStream();
+  const reader = stream.getReader();
+
+  stream.startElement("item", { title: 'He said "hi" & <bye>' }, true);
+  stream.end();
+
+  const result: string[] = [];
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    result.push(value!);
+  }
+
+  expect(result).toEqual(['<item title="He said &quot;hi&quot; &amp; &lt;bye&gt;"/>']);
+});

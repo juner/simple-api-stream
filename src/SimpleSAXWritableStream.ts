@@ -18,7 +18,7 @@ export class SimpleSAXWritableStream extends WritableStream<string> {
         this.#parseBuffer(handler);
       },
       abort: (reason: unknown) => {
-        handler.onError?.(reason instanceof Error ? reason : new Error(String(reason)));
+        handler.onError?.(reason instanceof Error ? reason : new Error(String(reason), {cause: reason}));
       }
     });
   }

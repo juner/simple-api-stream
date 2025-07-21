@@ -52,3 +52,38 @@ test("handles only text nodes", async ({ expect }) => {
   await writer.close();
   expect(handler.onText).toHaveBeenCalledWith("just text");
 });
+
+test("handles missing handlers gracefully", async ({ expect }) => {
+  const handler: SimpleSAXHandler = {}; // すべて未定義
+  const stream = new SimpleSAXWritableStream(handler);
+  const writer = stream.getWriter();
+  await writer.write('<a attr="1"/>SomeText</a>');
+  await writer.close();
+  expect(true).toBe(true); // エラーが出なければOK
+});
+
+test("handles malformed attributes and catches errors", async ({ expect }) => {
+  const handler: SimpleSAXHandler = {
+    onError: vi.fn()
+  };
+  const stream = new SimpleSAXWritableStream(handler);
+
+  // 属性が正しくない（クォートなし）
+  const writer = stream.getWriter();
+  await writer.write('<tag attr=foo></tag>');
+  await writer.close();
+
+  expect(handler.onError).toHaveBeenCalledWith(expect.any(Error));
+});
+
+test("parseBuffer throws synchronously in write and handled in onError", async ({ expect }) => {
+  const handler: SimpleSAXHandler = {
+    onError: vi.fn(),
+    onStartElement() {
+      throw new Error("handler error");
+    }
+  };
+  const stream = new SimpleSAXWritableStream(handler);
+  await stream.getWriter().write("<test/>");
+  expect(handler.onError).toHaveBeenCalledWith(expect.objectContaining({ message: "handler error" }));
+});
