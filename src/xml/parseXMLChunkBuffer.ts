@@ -5,15 +5,13 @@ import { TextEvent } from "./event/TextEvent";
 
 
 
-export function parseXMLChunkBuffer(buffer: string[], handler: SimpleSAXHandler) {
-  if (buffer.length <= 0) return;
-  const _buffer = buffer.join("");
-  if (!_buffer.trim()) return;
+export function parseXMLChunkBuffer(buffer: string, handler: SimpleSAXHandler): string {
+  if (buffer.length <= 0) return buffer;
   try {
-    const tagRegex = /<(\/?)([a-zA-Z0-9_:.-]+)([^>]*)>|([^<]+)/g;
+    const tagRegex = /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<!DOCTYPE[\s\S]+?>|<(\/?)([a-zA-Z0-9_:.-]+)([^>]*)>|([^<]+)/g;;
     let prevlastIndex = 0;
-    for (const match of next(tagRegex, (_buffer))) {
-      const [, slash, tagName, attrStr_, textContent] = match;
+    for (const match of next(tagRegex, (buffer))) {
+      const [full, slash, tagName, attrStr_, textContent] = match;
       prevlastIndex = match.lastIndex;
       let textContent_: string | undefined;
       if (textContent !== undefined && (textContent_ = textContent.trim())) {
@@ -49,16 +47,15 @@ export function parseXMLChunkBuffer(buffer: string[], handler: SimpleSAXHandler)
       }
     }
 
-    // 全処理後バッファクリア（今回の設計では都度全消し）
-    buffer.splice(0, buffer.length);
-
-    if (prevlastIndex < _buffer.length) {
-      const remainingText = _buffer.substring(prevlastIndex);
-      buffer.push(remainingText);
+    if (prevlastIndex < buffer.length) {
+      const remainingText = buffer.substring(prevlastIndex);
+      return remainingText;
     }
+    return "";
 
   } catch (err) {
     handler.onError?.(err instanceof Error ? err : new Error(String(err)));
+    return buffer;
   }
 }
 

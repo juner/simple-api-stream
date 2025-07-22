@@ -7,3 +7,4 @@ export interface StartElementSAXEventInterface {
   attrs: Record<string, string>;
   selfClosing: boolean;
 }
+

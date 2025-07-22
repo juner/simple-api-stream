@@ -5,14 +5,14 @@ import { SimpleSAXHandler } from "./SimpleSAXHandler";
 export class SimpleSAXWritableStream extends WritableStream<string> {
 
   constructor(handler: SimpleSAXHandler) {
-    const buffer: string[] = [];
+    let buffer: string = "";
     super({
       write: (chunk: string) => {
-        buffer.push(chunk);
-        parseXMLChunkBuffer(buffer, handler);
+        buffer += chunk;
+        buffer = parseXMLChunkBuffer(buffer, handler);
       },
       close: () => {
-        parseXMLChunkBuffer(buffer, handler);
+        buffer = parseXMLChunkBuffer(buffer, handler);
       },
       abort: (reason: unknown) => {
         handler.onError?.(reasonToError(reason));
