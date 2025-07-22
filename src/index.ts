@@ -1,3 +1,1 @@
-export * from "./SimpleSAXWritableStream";
-
-export * from "./SimpleXMLWritableReadableStream";
+export * from "./xml";

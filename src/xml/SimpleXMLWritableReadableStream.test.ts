@@ -1,10 +1,10 @@
 import { test } from "vitest";
 import { SimpleXMLWritableReadableStream } from ".";
 
-test("empty chunks", async ({expect}) => {
+test("empty chunks", async ({ expect }) => {
   const stream = new SimpleXMLWritableReadableStream();
   const response = new Response(stream.pipeThrough(new TextEncoderStream()));
-  stream.end();
+  stream.close();
   const text = await response.text();
   expect(text).toHaveLength(0);
 });
@@ -13,11 +13,11 @@ test("outputs correct XML chunks", async ({ expect }) => {
   const stream = new SimpleXMLWritableReadableStream();
   const reader = stream.getReader();
 
-  stream.startElement("root", { id: "123" });
+  stream.startElement("root", { id: "123" }, false);
   stream.text("Hello <world> & others");
   stream.startElement("empty", {}, true);
   stream.endElement("root");
-  stream.end();
+  stream.close();
 
   const chunks: string[] = [];
   while (true) {
@@ -41,7 +41,7 @@ test("handles empty text and attributes", async ({ expect }) => {
   stream.startElement("x", {}, false);
   stream.text("");
   stream.endElement("x");
-  stream.end();
+  stream.close();
 
   const out: string[] = [];
   while (true) {
@@ -58,7 +58,7 @@ test("correctly escapes quotes in attribute values", async ({ expect }) => {
   const reader = stream.getReader();
 
   stream.startElement("item", { title: 'He said "hi" & <bye>' }, true);
-  stream.end();
+  stream.close();
 
   const result: string[] = [];
   while (true) {

@@ -1,16 +1,17 @@
 import { test,vi } from "vitest";
-import { SimpleSAXWritableStream, type SimpleSAXHandler } from ".";
+import { SimpleSAXWritableStream, TextEvent } from "..";
+import type { SimpleSAXHandler } from "..";
 
 test("parses start and end tags with attributes", async ({ expect }) => {
   const events: string[] = [];
   const handler: SimpleSAXHandler = {
-    onStartElement(name, attrs, selfClosing) {
-      events.push(`start:${name}:${JSON.stringify(attrs)}:${selfClosing}`);
+    onStartElement({tagName, attrs, selfClosing}) {
+      events.push(`start:${tagName}:${JSON.stringify(attrs)}:${selfClosing}`);
     },
-    onEndElement(name) {
-      events.push(`end:${name}`);
+    onEndElement({tagName}) {
+      events.push(`end:${tagName}`);
     },
-    onText(text) {
+    onText({text}) {
       events.push(`text:${text}`);
     },
     onError(err) {
@@ -50,7 +51,7 @@ test("handles only text nodes", async ({ expect }) => {
   const writer = stream.getWriter();
   await writer.write("   just text   ");
   await writer.close();
-  expect(handler.onText).toHaveBeenCalledWith("just text");
+  expect(handler.onText).toHaveBeenCalledWith(new TextEvent("just text"));
 });
 
 test("handles missing handlers gracefully", async ({ expect }) => {

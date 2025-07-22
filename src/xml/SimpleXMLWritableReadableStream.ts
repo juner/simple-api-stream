@@ -1,3 +1,7 @@
+import { EndElementEvent } from "./EndElementEvent";
+import { StartElementEvent } from "./StartElementEvent";
+import { TextEvent } from "./TextEvent";
+
 export class SimpleXMLWritableReadableStream extends ReadableStream<string> {
   #controller!: ReadableStreamDefaultController<string>;
 
@@ -15,7 +19,7 @@ export class SimpleXMLWritableReadableStream extends ReadableStream<string> {
     this.#controller = controllerRef!;
   }
 
-  startElement(name: string, attrs: Record<string, string> = {}, selfClosing = false) {
+  startElement(...[name, attrs, selfClosing]: ConstructorParameters<typeof StartElementEvent>) {
     const attrStr = Object.entries(attrs)
       .map(([k, v]) => `${k}="${escapeAttr(v)}"`).join(" ");
     const tag = selfClosing
@@ -24,20 +28,20 @@ export class SimpleXMLWritableReadableStream extends ReadableStream<string> {
     this.#controller.enqueue(tag);
   }
 
-  endElement(name: string) {
+  endElement(...[name]: ConstructorParameters<typeof EndElementEvent>) {
     this.#controller.enqueue(`</${name}>`);
   }
 
-  text(text: string) {
+  text(...[text]: ConstructorParameters<typeof TextEvent>) {
     this.#controller.enqueue(escapeText(text));
   }
 
-  end() {
+  close() {
     this.#controller.close();
   }
 
   [Symbol.dispose]() {
-    this.end();
+    this.close();
   }
 }
 
