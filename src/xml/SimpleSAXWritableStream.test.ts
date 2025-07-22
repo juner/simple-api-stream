@@ -1,6 +1,7 @@
 import { test,vi } from "vitest";
 import { SimpleSAXWritableStream } from "..";
 import type { SimpleSAXHandler } from "..";
+import { TextEvent } from "./event/TextEvent";
 
 test("parses start and end tags with attributes", async ({ expect }) => {
   const events: string[] = [];
