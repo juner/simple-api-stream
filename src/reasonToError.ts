@@ -1,3 +1,5 @@
 export function reasonToError(reason: unknown): Error {
-  return reason instanceof Error ? reason : new Error(String(reason), { cause: reason });
+  if (reason instanceof Error)
+    return reason;
+  return new Error(String(reason), { cause: reason });
 }

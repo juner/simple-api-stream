@@ -1,8 +1,8 @@
-export * from "./EndElementEvent";
-export * from "./SAXEvent";
+export * from "./EndElementSAXEventInterface";
+export * from "./event/SAXEvent";
 export * from "./SimpleSAXHandler";
-export * from "./StartElementEvent";
-export * from "./TextEvent";
+export * from "./StartElementSAXEventInterface";
+export * from "./TextSAXEventInterface";
 
 export * from "./SimpleSAXWritableStream";
 export * from "./SimpleSAXTransformStream";

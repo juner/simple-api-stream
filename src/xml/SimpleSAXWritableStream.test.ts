@@ -1,5 +1,5 @@
 import { test,vi } from "vitest";
-import { SimpleSAXWritableStream, TextEvent } from "..";
+import { SimpleSAXWritableStream } from "..";
 import type { SimpleSAXHandler } from "..";
 
 test("parses start and end tags with attributes", async ({ expect }) => {
@@ -15,7 +15,7 @@ test("parses start and end tags with attributes", async ({ expect }) => {
       events.push(`text:${text}`);
     },
     onError(err) {
-      events.push(`error:${err.message}`);
+      events.push(`error:${(err as {message?:string}).message ?? err}`);
     }
   };
 

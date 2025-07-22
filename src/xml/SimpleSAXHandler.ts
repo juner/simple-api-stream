@@ -1,12 +1,12 @@
-import type { EndElementSAXEventInterface } from "./EndElementEvent";
-import type { StartElementSAXEventInterface } from "./StartElementEvent";
-import type { TextSAXEventInterface } from "./TextEvent";
+import type { EndElementSAXEventInterface } from "./EndElementSAXEventInterface";
+import type { StartElementSAXEventInterface } from "./StartElementSAXEventInterface";
+import type { TextSAXEventInterface } from "./TextSAXEventInterface";
 
 
 export interface SimpleSAXHandler {
   onStartElement?: (arg: StartElementSAXEventInterface) => void;
   onEndElement?: (arg: EndElementSAXEventInterface) => void;
   onText?: (arg: TextSAXEventInterface) => void;
-  onError?: (err: Error) => void;
+  onError?: (err: unknown) => void;
 }
-export type SAXEventInterface = StartElementSAXEventInterface | EndElementSAXEventInterface | TextSAXEventInterface;
+

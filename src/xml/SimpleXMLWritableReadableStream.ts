@@ -1,6 +1,6 @@
-import { EndElementEvent } from "./EndElementEvent";
-import { StartElementEvent } from "./StartElementEvent";
-import { TextEvent } from "./TextEvent";
+import { EndElementEvent } from "./event/EndElementEvent";
+import { StartElementEvent } from "./event/StartElementEvent";
+import { TextEvent } from "./event/TextEvent";
 
 export class SimpleXMLWritableReadableStream extends ReadableStream<string> {
   #controller!: ReadableStreamDefaultController<string>;
@@ -19,7 +19,7 @@ export class SimpleXMLWritableReadableStream extends ReadableStream<string> {
     this.#controller = controllerRef!;
   }
 
-  startElement(...[name, attrs, selfClosing]: ConstructorParameters<typeof StartElementEvent>) {
+  startElement(...[name, attrs = {}, selfClosing = false]: ConstructorParameters<typeof StartElementEvent>) {
     const attrStr = Object.entries(attrs)
       .map(([k, v]) => `${k}="${escapeAttr(v)}"`).join(" ");
     const tag = selfClosing

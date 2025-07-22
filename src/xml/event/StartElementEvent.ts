@@ -1,4 +1,5 @@
 import { SAXEvent } from "./SAXEvent";
+import { StartElementSAXEventInterface } from "../StartElementSAXEventInterface";
 
 export const SAX_START_ELEMENT_EVENT_TYPE = "startElement";
 export class StartElementEvent extends SAXEvent<typeof SAX_START_ELEMENT_EVENT_TYPE> implements StartElementSAXEventInterface {
@@ -13,9 +14,3 @@ export class StartElementEvent extends SAXEvent<typeof SAX_START_ELEMENT_EVENT_T
   }
 }
 
-export interface StartElementSAXEventInterface {
-  name: typeof SAX_START_ELEMENT_EVENT_TYPE;
-  tagName: string;
-  attrs: Record<string, string>;
-  selfClosing: boolean;
-}

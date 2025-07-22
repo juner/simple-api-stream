@@ -1,7 +1,7 @@
 import { SimpleSAXHandler } from "./SimpleSAXHandler";
-import { StartElementEvent } from "./StartElementEvent";
-import { EndElementEvent } from "./EndElementEvent";
-import { TextEvent } from "./TextEvent";
+import { StartElementEvent } from "./event/StartElementEvent";
+import { EndElementEvent } from "./event/EndElementEvent";
+import { TextEvent } from "./event/TextEvent";
 
 
 
