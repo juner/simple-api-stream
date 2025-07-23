@@ -24,7 +24,8 @@ const CDATA_PREFIX = "<![CDATA[";
 const CDATA_SUFFIX = "]]>";
 const BLOCK_PREFIX = "<";
 const DOCTYPE_PREFIX = "<!DOCTYPE";
-const DOCTYPE_D_SUFFIX = "]>"
+const DOCTYPE_BLOCK_START = "[";
+const DOCTYPE_BLOCK_SUFFIX = "]>"
 const BLOCK_SUFFIX = ">";
 const DECLARATION_PREFIX = "<?";
 const XML_STYLESHEET_DECLARATION_PREFIX = "<?xml-stylesheet";
@@ -103,7 +104,7 @@ export function parseXMLChunkBuffer(
 
         case ParseState.Comment: {
           const end = buffer.indexOf(COMMENT_SUFFIX, cursor);
-          if (end === -1) return COMMENT_PREFIX + buffer.slice(cursor);
+          if (end < 0) return COMMENT_PREFIX + buffer.slice(cursor);
           const content = buffer.slice(cursor, end);
           handler.onComment?.(new CommentEvent(content));
           cursor = end + COMMENT_SUFFIX.length;
@@ -113,7 +114,7 @@ export function parseXMLChunkBuffer(
 
         case ParseState.Cdata: {
           const end = buffer.indexOf(CDATA_SUFFIX, cursor);
-          if (end === -1) return CDATA_PREFIX + buffer.slice(cursor);
+          if (end < 0) return CDATA_PREFIX + buffer.slice(cursor);
           const content = buffer.slice(cursor, end);
           handler.onCdata?.(new CdataEvent(content));
           cursor = end + CDATA_SUFFIX.length;
@@ -122,19 +123,41 @@ export function parseXMLChunkBuffer(
         }
 
         case ParseState.Doctype: {
-          const endBracket = buffer.indexOf(DOCTYPE_D_SUFFIX, cursor);
+          const endBracket = buffer.indexOf(DOCTYPE_BLOCK_SUFFIX, cursor);
+          const blockStart = buffer.indexOf(DOCTYPE_BLOCK_START, cursor);
+          const endBlock = buffer.indexOf(BLOCK_SUFFIX, cursor);
 
-          if (endBracket !== -1) {
-            // 内部サブセットを含む DOCTYPE 宣言が閉じた
-            const content = buffer.slice(cursor, endBracket + 1); // +1 to include ']'
-            handler.onDtd?.(new DtdEvent(DOCTYPE_PREFIX + content + BLOCK_SUFFIX));
-            cursor = endBracket + DOCTYPE_D_SUFFIX.length;
+          const mode = endBlock < 0 ? undefined : 0 <= blockStart && blockStart < endBlock ? "block" : "simple";
+
+          if (mode === "simple" && 0 <= endBlock) {
+            // 内部サブセットを含まない DOCTYPE 宣言が閉じた
+            const next = endBlock + BLOCK_SUFFIX.length;
+            const content = buffer.slice(cursor, next);
+            const dtd = DOCTYPE_PREFIX + content;
+            handler.onDtd?.(new DtdEvent(dtd));
+            cursor = next;
             acc = "";
             state = ParseState.Text;
             continue;
           }
-          // `]>` が見つかるまでは、途中の `>` を無視（不完全チャンクとして待つ）
+          if (mode === "block" && 0 <= endBracket) {
+            // 内部サブセットを含む DOCTYPE 宣言が閉じた
+            const next = endBracket + DOCTYPE_BLOCK_SUFFIX.length;
+            const content = buffer.slice(cursor, next);
+            const dtd = DOCTYPE_PREFIX + content;
+            handler.onDtd?.(new DtdEvent(dtd));
+            cursor = next;
+            acc = "";
+            state = ParseState.Text;
+            continue;
+          }
+          // `[` or `>` or `]>` が見つかるまでは、途中の `>` を無視（不完全チャンクとして待つ）
           return DOCTYPE_PREFIX + buffer.slice(cursor);
+
+          if (0 < blockStart && blockStart < endBracket)
+
+            continue;
+
         }
 
         case ParseState.DisplayingXML: {
