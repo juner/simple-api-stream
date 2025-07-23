@@ -25,11 +25,11 @@ const CDATA_SUFFIX = "]]>";
 const BLOCK_PREFIX = "<";
 const DOCTYPE_PREFIX = "<!DOCTYPE";
 const DOCTYPE_BLOCK_START = "[";
-const DOCTYPE_BLOCK_SUFFIX = "]>"
+const DOCTYPE_BLOCK_SUFFIX = "]>";
 const BLOCK_SUFFIX = ">";
 const DECLARATION_PREFIX = "<?";
 const XML_STYLESHEET_DECLARATION_PREFIX = "<?xml-stylesheet";
-const XML_DECLARATION_PREFIX = "<?xml"
+const XML_DECLARATION_PREFIX = "<?xml";
 const DECLARATION_SUFFIX = "?>";
 const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
@@ -42,8 +42,14 @@ export function parseXMLChunkBuffer(
     let state = ParseState.Text;
     let cursor = 0;
     let acc = "";
-
+    let lastCursor = -1;
     while (cursor < buffer.length) {
+      if (lastCursor === cursor) {
+        console.warn("🚨 無限ループの可能性: cursor が進んでいません", cursor);
+        break;
+      }
+      lastCursor = cursor;
+      console.dir({ acc, state, cursor, buffer });
       switch (state) {
         case ParseState.Text: {
           const nextOpen = buffer.indexOf(BLOCK_PREFIX, cursor);
@@ -54,12 +60,13 @@ export function parseXMLChunkBuffer(
           }
 
           acc += buffer.slice(cursor, nextOpen);
-          if (acc) {
+          if (acc.trim() !== "") {
             handler.onText?.(new TextEvent(acc));
-            acc = "";
           }
 
           cursor = nextOpen;
+          console.dir({ acc });
+          acc = "";
 
           const remaining = buffer.slice(cursor);
 
@@ -71,15 +78,12 @@ export function parseXMLChunkBuffer(
             cursor += CDATA_PREFIX.length;
           } else if (remaining.startsWith(DOCTYPE_PREFIX)) {
             state = ParseState.Doctype;
-            acc = "";
             cursor += DOCTYPE_PREFIX.length;
           } else if (remaining.startsWith(XML_STYLESHEET_DECLARATION_PREFIX)) {
             state = ParseState.DisplayingXML;
-            acc = "";
             cursor += XML_STYLESHEET_DECLARATION_PREFIX.length;
           } else if (remaining.startsWith(XML_DECLARATION_PREFIX)) {
             state = ParseState.XMLDeclaration;
-            acc = "";
             cursor += XML_DECLARATION_PREFIX.length;
           } else if (
             CDATA_PREFIX.startsWith(remaining) ||
@@ -88,10 +92,10 @@ export function parseXMLChunkBuffer(
             XML_STYLESHEET_DECLARATION_PREFIX.startsWith(remaining) ||
             XML_DECLARATION_PREFIX.startsWith(remaining)
           ) {
-            return buffer.slice(cursor); // 不完全なトークン、次チャンク待ち
+            return buffer.slice(cursor); // 不完全トークン
           } else if (remaining.startsWith(DECLARATION_PREFIX)) {
             const end = buffer.indexOf(DECLARATION_SUFFIX, cursor);
-            if (end === -1) return buffer.slice(cursor); // incomplete PI
+            if (end === -1) return buffer.slice(cursor);
             cursor = end + DECLARATION_SUFFIX.length;
             continue;
           } else {
@@ -130,34 +134,28 @@ export function parseXMLChunkBuffer(
           const mode = endBlock < 0 ? undefined : 0 <= blockStart && blockStart < endBlock ? "block" : "simple";
 
           if (mode === "simple" && 0 <= endBlock) {
-            // 内部サブセットを含まない DOCTYPE 宣言が閉じた
             const next = endBlock + BLOCK_SUFFIX.length;
             const content = buffer.slice(cursor, next);
             const dtd = DOCTYPE_PREFIX + content;
             handler.onDtd?.(new DtdEvent(dtd));
             cursor = next;
+            console.dir({ acc });
             acc = "";
             state = ParseState.Text;
             continue;
           }
           if (mode === "block" && 0 <= endBracket) {
-            // 内部サブセットを含む DOCTYPE 宣言が閉じた
             const next = endBracket + DOCTYPE_BLOCK_SUFFIX.length;
             const content = buffer.slice(cursor, next);
             const dtd = DOCTYPE_PREFIX + content;
             handler.onDtd?.(new DtdEvent(dtd));
             cursor = next;
+            console.dir({ acc });
             acc = "";
             state = ParseState.Text;
             continue;
           }
-          // `[` or `>` or `]>` が見つかるまでは、途中の `>` を無視（不完全チャンクとして待つ）
           return DOCTYPE_PREFIX + buffer.slice(cursor);
-
-          if (0 < blockStart && blockStart < endBracket)
-
-            continue;
-
         }
 
         case ParseState.DisplayingXML: {
@@ -206,6 +204,7 @@ export function parseXMLChunkBuffer(
           processTag(acc, handler);
           cursor = end + BLOCK_SUFFIX.length;
           state = ParseState.Text;
+          console.dir({ acc });
           acc = "";
           break;
         }
@@ -235,7 +234,6 @@ function parseAttributes(source: string): Record<string, string> {
 
 function processTag(source: string, handler: Partial<SimpleSAXHandler>) {
   if (source.startsWith("<!") || source.startsWith("<?")) {
-    // ここでは処理しない（Doctype や PI は別の状態で処理される）
     return;
   }
   const tagMatch = /^<\/?([a-zA-Z0-9_:.-]+)([^>]*)\/?>$/.exec(source.trim());
