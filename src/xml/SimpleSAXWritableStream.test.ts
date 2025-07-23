@@ -64,7 +64,7 @@ test("handles only text nodes", async ({ expect }) => {
   const writer = stream.getWriter();
   await writer.write("   just text   ");
   await writer.close();
-  expect(handler.onText).toHaveBeenCalledWith(new TextEvent("just text"));
+  expect(handler.onText).toHaveBeenCalledWith(new TextEvent("   just text   "));
 });
 
 test("handles missing handlers gracefully", async ({ expect }) => {

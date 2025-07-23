@@ -1,90 +1,151 @@
-import { SimpleSAXHandler } from "./interface/SimpleSAXHandler";
-import { StartElementEvent } from "./event/StartElementEvent";
-import { EndElementEvent } from "./event/EndElementEvent";
-import { TextEvent } from "./event/TextEvent";
-import { CdataEvent, CommentEvent, DtdEvent } from "./event";
+import { CdataEvent, CommentEvent, DtdEvent, EndElementEvent, StartElementEvent, TextEvent } from "./event";
+import { SimpleSAXHandler } from "./interface";
 
-
-
+const ParseState = {
+  Text: 'Text',
+  Comment: 'Comment',
+  Cdata: 'Cdata',
+  Doctype: 'Doctype',
+  Tag: 'Tag',
+};
 export function parseXMLChunkBuffer(buffer: string, handler: SimpleSAXHandler): string {
-  if (buffer.length <= 0) return buffer;
   try {
-    const tagRegex =  /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<!DOCTYPE[\s\S]*?>|<(\/?)([a-zA-Z0-9_:.-]+)([^>]*)>|([^<]+)/g;
-    let prevlastIndex = 0;
-    for (const match of next(tagRegex, (buffer))) {
-      const [full, slash, tagName, attrStr_, textContent] = match;
-      console.dir({ full, slash, tagName, attrStr_, textContent });
-      if (full.startsWith("<!--")) {
-        if (!full.endsWith("-->")) return buffer;
-        const comment = full.slice(4, -3).trim();
-        handler.onComment?.(new CommentEvent(comment));
-        continue;
-      }
-      if (full.startsWith("<![CDATA[")) {
-        if (!full.endsWith("]]>")) return buffer;
-        const cdata = full.slice(9, -3);
-        handler.onCdata?.(new CdataEvent(cdata));
-        continue;
-      }
-      if (full.startsWith("<!DOCTYPE")) {
-        if (!full.endsWith(">")) return buffer;
-        const doctype = full;
-        handler.onDtd?.(new DtdEvent(doctype));
-        continue;
-      }
-      prevlastIndex = match.lastIndex;
-      let textContent_: string | undefined;
-      if (textContent !== undefined && (textContent_ = textContent.trim())) {
-        handler.onText?.(new TextEvent(textContent_));
-        continue;
-      }
-      if (tagName) {
-        const isClosing = slash === "/";
-        const selfClosing = attrStr_?.endsWith("/");
-        const attrStr = selfClosing ? attrStr_.slice(0, -1).trimEnd() : attrStr_.trimEnd();
-        const attrs: Record<string, string> = {};
+    let state = ParseState.Text;
+    let cursor = 0;
+    let acc = ''; // 一時蓄積用
 
-        // 属性の簡易パース（ダブルクォートのみ）
-        const attrRegex = /\s*([a-zA-Z0-9_:.-]+)=(?="([^"]*)"|'([^']*)'|([^'"]*))\s*/g;
-        let prevLast = 0;
-        for (const { 1: attr, 2: value1, 3: value2, 4: invalid, lastIndex } of next(attrRegex, attrStr)) {
-          if (invalid !== undefined) throw new Error(`Invalid attribute format: ${invalid}. required ' or "`, { cause: { index: prevLast, lastIndex } });
-          attrs[attr] = value1 ?? value2;;
-          prevLast = lastIndex;
-        }
-        if (prevLast < attrStr.length) {
-          const after = attrStr.substring(prevLast).trim();
-          if (after.length > 0)
-            throw new Error(`Invalid attribute format: ${after}. `, { cause: { index: prevLast, lastIndex: attrStr.length } });
-        }
+    while (cursor < buffer.length) {
+      switch (state) {
+        case ParseState.Text: {
+          const nextOpen = buffer.indexOf('<', cursor);
+          const text = nextOpen === -1 ? buffer.slice(cursor) : buffer.slice(cursor, nextOpen);
+          if (text.trim()) handler.onText?.(new TextEvent(text));
+          if (nextOpen === -1) return ''; // 全部処理済み
+          cursor = nextOpen;
 
-        if (isClosing) {
-          handler.onEndElement?.(new EndElementEvent(tagName));
-        } else {
-          handler.onStartElement?.(new StartElementEvent(tagName, attrs, selfClosing));
-          if (selfClosing) {
-            handler.onEndElement?.(new EndElementEvent(tagName));
+          // 判別開始
+          if (buffer.startsWith('<!--', cursor)) {
+            state = ParseState.Comment;
+            acc = '';
+            cursor += 4;
+          } else if (buffer.startsWith('<![CDATA[', cursor)) {
+            state = ParseState.Cdata;
+            acc = '';
+            cursor += 9;
+          } else if (buffer.startsWith('<!DOCTYPE', cursor)) {
+            state = ParseState.Doctype;
+            acc = '<!DOCTYPE';
+            cursor += 9;
+          } else {
+            state = ParseState.Tag;
+            acc = '<';
+            cursor++;
           }
+          break;
+        }
+
+        case ParseState.Comment: {
+          const end = buffer.indexOf('-->', cursor);
+          if (end === -1) {
+            acc += buffer.slice(cursor);
+            return '<!--' + acc;
+          }
+          acc += buffer.slice(cursor, end);
+          handler.onComment?.(new CommentEvent(acc));
+          cursor = end + 3;
+          state = ParseState.Text;
+          break;
+        }
+
+        case ParseState.Cdata: {
+          const end = buffer.indexOf(']]>', cursor);
+          if (end === -1) {
+            acc += buffer.slice(cursor);
+            return '<![CDATA[' + acc;
+          }
+          acc += buffer.slice(cursor, end);
+          handler.onCdata?.(new CdataEvent(acc));
+          cursor = end + 3;
+          state = ParseState.Text;
+          break;
+        }
+
+        case ParseState.Doctype: {
+          const end = buffer.indexOf('>', cursor);
+          if (end === -1) {
+            acc += buffer.slice(cursor);
+            return acc;
+          }
+          acc += buffer.slice(cursor, end + 1);
+          handler.onDtd?.(new DtdEvent(acc));
+          cursor = end + 1;
+          state = ParseState.Text;
+          break;
+        }
+
+        case ParseState.Tag: {
+          const end = buffer.indexOf('>', cursor);
+          if (end === -1) {
+            acc += buffer.slice(cursor);
+            return acc;
+          }
+          acc += buffer.slice(cursor, end + 1);
+          processTag(acc, handler); // タグのパース処理に委譲
+          cursor = end + 1;
+          state = ParseState.Text;
+          break;
         }
       }
     }
 
-    if (prevlastIndex < buffer.length) {
-      const remainingText = buffer.substring(prevlastIndex);
-      return remainingText;
-    }
-    return "";
-
-  } catch (err) {
+    return ''; // 全処理済み
+  } catch (err: unknown) {
     handler.onError?.(err instanceof Error ? err : new Error(String(err)));
     return buffer;
   }
 }
 
-function* next(regexp: RegExp, test: string) {
-  let matches: RegExpExecArray | null;
-  while ((matches = regexp.exec(test)) !== null) {
-    yield matches;
+function processTag(source: string, handler: SimpleSAXHandler) {
+  const tagMatch = /^<\/?([a-zA-Z0-9_:.-]+)([^>]*)\/?>$/.exec(source.trim());
+  if (!tagMatch) {
+    handler.onError?.(new Error(`Invalid tag syntax: ${source}`));
+    return;
+  }
+
+  const [, tagName, attrStrRaw] = tagMatch;
+  const isClosing = source.startsWith('</');
+  const isSelfClosing = source.endsWith('/>') || attrStrRaw.trimEnd().endsWith('/');
+
+  if (isClosing) {
+    handler.onEndElement?.(new EndElementEvent(tagName));
+    return;
+  }
+
+  const attrStr = (() => {
+    if (attrStrRaw.endsWith("/")) {
+      return attrStrRaw.slice(0, -1).trim();
+    }
+    return attrStrRaw.trim();
+  })();
+  const attrs: Record<string, string> = {};
+  let match: RegExpExecArray | null;
+
+  const attrRegex = /\s*([a-zA-Z0-9_:.-]+)=(?:"([^"]*)"|'([^']*)')/g;
+  let prevIndex = 0;
+
+  while ((match = attrRegex.exec(attrStr))) {
+    const [, key, val1, val2] = match;
+    attrs[key] = val1 ?? val2 ?? '';
+    prevIndex = attrRegex.lastIndex;
+  }
+
+  const remaining = attrStr.slice(prevIndex).trim();
+  if (remaining.length > 0) {
+    handler.onError?.(new Error(`Invalid or unquoted attribute syntax near: ${remaining}`));
+  }
+
+  handler.onStartElement?.(new StartElementEvent(tagName, attrs, isSelfClosing));
+  if (isSelfClosing) {
+    handler.onEndElement?.(new EndElementEvent(tagName));
   }
 }
-
