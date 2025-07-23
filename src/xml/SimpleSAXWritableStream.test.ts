@@ -52,7 +52,7 @@ test("handles malformed XML gracefully", async ({ expect }) => {
     onError: vi.fn()
   };
   const stream = new SimpleSAXWritableStream(handler);
-  await stream.getWriter().abort("bad xml");
+  await stream.getWriter().abort(new Error("bad xml"));
   expect(handler.onError).toHaveBeenCalledWith(expect.any(Error));
 });
 

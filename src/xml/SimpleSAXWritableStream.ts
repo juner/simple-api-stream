@@ -1,4 +1,3 @@
-import { reasonToError } from "../reasonToError";
 import { parseXMLChunkBuffer } from "./parseXMLChunkBuffer";
 import { SimpleSAXHandler } from "./interface/SimpleSAXHandler";
 
@@ -15,7 +14,7 @@ export class SimpleSAXWritableStream extends WritableStream<string> {
         buffer = parseXMLChunkBuffer(buffer, handler);
       },
       abort: (reason: unknown) => {
-        handler.onError?.(reasonToError(reason));
+        handler.onError?.(reason);
       }
     });
   }
