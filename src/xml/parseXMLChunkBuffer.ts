@@ -22,7 +22,7 @@ const ParseState = {
 
 export function parseXMLChunkBuffer(
   buffer: string,
-  handler: SimpleSAXHandler,
+  handler: Partial<SimpleSAXHandler>,
 ): string {
   try {
     let state = ParseState.Text;
@@ -196,7 +196,7 @@ function parseAttributes(source: string): Record<string, string> {
   return attrs;
 }
 
-function processTag(source: string, handler: SimpleSAXHandler) {
+function processTag(source: string, handler: Partial<SimpleSAXHandler>) {
   const tagMatch = /^<\/?([a-zA-Z0-9_:.-]+)([^>]*)\/?>$/.exec(source.trim());
   if (!tagMatch) {
     handler.onError?.(new Error(`Invalid tag syntax: ${source}`));

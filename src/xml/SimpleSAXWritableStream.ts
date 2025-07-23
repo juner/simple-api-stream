@@ -3,7 +3,7 @@ import { SimpleSAXHandler } from "./interface/SimpleSAXHandler";
 
 export class SimpleSAXWritableStream extends WritableStream<string> {
 
-  constructor(handler: SimpleSAXHandler) {
+  constructor(handler: Partial<SimpleSAXHandler>) {
     let buffer: string = "";
     super({
       write: (chunk: string) => {

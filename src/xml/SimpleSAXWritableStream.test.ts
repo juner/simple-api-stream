@@ -54,7 +54,7 @@ test("parses start and end tags with attributes", async ({ expect }) => {
 });
 
 test("handles malformed XML gracefully", async ({ expect }) => {
-  const handler: SimpleSAXHandler = {
+  const handler: Partial<SimpleSAXHandler> = {
     onError: vi.fn()
   };
   const stream = new SimpleSAXWritableStream(handler);
@@ -63,7 +63,7 @@ test("handles malformed XML gracefully", async ({ expect }) => {
 });
 
 test("handles only text nodes", async ({ expect }) => {
-  const handler: SimpleSAXHandler = {
+  const handler: Partial<SimpleSAXHandler> = {
     onText: vi.fn()
   };
   const stream = new SimpleSAXWritableStream(handler);
@@ -74,7 +74,7 @@ test("handles only text nodes", async ({ expect }) => {
 });
 
 test("handles missing handlers gracefully", async ({ expect }) => {
-  const handler: SimpleSAXHandler = {}; // すべて未定義
+  const handler: Partial<SimpleSAXHandler> = {}; // すべて未定義
   const stream = new SimpleSAXWritableStream(handler);
   const writer = stream.getWriter();
   await writer.write('<a attr="1"/>SomeText</a>');
@@ -83,7 +83,7 @@ test("handles missing handlers gracefully", async ({ expect }) => {
 });
 
 test("handles malformed attributes and catches errors", async ({ expect }) => {
-  const handler: SimpleSAXHandler = {
+  const handler: Partial<SimpleSAXHandler> = {
     onError: vi.fn()
   };
   const stream = new SimpleSAXWritableStream(handler);
@@ -97,7 +97,7 @@ test("handles malformed attributes and catches errors", async ({ expect }) => {
 });
 
 test("parseBuffer throws synchronously in write and handled in onError", async ({ expect }) => {
-  const handler: SimpleSAXHandler = {
+  const handler: Partial<SimpleSAXHandler> = {
     onError: vi.fn(),
     onStartElement() {
       throw new Error("handler error");
