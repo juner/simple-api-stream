@@ -1,6 +1,4 @@
-import { EndElementEvent } from "./event/EndElementEvent";
-import { StartElementEvent } from "./event/StartElementEvent";
-import { TextEvent } from "./event/TextEvent";
+import { EndElementEvent, StartElementEvent, TextEvent } from "./event";
 
 export class SimpleXMLWritableReadableStream extends ReadableStream<string> {
   #controller!: ReadableStreamDefaultController<string>;

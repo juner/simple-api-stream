@@ -1,22 +1,44 @@
-import { SimpleSAXHandler } from "./SimpleSAXHandler";
+import { SimpleSAXHandler } from "./interface/SimpleSAXHandler";
 import { StartElementEvent } from "./event/StartElementEvent";
 import { EndElementEvent } from "./event/EndElementEvent";
 import { TextEvent } from "./event/TextEvent";
+import { CdataEvent, CommentEvent, DtdEvent } from "./event";
 
 
 
 export function parseXMLChunkBuffer(buffer: string, handler: SimpleSAXHandler): string {
   if (buffer.length <= 0) return buffer;
   try {
-    const tagRegex = /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<!DOCTYPE[\s\S]+?>|<(\/?)([a-zA-Z0-9_:.-]+)([^>]*)>|([^<]+)/g;;
+    const tagRegex =  /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<!DOCTYPE[\s\S]*?>|<(\/?)([a-zA-Z0-9_:.-]+)([^>]*)>|([^<]+)/g;
     let prevlastIndex = 0;
     for (const match of next(tagRegex, (buffer))) {
       const [full, slash, tagName, attrStr_, textContent] = match;
+      console.dir({ full, slash, tagName, attrStr_, textContent });
+      if (full.startsWith("<!--")) {
+        if (!full.endsWith("-->")) return buffer;
+        const comment = full.slice(4, -3).trim();
+        handler.onComment?.(new CommentEvent(comment));
+        continue;
+      }
+      if (full.startsWith("<![CDATA[")) {
+        if (!full.endsWith("]]>")) return buffer;
+        const cdata = full.slice(9, -3);
+        handler.onCdata?.(new CdataEvent(cdata));
+        continue;
+      }
+      if (full.startsWith("<!DOCTYPE")) {
+        if (!full.endsWith(">")) return buffer;
+        const doctype = full;
+        handler.onDtd?.(new DtdEvent(doctype));
+        continue;
+      }
       prevlastIndex = match.lastIndex;
       let textContent_: string | undefined;
       if (textContent !== undefined && (textContent_ = textContent.trim())) {
         handler.onText?.(new TextEvent(textContent_));
-      } else if (tagName) {
+        continue;
+      }
+      if (tagName) {
         const isClosing = slash === "/";
         const selfClosing = attrStr_?.endsWith("/");
         const attrStr = selfClosing ? attrStr_.slice(0, -1).trimEnd() : attrStr_.trimEnd();

@@ -1,34 +1,46 @@
-import { test,vi } from "vitest";
-import { SimpleSAXWritableStream } from "..";
-import type { SimpleSAXHandler } from "..";
-import { TextEvent } from "./event/TextEvent";
+import { test, vi } from "vitest";
+import { SimpleSAXWritableStream, TextEvent } from "..";
+import type { SimpleSAXHandler } from "./interface";
 
 test("parses start and end tags with attributes", async ({ expect }) => {
   const events: string[] = [];
   const handler: SimpleSAXHandler = {
-    onStartElement({tagName, attrs, selfClosing}) {
+    onStartElement({ tagName, attrs, selfClosing }) {
       events.push(`start:${tagName}:${JSON.stringify(attrs)}:${selfClosing}`);
     },
-    onEndElement({tagName}) {
+    onEndElement({ tagName }) {
       events.push(`end:${tagName}`);
     },
-    onText({text}) {
+    onText({ text }) {
       events.push(`text:${text}`);
     },
     onError(err) {
-      events.push(`error:${(err as {message?:string}).message ?? err}`);
+      events.push(`error:${(err as { message?: string }).message ?? err}`);
+    },
+    onComment({ comment }) {
+      events.push(`comment:${comment}`);
+    },
+    onCdata({ cdata }) {
+      events.push(`cdata:${cdata}`);
+    },
+    onDtd({ dtd }) {
+      events.push(`dtd:${dtd}`);
     }
   };
 
-  const xml = '<root attr="value">text<child attr2="v2"/></root>';
+  const xml = '<!DOCTYPE hoge><root attr="value">text<!--comment--><![CDATA[ cdata ]]><child attr2="v2"/></root>';
   const stream = new SimpleSAXWritableStream(handler);
   const writer = stream.getWriter();
-  await writer.write(xml);
+  for (const chunk of xml.match(/.{1,10}/g) ?? [])
+    await writer.write(chunk);
   await writer.close();
 
   expect(events).toEqual([
+    'dtd:<!DOCTYPE hoge>',
     'start:root:{"attr":"value"}:false',
     'text:text',
+    "comment:comment",
+    "cdata: cdata ",
     'start:child:{"attr2":"v2"}:true',
     'end:child',
     'end:root'
