@@ -28,7 +28,7 @@ test("parses start and end tags with attributes", async ({ expect }) => {
     }
   };
 
-  const xml = '<!DOCTYPE hoge><root attr="value">text<!--comment--><![CDATA[ cdata ]]><child attr2="v2"/></root>';
+  const xml = '<!DOCTYPE hoge><root \nattr="value">text<!--comment\n--><![CDATA[ \ncdata ]]><child attr2="v2"/></root>';
   const stream = new SimpleSAXWritableStream(handler);
   const writer = stream.getWriter();
   for (const chunk of xml.match(/.{1,10}/g) ?? [])
