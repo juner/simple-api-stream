@@ -1,21 +1,20 @@
-import { parseXMLChunkBuffer } from "./parseXMLChunkBuffer";
+import { ParseXMLChunkBuffer } from "./parseXMLChunkBuffer";
 import { SimpleSAXHandler } from "./interface";
 import { SAXEventInterface } from "./event-interface";
 
 export class SimpleSAXTransformStream extends TransformStream<string, SAXEventInterface> {
   constructor() {
-    let handler!: SimpleSAXHandler;
-    let buffer: string = "";
+    let buffer!: ParseXMLChunkBuffer;
     super({
       start(controller) {
-        handler = toHandler(controller);;
+        const handler = toHandler(controller);;
+        buffer = new ParseXMLChunkBuffer({handler});
       },
       transform(chunk) {
-        buffer += chunk;
-        buffer = parseXMLChunkBuffer(buffer, handler);
+        buffer.enqueue(chunk);
       },
       flush() {
-        buffer = parseXMLChunkBuffer(buffer, handler);
+        buffer.flush();
       }
     });
   }

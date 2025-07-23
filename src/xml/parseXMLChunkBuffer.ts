@@ -33,191 +33,213 @@ const XML_DECLARATION_PREFIX = "<?xml";
 const DECLARATION_SUFFIX = "?>";
 const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
+export class ParseXMLChunkBuffer {
+  #buffer: string = "";
+  #state: typeof ParseState[keyof typeof ParseState] = ParseState.Text;
+  #handler: Partial<SimpleSAXHandler>;
+  get buffer() {
+    return this.#buffer;
+  }
+  get state() {
+    return this.#state;
+  }
+  constructor({ handler }: { handler: Partial<SimpleSAXHandler> }) {
+    this.#handler = handler;
+  }
+  enqueue(chunk: string) {
+    this.#buffer += chunk;
+    this.#buffer = this.#parseXMLChunkBuffer(this.#buffer, this.#handler);
+  }
+  flush() {
+    this.#parseXMLChunkBuffer(this.#buffer, this.#handler);
+  }
+  error(reasone: unknown) {
+    this.#handler?.onError?.(reasone);
+  }
+  #parseXMLChunkBuffer(
+    buffer: string,
+    handler: Partial<SimpleSAXHandler>
+  ): string {
+    try {
+      let cursor = 0;
+      let acc = "";
+      let lastCursor = -1;
+      while (cursor < buffer.length) {
+        if (lastCursor === cursor) {
+          console.warn("🚨 無限ループの可能性: cursor が進んでいません", cursor);
+          break;
+        }
+        lastCursor = cursor;
+        console.dir({ acc, state: this.#state, cursor, buffer });
+        switch (this.#state) {
+          case ParseState.Text: {
+            const nextOpen = buffer.indexOf(BLOCK_PREFIX, cursor);
+            if (nextOpen === -1) {
+              acc += buffer.slice(cursor);
+              cursor = buffer.length;
+              break;
+            }
 
-export function parseXMLChunkBuffer(
-  buffer: string,
-  handler: Partial<SimpleSAXHandler>
-): string {
-  try {
-    let state = ParseState.Text;
-    let cursor = 0;
-    let acc = "";
-    let lastCursor = -1;
-    while (cursor < buffer.length) {
-      if (lastCursor === cursor) {
-        console.warn("🚨 無限ループの可能性: cursor が進んでいません", cursor);
-        break;
-      }
-      lastCursor = cursor;
-      console.dir({ acc, state, cursor, buffer });
-      switch (state) {
-        case ParseState.Text: {
-          const nextOpen = buffer.indexOf(BLOCK_PREFIX, cursor);
-          if (nextOpen === -1) {
-            acc += buffer.slice(cursor);
-            cursor = buffer.length;
+            acc += buffer.slice(cursor, nextOpen);
+            if (acc.trim() !== "") {
+              handler.onText?.(new TextEvent(acc));
+            }
+
+            cursor = nextOpen;
+            console.dir({ acc });
+            acc = "";
+
+            const remaining = buffer.slice(cursor);
+
+            if (remaining.startsWith(COMMENT_PREFIX)) {
+              this.#state = ParseState.Comment;
+              cursor += COMMENT_PREFIX.length;
+            } else if (remaining.startsWith(CDATA_PREFIX)) {
+              this.#state = ParseState.Cdata;
+              cursor += CDATA_PREFIX.length;
+            } else if (remaining.startsWith(DOCTYPE_PREFIX)) {
+              this.#state = ParseState.Doctype;
+              cursor += DOCTYPE_PREFIX.length;
+            } else if (remaining.startsWith(XML_STYLESHEET_DECLARATION_PREFIX)) {
+              this.#state = ParseState.DisplayingXML;
+              cursor += XML_STYLESHEET_DECLARATION_PREFIX.length;
+            } else if (remaining.startsWith(XML_DECLARATION_PREFIX)) {
+              this.#state = ParseState.XMLDeclaration;
+              cursor += XML_DECLARATION_PREFIX.length;
+            } else if (
+              CDATA_PREFIX.startsWith(remaining) ||
+              DOCTYPE_PREFIX.startsWith(remaining) ||
+              COMMENT_PREFIX.startsWith(remaining) ||
+              XML_STYLESHEET_DECLARATION_PREFIX.startsWith(remaining) ||
+              XML_DECLARATION_PREFIX.startsWith(remaining)
+            ) {
+              return buffer.slice(cursor); // 不完全トークン
+            } else if (remaining.startsWith(DECLARATION_PREFIX)) {
+              const end = buffer.indexOf(DECLARATION_SUFFIX, cursor);
+              if (end === -1) return buffer.slice(cursor);
+              cursor = end + DECLARATION_SUFFIX.length;
+              continue;
+            } else {
+              this.#state = ParseState.Tag;
+              acc = BLOCK_PREFIX;
+              cursor++;
+            }
             break;
           }
 
-          acc += buffer.slice(cursor, nextOpen);
-          if (acc.trim() !== "") {
-            handler.onText?.(new TextEvent(acc));
+          case ParseState.Comment: {
+            const end = buffer.indexOf(COMMENT_SUFFIX, cursor);
+            if (end < 0) return COMMENT_PREFIX + buffer.slice(cursor);
+            const content = buffer.slice(cursor, end);
+            handler.onComment?.(new CommentEvent(content));
+            cursor = end + COMMENT_SUFFIX.length;
+            this.#state = ParseState.Text;
+            break;
           }
 
-          cursor = nextOpen;
-          console.dir({ acc });
-          acc = "";
+          case ParseState.Cdata: {
+            const end = buffer.indexOf(CDATA_SUFFIX, cursor);
+            if (end < 0) return CDATA_PREFIX + buffer.slice(cursor);
+            const content = buffer.slice(cursor, end);
+            handler.onCdata?.(new CdataEvent(content));
+            cursor = end + CDATA_SUFFIX.length;
+            this.#state = ParseState.Text;
+            break;
+          }
 
-          const remaining = buffer.slice(cursor);
+          case ParseState.Doctype: {
+            const endBracket = buffer.indexOf(DOCTYPE_BLOCK_SUFFIX, cursor);
+            const blockStart = buffer.indexOf(DOCTYPE_BLOCK_START, cursor);
+            const endBlock = buffer.indexOf(BLOCK_SUFFIX, cursor);
 
-          if (remaining.startsWith(COMMENT_PREFIX)) {
-            state = ParseState.Comment;
-            cursor += COMMENT_PREFIX.length;
-          } else if (remaining.startsWith(CDATA_PREFIX)) {
-            state = ParseState.Cdata;
-            cursor += CDATA_PREFIX.length;
-          } else if (remaining.startsWith(DOCTYPE_PREFIX)) {
-            state = ParseState.Doctype;
-            cursor += DOCTYPE_PREFIX.length;
-          } else if (remaining.startsWith(XML_STYLESHEET_DECLARATION_PREFIX)) {
-            state = ParseState.DisplayingXML;
-            cursor += XML_STYLESHEET_DECLARATION_PREFIX.length;
-          } else if (remaining.startsWith(XML_DECLARATION_PREFIX)) {
-            state = ParseState.XMLDeclaration;
-            cursor += XML_DECLARATION_PREFIX.length;
-          } else if (
-            CDATA_PREFIX.startsWith(remaining) ||
-            DOCTYPE_PREFIX.startsWith(remaining) ||
-            COMMENT_PREFIX.startsWith(remaining) ||
-            XML_STYLESHEET_DECLARATION_PREFIX.startsWith(remaining) ||
-            XML_DECLARATION_PREFIX.startsWith(remaining)
-          ) {
-            return buffer.slice(cursor); // 不完全トークン
-          } else if (remaining.startsWith(DECLARATION_PREFIX)) {
+            const mode = endBlock < 0 ? undefined : 0 <= blockStart && blockStart < endBlock ? "block" : "simple";
+
+            if (mode === "simple" && 0 <= endBlock) {
+              const next = endBlock + BLOCK_SUFFIX.length;
+              const content = buffer.slice(cursor, next);
+              const dtd = DOCTYPE_PREFIX + content;
+              handler.onDtd?.(new DtdEvent(dtd));
+              cursor = next;
+              console.dir({ acc });
+              acc = "";
+              this.#state = ParseState.Text;
+              continue;
+            }
+            if (mode === "block" && 0 <= endBracket) {
+              const next = endBracket + DOCTYPE_BLOCK_SUFFIX.length;
+              const content = buffer.slice(cursor, next);
+              const dtd = DOCTYPE_PREFIX + content;
+              handler.onDtd?.(new DtdEvent(dtd));
+              cursor = next;
+              console.dir({ acc });
+              acc = "";
+              this.#state = ParseState.Text;
+              continue;
+            }
+            return DOCTYPE_PREFIX + buffer.slice(cursor);
+          }
+
+          case ParseState.DisplayingXML: {
             const end = buffer.indexOf(DECLARATION_SUFFIX, cursor);
-            if (end === -1) return buffer.slice(cursor);
+            if (end === -1) return XML_STYLESHEET_DECLARATION_PREFIX + buffer.slice(cursor);
+            acc += buffer.slice(cursor, end);
+            const attrs = parseAttributes(acc);
+            if (attrs.type && attrs.href) {
+              handler.onDisplayingXML?.(
+                new DisplayingXMLEvent(attrs.type, attrs.href)
+              );
+            } else {
+              handler.onError?.(
+                new Error(`Invalid xml-stylesheet declaration: ${acc}`)
+              );
+            }
             cursor = end + DECLARATION_SUFFIX.length;
-            continue;
-          } else {
-            state = ParseState.Tag;
-            acc = BLOCK_PREFIX;
-            cursor++;
+            this.#state = ParseState.Text;
+            break;
           }
-          break;
-        }
 
-        case ParseState.Comment: {
-          const end = buffer.indexOf(COMMENT_SUFFIX, cursor);
-          if (end < 0) return COMMENT_PREFIX + buffer.slice(cursor);
-          const content = buffer.slice(cursor, end);
-          handler.onComment?.(new CommentEvent(content));
-          cursor = end + COMMENT_SUFFIX.length;
-          state = ParseState.Text;
-          break;
-        }
+          case ParseState.XMLDeclaration: {
+            const end = buffer.indexOf(DECLARATION_SUFFIX, cursor);
+            if (end === -1) return XML_DECLARATION_PREFIX + buffer.slice(cursor);
+            acc += buffer.slice(cursor, end);
+            const attrs = parseAttributes(acc);
+            handler.onXmlDeclaration?.(
+              new XMLDeclarationEvent(
+                attrs.version ?? "1.0",
+                attrs.encoding ?? "UTF-8",
+                attrs.standalone === "no" ? "no" : "yes"
+              )
+            );
+            cursor = end + DECLARATION_SUFFIX.length;
+            this.#state = ParseState.Text;
+            break;
+          }
 
-        case ParseState.Cdata: {
-          const end = buffer.indexOf(CDATA_SUFFIX, cursor);
-          if (end < 0) return CDATA_PREFIX + buffer.slice(cursor);
-          const content = buffer.slice(cursor, end);
-          handler.onCdata?.(new CdataEvent(content));
-          cursor = end + CDATA_SUFFIX.length;
-          state = ParseState.Text;
-          break;
-        }
-
-        case ParseState.Doctype: {
-          const endBracket = buffer.indexOf(DOCTYPE_BLOCK_SUFFIX, cursor);
-          const blockStart = buffer.indexOf(DOCTYPE_BLOCK_START, cursor);
-          const endBlock = buffer.indexOf(BLOCK_SUFFIX, cursor);
-
-          const mode = endBlock < 0 ? undefined : 0 <= blockStart && blockStart < endBlock ? "block" : "simple";
-
-          if (mode === "simple" && 0 <= endBlock) {
-            const next = endBlock + BLOCK_SUFFIX.length;
-            const content = buffer.slice(cursor, next);
-            const dtd = DOCTYPE_PREFIX + content;
-            handler.onDtd?.(new DtdEvent(dtd));
-            cursor = next;
+          case ParseState.Tag: {
+            const end = buffer.indexOf(BLOCK_SUFFIX, cursor);
+            if (end === -1) {
+              acc += buffer.slice(cursor);
+              return acc;
+            }
+            acc += buffer.slice(cursor, end + 1);
+            processTag(acc, handler);
+            cursor = end + BLOCK_SUFFIX.length;
+            this.#state = ParseState.Text;
             console.dir({ acc });
             acc = "";
-            state = ParseState.Text;
-            continue;
+            break;
           }
-          if (mode === "block" && 0 <= endBracket) {
-            const next = endBracket + DOCTYPE_BLOCK_SUFFIX.length;
-            const content = buffer.slice(cursor, next);
-            const dtd = DOCTYPE_PREFIX + content;
-            handler.onDtd?.(new DtdEvent(dtd));
-            cursor = next;
-            console.dir({ acc });
-            acc = "";
-            state = ParseState.Text;
-            continue;
-          }
-          return DOCTYPE_PREFIX + buffer.slice(cursor);
-        }
 
-        case ParseState.DisplayingXML: {
-          const end = buffer.indexOf(DECLARATION_SUFFIX, cursor);
-          if (end === -1) return XML_STYLESHEET_DECLARATION_PREFIX + buffer.slice(cursor);
-          acc += buffer.slice(cursor, end);
-          const attrs = parseAttributes(acc);
-          if (attrs.type && attrs.href) {
-            handler.onDisplayingXML?.(
-              new DisplayingXMLEvent(attrs.type, attrs.href)
-            );
-          } else {
-            handler.onError?.(
-              new Error(`Invalid xml-stylesheet declaration: ${acc}`)
-            );
-          }
-          cursor = end + DECLARATION_SUFFIX.length;
-          state = ParseState.Text;
-          break;
+          default:
+            throw new Error("Unknown parse state");
         }
-
-        case ParseState.XMLDeclaration: {
-          const end = buffer.indexOf(DECLARATION_SUFFIX, cursor);
-          if (end === -1) return XML_DECLARATION_PREFIX + buffer.slice(cursor);
-          acc += buffer.slice(cursor, end);
-          const attrs = parseAttributes(acc);
-          handler.onXmlDeclaration?.(
-            new XMLDeclarationEvent(
-              attrs.version ?? "1.0",
-              attrs.encoding ?? "UTF-8",
-              attrs.standalone === "no" ? "no" : "yes"
-            )
-          );
-          cursor = end + DECLARATION_SUFFIX.length;
-          state = ParseState.Text;
-          break;
-        }
-
-        case ParseState.Tag: {
-          const end = buffer.indexOf(BLOCK_SUFFIX, cursor);
-          if (end === -1) {
-            acc += buffer.slice(cursor);
-            return acc;
-          }
-          acc += buffer.slice(cursor, end + 1);
-          processTag(acc, handler);
-          cursor = end + BLOCK_SUFFIX.length;
-          state = ParseState.Text;
-          console.dir({ acc });
-          acc = "";
-          break;
-        }
-
-        default:
-          throw new Error("Unknown parse state");
       }
-    }
 
-    return "";
-  } catch (err: unknown) {
-    handler.onError?.(err instanceof Error ? err : new Error(String(err)));
-    return buffer;
+      return "";
+    } catch (err: unknown) {
+      handler.onError?.(err instanceof Error ? err : new Error(String(err)));
+      return buffer;
+    }
   }
 }
 
