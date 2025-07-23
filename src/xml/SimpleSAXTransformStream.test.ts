@@ -104,8 +104,8 @@ test("parses DOCTYPE with internal subset", async ({ expect }) => {
 
   const stream = new SimpleSAXTransformStream();
   const events = await collectEvents(stream, xml);
-
-  expect(events[0]).toEqual(expect.stringMatching(/^dtd:<!DOCTYPE person \[/));
+console.log(events);
+  expect(events[0]).toEqual(expect.stringMatching(/^dtd:<!DOCTYPE person \[(?:.|\n)+\]>/));
   expect(events.slice(1)).toEqual([
     "start:person:{}:false",
     "start:name:{}:false",
