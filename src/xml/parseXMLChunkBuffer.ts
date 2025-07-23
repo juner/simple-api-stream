@@ -22,7 +22,7 @@ const ParseState = {
 
 export function parseXMLChunkBuffer(
   buffer: string,
-  handler: Partial<SimpleSAXHandler>,
+  handler: Partial<SimpleSAXHandler>
 ): string {
   try {
     let state = ParseState.Text;
@@ -33,44 +33,40 @@ export function parseXMLChunkBuffer(
       switch (state) {
         case ParseState.Text: {
           const nextOpen = buffer.indexOf("<", cursor);
-          const text =
-            nextOpen === -1
-              ? buffer.slice(cursor)
-              : buffer.slice(cursor, nextOpen);
-          if (text.trim()) handler.onText?.(new TextEvent(text));
-          if (nextOpen === -1) return ""; // 完全に処理済み
-          const remaining = buffer.slice(nextOpen);
+          if (nextOpen === -1) {
+            acc += buffer.slice(cursor);
+            cursor = buffer.length;
+            break;
+          }
+
+          acc += buffer.slice(cursor, nextOpen);
+          if (acc) {
+            handler.onText?.(new TextEvent(acc));
+            acc = "";
+          }
+
           cursor = nextOpen;
+
+          const remaining = buffer.slice(cursor);
 
           if (remaining.startsWith("<!--")) {
             state = ParseState.Comment;
-            acc = "";
             cursor += 4;
           } else if (remaining.startsWith("<![CDATA[")) {
             state = ParseState.Cdata;
-            acc = "";
             cursor += 9;
           } else if (remaining.startsWith("<!DOCTYPE")) {
-            const end = buffer.indexOf(">", cursor);
-            if (end === -1) return buffer.slice(cursor); // 続き待ち
-            acc = buffer.slice(cursor, end + 1);
-            handler.onDtd?.(new DtdEvent(acc));
-            cursor = end + 1;
-            continue;
+            state = ParseState.Doctype;
+            acc = "";
+            cursor += 9;
           } else if (remaining.startsWith("<?xml-stylesheet")) {
-            const offset = "<?xml-stylesheet".length;
-            if (remaining.length < offset + 1) return buffer.slice(cursor);
-            if (!/\s/.test(remaining[offset])) return buffer.slice(cursor);
             state = ParseState.DisplayingXML;
             acc = "";
-            cursor += offset + 1;
+            cursor += 18;
           } else if (remaining.startsWith("<?xml")) {
-            const offset = "<?xml".length;
-            if (remaining.length < offset + 1) return buffer.slice(cursor);
-            if (!/\s/.test(remaining[offset])) return buffer.slice(cursor);
             state = ParseState.XMLDeclaration;
             acc = "";
-            cursor += offset + 1;
+            cursor += 5;
           } else if (
             "<![CDATA[".startsWith(remaining) ||
             "<!DOCTYPE".startsWith(remaining) ||
@@ -78,11 +74,11 @@ export function parseXMLChunkBuffer(
             "<?xml-stylesheet".startsWith(remaining) ||
             "<?xml".startsWith(remaining)
           ) {
-            return buffer.slice(cursor); // 未完 → 次のチャンク待ち
+            return buffer.slice(cursor); // 不完全なトークン、次チャンク待ち
           } else if (remaining.startsWith("<?")) {
             const end = buffer.indexOf("?>", cursor);
-            if (end === -1) return buffer.slice(cursor);
-            cursor = end + 2; // 未サポート PI はスキップ
+            if (end === -1) return buffer.slice(cursor); // incomplete PI
+            cursor = end + 2;
             continue;
           } else {
             state = ParseState.Tag;
@@ -94,12 +90,9 @@ export function parseXMLChunkBuffer(
 
         case ParseState.Comment: {
           const end = buffer.indexOf("-->", cursor);
-          if (end === -1) {
-            acc += buffer.slice(cursor);
-            return "<!--" + acc;
-          }
-          acc += buffer.slice(cursor, end);
-          handler.onComment?.(new CommentEvent(acc));
+          if (end === -1) return "<!--" + buffer.slice(cursor);
+          const content = buffer.slice(cursor, end);
+          handler.onComment?.(new CommentEvent(content));
           cursor = end + 3;
           state = ParseState.Text;
           break;
@@ -107,32 +100,36 @@ export function parseXMLChunkBuffer(
 
         case ParseState.Cdata: {
           const end = buffer.indexOf("]]>", cursor);
-          if (end === -1) {
-            acc += buffer.slice(cursor);
-            return "<![CDATA[" + acc;
-          }
-          acc += buffer.slice(cursor, end);
-          handler.onCdata?.(new CdataEvent(acc));
+          if (end === -1) return "<![CDATA[" + buffer.slice(cursor);
+          const content = buffer.slice(cursor, end);
+          handler.onCdata?.(new CdataEvent(content));
           cursor = end + 3;
+          state = ParseState.Text;
+          break;
+        }
+
+        case ParseState.Doctype: {
+          const end = buffer.indexOf("]>", cursor);
+          if (end === -1) return "<!DOCTYPE" + buffer.slice(cursor);
+          const content = buffer.slice(cursor, end + 1); // `[`〜`]`
+          handler.onDtd?.(new DtdEvent("<!DOCTYPE" + content + ">"));
+          cursor = end + 2;
           state = ParseState.Text;
           break;
         }
 
         case ParseState.DisplayingXML: {
           const end = buffer.indexOf("?>", cursor);
-          if (end === -1) {
-            acc += buffer.slice(cursor);
-            return "<?xml-stylesheet " + acc;
-          }
+          if (end === -1) return "<?xml-stylesheet" + buffer.slice(cursor);
           acc += buffer.slice(cursor, end);
           const attrs = parseAttributes(acc);
           if (attrs.type && attrs.href) {
             handler.onDisplayingXML?.(
-              new DisplayingXMLEvent(attrs.type, attrs.href),
+              new DisplayingXMLEvent(attrs.type, attrs.href)
             );
           } else {
             handler.onError?.(
-              new Error(`Invalid xml-stylesheet declaration: ${acc}`),
+              new Error(`Invalid xml-stylesheet declaration: ${acc}`)
             );
           }
           cursor = end + 2;
@@ -142,18 +139,15 @@ export function parseXMLChunkBuffer(
 
         case ParseState.XMLDeclaration: {
           const end = buffer.indexOf("?>", cursor);
-          if (end === -1) {
-            acc += buffer.slice(cursor);
-            return "<?xml " + acc;
-          }
+          if (end === -1) return "<?xml" + buffer.slice(cursor);
           acc += buffer.slice(cursor, end);
           const attrs = parseAttributes(acc);
           handler.onXmlDeclaration?.(
             new XMLDeclarationEvent(
               attrs.version ?? "1.0",
               attrs.encoding ?? "UTF-8",
-              attrs.standalone === "no" ? "no" : "yes",
-            ),
+              attrs.standalone === "no" ? "no" : "yes"
+            )
           );
           cursor = end + 2;
           state = ParseState.Text;
@@ -170,11 +164,12 @@ export function parseXMLChunkBuffer(
           processTag(acc, handler);
           cursor = end + 1;
           state = ParseState.Text;
+          acc = "";
           break;
         }
 
         default:
-          throw new Error("Unknown parser state");
+          throw new Error("Unknown parse state");
       }
     }
 
@@ -228,12 +223,12 @@ function processTag(source: string, handler: Partial<SimpleSAXHandler>) {
   const remaining = attrStr.slice(prevIndex).trim();
   if (remaining.length > 0) {
     handler.onError?.(
-      new Error(`Invalid or unquoted attribute syntax near: ${remaining}`),
+      new Error(`Invalid or unquoted attribute syntax near: ${remaining}`)
     );
   }
 
   handler.onStartElement?.(
-    new StartElementEvent(tagName, attrs, isSelfClosing),
+    new StartElementEvent(tagName, attrs, isSelfClosing)
   );
   if (isSelfClosing) {
     handler.onEndElement?.(new EndElementEvent(tagName));

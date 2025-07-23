@@ -92,3 +92,31 @@ test("parses xml declaration and stylesheet", async ({ expect }) => {
     "end:root"
   ]);
 });
+
+test("parses DOCTYPE with internal subset", async ({ expect }) => {
+  const xml = `<!DOCTYPE person [
+    <!ELEMENT person (name, age, city)>
+    <!ELEMENT name (#PCDATA)>
+    <!ELEMENT age (#PCDATA)>
+    <!ELEMENT city (#PCDATA)>
+  ]>
+  <person><name>Alice</name><age>30</age><city>New York</city></person>`;
+
+  const stream = new SimpleSAXTransformStream();
+  const events = await collectEvents(stream, xml);
+
+  expect(events[0]).toEqual(expect.stringMatching(/^dtd:<!DOCTYPE person \[/));
+  expect(events.slice(1)).toEqual([
+    "start:person:{}:false",
+    "start:name:{}:false",
+    "text:Alice",
+    "end:name",
+    "start:age:{}:false",
+    "text:30",
+    "end:age",
+    "start:city:{}:false",
+    "text:New York",
+    "end:city",
+    "end:person"
+  ]);
+});
