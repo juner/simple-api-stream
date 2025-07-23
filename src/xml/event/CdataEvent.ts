@@ -10,3 +10,4 @@ export class CdataEvent extends SAXEvent<typeof SAX_CDATA_EVENT_TYPE> implements
     this.cdata = cdata;
   }
 }
+

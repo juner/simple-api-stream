@@ -48,7 +48,12 @@ function toHandler(controller: TransformStreamDefaultController<SAXEventInterfac
     },
     onDtd: (arg) => {
       controller.enqueue(arg);
-    }
-
+    },
+    onDisplayingXML: (arg) => {
+      controller.enqueue(arg);
+    },
+    onXmlDeclaration: (arg) => {
+      controller.enqueue(arg);
+    },
   };
 }

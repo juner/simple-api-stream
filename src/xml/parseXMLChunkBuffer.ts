@@ -5,6 +5,8 @@ import {
   EndElementEvent,
   StartElementEvent,
   TextEvent,
+  XMLDeclarationEvent,
+  DisplayingXMLEvent,
 } from "./event";
 import { SimpleSAXHandler } from "./interface";
 
@@ -14,7 +16,9 @@ const ParseState = {
   Cdata: Symbol("Cdata"),
   Doctype: Symbol("Doctype"),
   Tag: Symbol("Tag"),
-};
+  XMLDeclaration: Symbol("XMLDeclaration"),
+  DisplayingXML: Symbol("DisplayingXML"),
+} as const;
 
 export function parseXMLChunkBuffer(
   buffer: string,
@@ -38,16 +42,6 @@ export function parseXMLChunkBuffer(
           const remaining = buffer.slice(nextOpen);
           cursor = nextOpen;
 
-          // 1. 部分一致なら保留（チャンク切れ）
-          if (
-            "<![CDATA[".startsWith(remaining) ||
-            "<!DOCTYPE".startsWith(remaining) ||
-            "<!--".startsWith(remaining)
-          ) {
-            return buffer.slice(cursor); // 次のチャンクで処理
-          }
-
-          // 2. 完全一致判定
           if (remaining.startsWith("<!--")) {
             state = ParseState.Comment;
             acc = "";
@@ -63,11 +57,33 @@ export function parseXMLChunkBuffer(
             handler.onDtd?.(new DtdEvent(acc));
             cursor = end + 1;
             continue;
-          } else if (remaining.startsWith("<!")) {
-            handler.onError?.(
-              new Error(`Unknown declaration: ${remaining.slice(0, 15)}`),
-            );
-            return buffer.slice(cursor + 2);
+          } else if (remaining.startsWith("<?xml-stylesheet")) {
+            const offset = "<?xml-stylesheet".length;
+            if (remaining.length < offset + 1) return buffer.slice(cursor);
+            if (!/\s/.test(remaining[offset])) return buffer.slice(cursor);
+            state = ParseState.DisplayingXML;
+            acc = "";
+            cursor += offset + 1;
+          } else if (remaining.startsWith("<?xml")) {
+            const offset = "<?xml".length;
+            if (remaining.length < offset + 1) return buffer.slice(cursor);
+            if (!/\s/.test(remaining[offset])) return buffer.slice(cursor);
+            state = ParseState.XMLDeclaration;
+            acc = "";
+            cursor += offset + 1;
+          } else if (
+            "<![CDATA[".startsWith(remaining) ||
+            "<!DOCTYPE".startsWith(remaining) ||
+            "<!--".startsWith(remaining) ||
+            "<?xml-stylesheet".startsWith(remaining) ||
+            "<?xml".startsWith(remaining)
+          ) {
+            return buffer.slice(cursor); // 未完 → 次のチャンク待ち
+          } else if (remaining.startsWith("<?")) {
+            const end = buffer.indexOf("?>", cursor);
+            if (end === -1) return buffer.slice(cursor);
+            cursor = end + 2; // 未サポート PI はスキップ
+            continue;
           } else {
             state = ParseState.Tag;
             acc = "<";
@@ -102,8 +118,46 @@ export function parseXMLChunkBuffer(
           break;
         }
 
-        case ParseState.Doctype: {
-          break; // 未使用
+        case ParseState.DisplayingXML: {
+          const end = buffer.indexOf("?>", cursor);
+          if (end === -1) {
+            acc += buffer.slice(cursor);
+            return "<?xml-stylesheet " + acc;
+          }
+          acc += buffer.slice(cursor, end);
+          const attrs = parseAttributes(acc);
+          if (attrs.type && attrs.href) {
+            handler.onDisplayingXML?.(
+              new DisplayingXMLEvent(attrs.type, attrs.href),
+            );
+          } else {
+            handler.onError?.(
+              new Error(`Invalid xml-stylesheet declaration: ${acc}`),
+            );
+          }
+          cursor = end + 2;
+          state = ParseState.Text;
+          break;
+        }
+
+        case ParseState.XMLDeclaration: {
+          const end = buffer.indexOf("?>", cursor);
+          if (end === -1) {
+            acc += buffer.slice(cursor);
+            return "<?xml " + acc;
+          }
+          acc += buffer.slice(cursor, end);
+          const attrs = parseAttributes(acc);
+          handler.onXmlDeclaration?.(
+            new XMLDeclarationEvent(
+              attrs.version ?? "1.0",
+              attrs.encoding ?? "UTF-8",
+              attrs.standalone === "no" ? "no" : "yes",
+            ),
+          );
+          cursor = end + 2;
+          state = ParseState.Text;
+          break;
         }
 
         case ParseState.Tag: {
@@ -118,14 +172,28 @@ export function parseXMLChunkBuffer(
           state = ParseState.Text;
           break;
         }
+
+        default:
+          throw new Error("Unknown parser state");
       }
     }
 
-    return ""; // 完全に処理済み
+    return "";
   } catch (err: unknown) {
     handler.onError?.(err instanceof Error ? err : new Error(String(err)));
     return buffer;
   }
+}
+
+function parseAttributes(source: string): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  const attrRegex = /\s*([a-zA-Z0-9_:.-]+)=(?:"([^"]*)"|'([^']*)')/g;
+  let match: RegExpExecArray | null;
+  while ((match = attrRegex.exec(source))) {
+    const [, key, val1, val2] = match;
+    attrs[key] = val1 ?? val2 ?? "";
+  }
+  return attrs;
 }
 
 function processTag(source: string, handler: SimpleSAXHandler) {

@@ -37,6 +37,12 @@ function collectEvents(stream: TransformStream<string, SAXEventInterface>, xml: 
         case "dtd":
           output.push(`dtd:${value.dtd}`);
           break;
+        case "xmlDeclaration":
+          output.push(`xmlDeclaration:${value.version}:${value.encoding}:${value.standalone}`);
+          break;
+        case "displayingXML":
+          output.push(`displayingXML:${value.contentType}:${value.href}`);
+          break;
       }
     }
 
@@ -67,7 +73,22 @@ test("SimpleSAXTransformStream handles malformed XML", async ({ expect }) => {
   const reader = readable.getReader();
   (async () => {
     await writer.write('<tag attr=foo></tag>');
-    await writer.close();
+    await writer.close().catch(() => undefined);
   })();
-  expect(() => reader.read()).rejects.toThrowError("Invalid or unquoted attribute syntax near: attr=foo");
+  await expect(() => reader.read()).rejects.toThrowError("Invalid or unquoted attribute syntax near: attr=foo");
+});
+
+test("parses xml declaration and stylesheet", async ({ expect }) => {
+  const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml-stylesheet type="text/xsl" href="style.xsl"?>
+<root/>`;
+  const stream = new SimpleSAXTransformStream();
+  const events = await collectEvents(stream, xml);
+
+  expect(events).toEqual([
+    "xmlDeclaration:1.0:UTF-8:yes",
+    "displayingXML:text/xsl:style.xsl",
+    "start:root:{}:true",
+    "end:root"
+  ]);
 });

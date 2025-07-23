@@ -25,6 +25,12 @@ test("parses start and end tags with attributes", async ({ expect }) => {
     },
     onDtd({ dtd }) {
       events.push(`dtd:${dtd}`);
+    },
+    onDisplayingXML(arg) {
+      events.push(`displayingXML:${arg.contentType}:${arg.href}`);
+    },
+    onXmlDeclaration({ version, encoding, standalone }) {
+      events.push(`xmlDeclaration:${version}:${encoding}:${standalone}`);
     }
   };
 

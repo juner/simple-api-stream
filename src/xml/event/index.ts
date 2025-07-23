@@ -5,3 +5,5 @@ export * from "./EndElementEvent";
 export * from "./TextEvent";
 export * from "./CdataEvent";
 export * from "./CommentEvent";
+export * from "./XMLDeclarationEvent";
+export * from "./DisplayingXMLEvent";

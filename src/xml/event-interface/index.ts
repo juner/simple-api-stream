@@ -5,3 +5,5 @@ export type * from "./CommentSAXEventInterface";
 export type * from "./StartElementSAXEventInterface";
 export type * from "./EndElementSAXEventInterface";
 export type * from "./TextSAXEventInterface";
+export type * from "./XMLdeclarationSAXEventInterface";
+export type * from "./DisplayingXMLEventInterface";
