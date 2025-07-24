@@ -42,7 +42,7 @@ test("parses start and end tags with attributes", async ({ expect }) => {
   await writer.close();
 
   expect(events).toEqual([
-    'dtd:<!DOCTYPE hoge>',
+    'doctype:<!DOCTYPE hoge>',
     'start:root:{"attr":"value"}:false',
     'text:text',
     "comment:comment",
@@ -64,7 +64,8 @@ test("handles malformed XML gracefully", async ({ expect }) => {
 
 test("handles only text nodes", async ({ expect }) => {
   const handler: Partial<SimpleSAXHandler> = {
-    onText: vi.fn()
+    onText: vi.fn(),
+    onError: (v) => console.error(v),
   };
   const stream = new SimpleSAXWritableStream(handler);
   const writer = stream.getWriter();

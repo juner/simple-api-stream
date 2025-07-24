@@ -29,8 +29,8 @@ const DOCTYPE_BLOCK_START = "[";
 const DOCTYPE_BLOCK_SUFFIX = "]>";
 const BLOCK_SUFFIX = ">";
 const DECLARATION_PREFIX = "<?";
-const XML_STYLESHEET_DECLARATION_PREFIX = "<?xml-stylesheet";
-const XML_DECLARATION_PREFIX = "<?xml";
+const XML_STYLESHEET_DECLARATION_PREFIX = "<?xml-stylesheet ";
+const XML_DECLARATION_PREFIX = "<?xml ";
 const DECLARATION_SUFFIX = "?>";
 const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
@@ -161,7 +161,7 @@ export class SimpleSAXParseXMLBuffer {
               if (flush) throw this.#makeNotCompleteError();
               return;
             }
-            const content = this.#buffer.slice(cursor, end);
+            const content = this.#buffer.slice(cursor + COMMENT_PREFIX.length, end);
             this.#handler.onComment?.(new CommentEvent(content));
             cursor = end + COMMENT_SUFFIX.length;
             this.#state = parseState.Text;
@@ -175,7 +175,7 @@ export class SimpleSAXParseXMLBuffer {
               if (flush) throw this.#makeNotCompleteError();
               return;
             }
-            const content = this.#buffer.slice(cursor, end);
+            const content = this.#buffer.slice(cursor + CDATA_PREFIX.length, end);
             this.#handler.onCdata?.(new CdataEvent(content));
             cursor = end + CDATA_SUFFIX.length;
             this.#state = parseState.Text;
@@ -223,8 +223,8 @@ export class SimpleSAXParseXMLBuffer {
               if (flush) throw this.#makeNotCompleteError();
               return;
             }
-            this.#acc += this.#buffer.slice(cursor, end);
-            const attrs = this.#parseAttributes(this.#acc);
+            const acc = this.#buffer.slice(cursor, end);
+            const attrs = this.#parseAttributes(acc);
             if (attrs.type && attrs.href) {
               this.#handler.onDisplayingXML?.(
                 new DisplayingXMLEvent(attrs.type, attrs.href)
@@ -248,8 +248,8 @@ export class SimpleSAXParseXMLBuffer {
               if (flush) throw this.#makeNotCompleteError();
               return;
             }
-            this.#acc += this.#buffer.slice(cursor, end);
-            const attrs = this.#parseAttributes(this.#acc);
+            const acc = this.#buffer.slice(cursor, end);
+            const attrs = this.#parseAttributes(acc);
             this.#handler.onXmlDeclaration?.(
               new XMLDeclarationEvent(
                 attrs.version ?? "1.0",
@@ -265,13 +265,12 @@ export class SimpleSAXParseXMLBuffer {
           case parseState.Tag: {
             const end = this.#buffer.indexOf(BLOCK_SUFFIX, cursor);
             if (end === -1) {
-              this.#acc += this.#buffer.slice(cursor);
-              this.#buffer = this.#acc;
+              this.#buffer = this.#buffer.slice(cursor);
               if (flush) throw this.#makeNotCompleteError();
               return;
             }
-            this.#acc += this.#buffer.slice(cursor, end + 1);
-            this.#processTag(this.#acc);
+            const acc = this.#buffer.slice(cursor, end + BLOCK_SUFFIX.length);
+            this.#processTag(acc);
             cursor = end + BLOCK_SUFFIX.length;
             this.#state = parseState.Text;
             console.dir({ acc: this.#acc });
@@ -282,6 +281,11 @@ export class SimpleSAXParseXMLBuffer {
           default:
             throw this.#makeError("Unknown parse state");
         }
+      }
+      if (flush && this.#acc.length > 0) {
+        const text = this.#acc;
+        this.#handler.onText?.(new TextEvent(text));
+        this.#acc = "";
       }
       this.#buffer = "";
       return;
