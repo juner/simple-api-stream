@@ -18,7 +18,6 @@ function collectEvents(stream: TransformStream<string, SAXEventInterface>, xml: 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      console.dir(value);
       switch (value.type) {
         case "startElement":
           output.push(`start:${value.tagName}:${JSON.stringify(value.attrs)}:${value.selfClosing}`);
