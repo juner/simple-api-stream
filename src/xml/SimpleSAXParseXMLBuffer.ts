@@ -98,7 +98,6 @@ export class SimpleSAXParseXMLBuffer {
     try {
       let cursor = 0;
       while (cursor < this.#buffer.length) {
-        console.dir({ acc: this.#acc, state: this.#state, cursor, buffer: this.#buffer, flush });
         switch (this.#state) {
           case parseState.Text: {
             const nextOpen = this.#buffer.indexOf(BLOCK_PREFIX, cursor);
@@ -114,7 +113,6 @@ export class SimpleSAXParseXMLBuffer {
             }
 
             cursor = nextOpen;
-            console.dir({ acc: this.#acc });
             this.#acc = "";
 
             const remaining = this.#buffer.slice(cursor);
@@ -195,7 +193,6 @@ export class SimpleSAXParseXMLBuffer {
               const dtd = content;
               this.#handler.onDoctype?.(new DoctypeEvent(dtd));
               cursor = next;
-              console.dir({ acc: this.#acc });
               this.#acc = "";
               this.#state = parseState.Text;
               continue;
@@ -206,7 +203,6 @@ export class SimpleSAXParseXMLBuffer {
               const dtd = content;
               this.#handler.onDoctype?.(new DoctypeEvent(dtd));
               cursor = next;
-              console.dir({ acc: this.#acc });
               this.#acc = "";
               this.#state = parseState.Text;
               continue;
@@ -273,7 +269,6 @@ export class SimpleSAXParseXMLBuffer {
             this.#processTag(acc);
             cursor = end + BLOCK_SUFFIX.length;
             this.#state = parseState.Text;
-            console.dir({ acc: this.#acc });
             this.#acc = "";
             break;
           }
