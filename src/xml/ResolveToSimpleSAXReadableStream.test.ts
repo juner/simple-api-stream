@@ -1,9 +1,11 @@
 import { test } from "vitest";
-import { ResolveToSimpleSAXReadableStream } from ".";
+import { ResolveToSimpleSAXReadableStream, SimpleSAXToXMLTextTransform } from ".";
 
 test("empty chunks", async ({ expect }) => {
   const stream = new ResolveToSimpleSAXReadableStream();
-  const response = new Response(stream.pipeThrough(new TextEncoderStream()));
+  const response = new Response(stream
+    .pipeThrough(new SimpleSAXToXMLTextTransform())
+    .pipeThrough(new TextEncoderStream()));
   stream.close();
   const text = await response.text();
   expect(text).toHaveLength(0);
@@ -11,7 +13,9 @@ test("empty chunks", async ({ expect }) => {
 
 test("outputs correct XML chunks", async ({ expect }) => {
   const stream = new ResolveToSimpleSAXReadableStream();
-  const reader = stream.getReader();
+  const reader = stream
+    .pipeThrough(new SimpleSAXToXMLTextTransform())
+    .getReader();
 
   stream.startElement("root", { id: "123" }, false);
   stream.text("Hello <world> & others");
@@ -36,7 +40,9 @@ test("outputs correct XML chunks", async ({ expect }) => {
 
 test("handles empty text and attributes", async ({ expect }) => {
   const stream = new ResolveToSimpleSAXReadableStream();
-  const reader = stream.getReader();
+  const reader = stream
+    .pipeThrough(new SimpleSAXToXMLTextTransform())
+    .getReader();
 
   stream.startElement("x", {}, false);
   stream.text("");
@@ -55,7 +61,9 @@ test("handles empty text and attributes", async ({ expect }) => {
 
 test("correctly escapes quotes in attribute values", async ({ expect }) => {
   const stream = new ResolveToSimpleSAXReadableStream();
-  const reader = stream.getReader();
+  const reader = stream
+    .pipeThrough(new SimpleSAXToXMLTextTransform())
+    .getReader();
 
   stream.startElement("item", { title: 'He said "hi" & <bye>' }, true);
   stream.close();

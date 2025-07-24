@@ -6,3 +6,4 @@ export type * as interfaces from "./interface";
 export * from "./XMLTextToSimpleSAXEventWritableStream";
 export * from "./XMLTextToSimpleSAXTransformStream";
 export * from "./ResolveToSimpleSAXReadableStream";
+export * from "./SimpleSAXToXMLTextTransform";

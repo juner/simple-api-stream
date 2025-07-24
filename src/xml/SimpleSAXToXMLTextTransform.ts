@@ -1,13 +1,17 @@
 import type { SAXEventInterface, StartElementSAXEventInterface } from "./event-interface";
 import { escape } from "./utils";
-
+export type SimpleSAXToXMLTextTransformOptions = {
+  indent: boolean;
+}
 export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterface, string> {
-  constructor() {
+  constructor(options?: SimpleSAXToXMLTextTransformOptions) {
     const starts: StartElementSAXEventInterface[] = [];
     super({
       transform(chunk, controller) {
         try {
-          controller.enqueue(convert(chunk, starts));
+          const str = convert(chunk, starts, options);
+          if (str === undefined) return;
+          controller.enqueue(str);
         } catch (e: unknown) {
           controller.error(e);
         }
@@ -26,7 +30,7 @@ const DECLARATION_SUFFIX = "?>";
 const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
 
-function convert(chunk: SAXEventInterface, starts:StartElementSAXEventInterface[]): string {
+function convert(chunk: SAXEventInterface, starts: StartElementSAXEventInterface[], options?: SimpleSAXToXMLTextTransformOptions): string | undefined {
   const type = chunk.type;
   switch (chunk.type) {
     case "cdata":
@@ -53,20 +57,37 @@ function convert(chunk: SAXEventInterface, starts:StartElementSAXEventInterface[
     }
     case "startElement": {
       const joins: string[] = [];
-      joins.push(BLOCK_PREFIX);
-      joins.push(chunk.tagName);
+      joins.push(`${BLOCK_PREFIX}${chunk.tagName}`);
       for (const [key, value] of Object.entries(chunk.attrs))
         joins.push(`${key}="${escape(value)}"`);
-      // if (chunk.selfClosing) {
-      //  joins.push(`/${BLOCK_SUFFIX}`);
-      //  return joins.join(" ");
-      // }
-      joins.push(BLOCK_SUFFIX);
+      if (chunk.selfClosing) {
+        return `${joins.join(" ")}/${BLOCK_SUFFIX}`;
+      }
       starts.push(chunk);
-      return joins.join(" ");
+      return `${joins.join(" ")}${BLOCK_SUFFIX}`;
     }
     case "endElement": {
-      return `${BLOCK_PREFIX}/ ${chunk.tagName}${BLOCK_SUFFIX}`;
+      const endTagName = chunk.tagName;
+      const start = starts.pop();
+      if (!start)
+        throw new Error(`mismatch startElement not found.`, {
+          cause: {
+            endTagName,
+            chunk,
+          }
+        });
+      const startTagName = start.tagName;
+      if (startTagName !== endTagName)
+        throw new Error(`mismatch startElement tagName ${startTagName} / endTagName ${endTagName}`, {
+          cause: {
+            startTagName,
+            endTagName,
+            chunk,
+            start,
+          }
+        });
+      if (start.selfClosing) return undefined;
+      return `${BLOCK_PREFIX}/${chunk.tagName}${BLOCK_SUFFIX}`;
     }
     default:
       throw new Error(`not support type: ${type}`, {

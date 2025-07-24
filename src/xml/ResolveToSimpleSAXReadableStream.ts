@@ -6,13 +6,15 @@ export class ResolveToSimpleSAXReadableStream extends ReadableStream<SAXEventInt
   #controller!: ReadableStreamDefaultController<SAXEventInterface>;
 
   constructor() {
+    let controller_!: ReadableStreamDefaultController<SAXEventInterface>;
     // super() を呼ぶ前に controller にアクセスできないため、
     // 一時的に外に取り出して参照を残す
     super({
       start: (controller) => {
-        this.#controller = controller;
+        controller_ = controller;
       }
     });
+    this.#controller = controller_;
   }
   cdata(...args: ConstructorParameters<typeof CdataEvent>): void {
     this.#controller.enqueue(new CdataEvent(...args));
