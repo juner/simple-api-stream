@@ -1,8 +1,8 @@
 import { test } from "vitest";
-import { SimpleXMLWritableReadableStream } from ".";
+import { ResolveToSimpleSAXReadableStream } from ".";
 
 test("empty chunks", async ({ expect }) => {
-  const stream = new SimpleXMLWritableReadableStream();
+  const stream = new ResolveToSimpleSAXReadableStream();
   const response = new Response(stream.pipeThrough(new TextEncoderStream()));
   stream.close();
   const text = await response.text();
@@ -10,7 +10,7 @@ test("empty chunks", async ({ expect }) => {
 });
 
 test("outputs correct XML chunks", async ({ expect }) => {
-  const stream = new SimpleXMLWritableReadableStream();
+  const stream = new ResolveToSimpleSAXReadableStream();
   const reader = stream.getReader();
 
   stream.startElement("root", { id: "123" }, false);
@@ -35,7 +35,7 @@ test("outputs correct XML chunks", async ({ expect }) => {
 });
 
 test("handles empty text and attributes", async ({ expect }) => {
-  const stream = new SimpleXMLWritableReadableStream();
+  const stream = new ResolveToSimpleSAXReadableStream();
   const reader = stream.getReader();
 
   stream.startElement("x", {}, false);
@@ -54,7 +54,7 @@ test("handles empty text and attributes", async ({ expect }) => {
 });
 
 test("correctly escapes quotes in attribute values", async ({ expect }) => {
-  const stream = new SimpleXMLWritableReadableStream();
+  const stream = new ResolveToSimpleSAXReadableStream();
   const reader = stream.getReader();
 
   stream.startElement("item", { title: 'He said "hi" & <bye>' }, true);

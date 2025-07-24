@@ -1,7 +1,8 @@
-export * from "./event";
-export type * from "./event-interface";
-export type * from "./interface";
+export * as events from "./event";
 
-export * from "./SimpleSAXWritableStream";
-export * from "./SimpleSAXTransformStream";
-export * from "./SimpleXMLWritableReadableStream";
+export type * as eventInterface from "./event-interface";
+export type * as interfaces from "./interface";
+
+export * from "./XMLTextToSimpleSAXEventWritableStream";
+export * from "./XMLTextToSimpleSAXTransformStream";
+export * from "./ResolveToSimpleSAXReadableStream";

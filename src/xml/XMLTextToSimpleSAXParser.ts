@@ -35,7 +35,7 @@ const DECLARATION_SUFFIX = "?>";
 const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
 
-export class SimpleSAXParseXMLBufferError extends Error {
+export class XMLTextToSimpleSAXParser extends Error {
   constructor(...args: ConstructorParameters<typeof Error>) {
     super(...args);
     this.name = "SimpleSAXParseXMLBufferError";
@@ -89,7 +89,7 @@ export class SimpleSAXParseXMLBuffer {
       ...(options?.cause ?? {})
     };
     (options ??= {}).cause = cause;
-    return new SimpleSAXParseXMLBufferError(message, options);
+    return new XMLTextToSimpleSAXParser(message, options);
   }
   #makeNotCompleteError() {
     return this.#makeError(`not complete syntax error. buffer:${this.#buffer}`);

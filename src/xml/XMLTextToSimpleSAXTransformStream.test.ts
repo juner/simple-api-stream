@@ -1,8 +1,7 @@
 import { test } from "vitest";
-import { SimpleSAXTransformStream } from ".";
-import type { SAXEventInterface } from ".";
-
-function collectEvents(stream: TransformStream<string, SAXEventInterface>, xml: string) {
+import { XMLTextToSimpleSAXTransformStream } from ".";
+import type { eventInterface } from ".";
+function collectEvents(stream: TransformStream<string, eventInterface.SAXEventInterface>, xml: string) {
   const reader = stream.readable.getReader();
   const writer = stream.writable.getWriter();
   const output: string[] = [];
@@ -52,7 +51,7 @@ function collectEvents(stream: TransformStream<string, SAXEventInterface>, xml: 
 
 test("SimpleSAXTransformStream parses XML stream correctly", async ({ expect }) => {
   const xml = '<!DOCTYPE root><root attr="value">text<!--comment--><![CDATA[cdata]]><child attr2="v2"/></root>';
-  const stream = new SimpleSAXTransformStream();
+  const stream = new XMLTextToSimpleSAXTransformStream();
   const events = await collectEvents(stream, xml);
 
   expect(events).toEqual([
@@ -68,7 +67,7 @@ test("SimpleSAXTransformStream parses XML stream correctly", async ({ expect }) 
 });
 
 test("SimpleSAXTransformStream handles malformed XML", async ({ expect }) => {
-  const { readable, writable } = new SimpleSAXTransformStream();
+  const { readable, writable } = new XMLTextToSimpleSAXTransformStream();
   const writer = writable.getWriter();
   const reader = readable.getReader();
   (async () => {
@@ -82,7 +81,7 @@ test("parses xml declaration and stylesheet", async ({ expect }) => {
   const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <?xml-stylesheet type="text/xsl" href="style.xsl"?>
 <root/>`;
-  const stream = new SimpleSAXTransformStream();
+  const stream = new XMLTextToSimpleSAXTransformStream();
   const events = await collectEvents(stream, xml);
 
   expect(events).toEqual([
@@ -102,7 +101,7 @@ test("parses DOCTYPE with internal subset", async ({ expect }) => {
   ]>
   <person><name>Alice</name><age>30</age><city>New York</city></person>`;
 
-  const stream = new SimpleSAXTransformStream();
+  const stream = new XMLTextToSimpleSAXTransformStream();
   const events = await collectEvents(stream, xml);
   expect(events[0]).toEqual(
     expect.stringMatching(/^dtd:<!DOCTYPE person \[(?:.|\n)+\]>/));

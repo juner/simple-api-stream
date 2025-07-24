@@ -1,7 +1,7 @@
-import { SimpleSAXParseXMLBuffer } from "./SimpleSAXParseXMLBuffer";
+import { SimpleSAXParseXMLBuffer } from "./XMLTextToSimpleSAXParser";
 import { SimpleSAXHandler } from "./interface/SimpleSAXHandler";
 
-export class SimpleSAXWritableStream extends WritableStream<string> {
+export class XMLTextToSimpleSAXEventWritableStream extends WritableStream<string> {
 
   constructor(handler: Partial<SimpleSAXHandler>) {
     const buffer = new SimpleSAXParseXMLBuffer({ handler });

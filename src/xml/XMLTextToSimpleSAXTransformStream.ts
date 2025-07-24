@@ -1,8 +1,8 @@
-import { SimpleSAXParseXMLBuffer } from "./SimpleSAXParseXMLBuffer";
+import { SimpleSAXParseXMLBuffer } from "./XMLTextToSimpleSAXParser";
 import { SimpleSAXHandler } from "./interface";
 import { SAXEventInterface } from "./event-interface";
 
-export class SimpleSAXTransformStream extends TransformStream<string, SAXEventInterface> {
+export class XMLTextToSimpleSAXTransformStream extends TransformStream<string, SAXEventInterface> {
   constructor() {
     let buffer!: SimpleSAXParseXMLBuffer;
     super({
