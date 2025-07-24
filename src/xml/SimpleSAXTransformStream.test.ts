@@ -18,6 +18,7 @@ function collectEvents(stream: TransformStream<string, SAXEventInterface>, xml: 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
+      console.dir(value);
       switch (value.type) {
         case "startElement":
           output.push(`start:${value.tagName}:${JSON.stringify(value.attrs)}:${value.selfClosing}`);
@@ -34,8 +35,8 @@ function collectEvents(stream: TransformStream<string, SAXEventInterface>, xml: 
         case "cdata":
           output.push(`cdata:${value.cdata}`);
           break;
-        case "dtd":
-          output.push(`dtd:${value.dtd}`);
+        case "doctype":
+          output.push(`dtd:${value.doctype}`);
           break;
         case "xmlDeclaration":
           output.push(`xmlDeclaration:${value.version}:${value.encoding}:${value.standalone}`);
@@ -51,12 +52,12 @@ function collectEvents(stream: TransformStream<string, SAXEventInterface>, xml: 
 }
 
 test("SimpleSAXTransformStream parses XML stream correctly", async ({ expect }) => {
-  const xml = '<!DOCTYPE hoge><root attr="value">text<!--comment--><![CDATA[cdata]]><child attr2="v2"/></root>';
+  const xml = '<!DOCTYPE root><root attr="value">text<!--comment--><![CDATA[cdata]]><child attr2="v2"/></root>';
   const stream = new SimpleSAXTransformStream();
   const events = await collectEvents(stream, xml);
 
   expect(events).toEqual([
-    'dtd:<!DOCTYPE hoge>',
+    'dtd:<!DOCTYPE root>',
     'start:root:{"attr":"value"}:false',
     'text:text',
     'comment:comment',

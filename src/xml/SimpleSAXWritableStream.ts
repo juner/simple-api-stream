@@ -1,10 +1,10 @@
-import { ParseXMLChunkBuffer } from "./parseXMLChunkBuffer";
+import { SimpleSAXParseXMLBuffer } from "./SimpleSAXParseXMLBuffer";
 import { SimpleSAXHandler } from "./interface/SimpleSAXHandler";
 
 export class SimpleSAXWritableStream extends WritableStream<string> {
 
   constructor(handler: Partial<SimpleSAXHandler>) {
-    const buffer = new ParseXMLChunkBuffer({ handler });
+    const buffer = new SimpleSAXParseXMLBuffer({ handler });
     super({
       write: (chunk: string) => {
         buffer.enqueue(chunk);

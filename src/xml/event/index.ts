@@ -1,5 +1,5 @@
 export * from "./SAXEvent";
-export * from "./DtdEvent";
+export * from "./DoctypeEvent";
 export * from "./StartElementEvent";
 export * from "./EndElementEvent";
 export * from "./TextEvent";

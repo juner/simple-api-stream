@@ -2,7 +2,7 @@ import type {
   EndElementSAXEventInterface,
   StartElementSAXEventInterface,
   TextSAXEventInterface,
-  DtdSAXEventInterface,
+  DoctypeSAXEventInterface,
   CdataSAXEventInterface,
   CommentSAXEventInterface,
   DisplayingXMLEventInterface,
@@ -10,7 +10,7 @@ import type {
 } from "../event-interface";
 
 export interface SimpleSAXHandler {
-  onDtd: (arg: DtdSAXEventInterface) => void;
+  onDoctype: (arg: DoctypeSAXEventInterface) => void;
   onStartElement: (arg: StartElementSAXEventInterface) => void;
   onEndElement: (arg: EndElementSAXEventInterface) => void;
   onText: (arg: TextSAXEventInterface) => void;
