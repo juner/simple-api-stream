@@ -1,8 +1,5 @@
-import type { SAX_DOCTYPE_EVENT_TYPE } from "../event";
+import { DoctypeSAXEventPublicInterface } from "./DoctypeSAXEventPublicInterface";
+import { DoctypeSAXEventSimpleInterface } from "./DoctypeSAXEventSimpleInterface";
+import { DoctypeSAXEventSystemInterface } from "./DoctypeSAXEventSystemInterface";
 
-export interface DoctypeSAXEventInterface {
-  type: typeof SAX_DOCTYPE_EVENT_TYPE;
-  doctype: string;
-}
-
-
+export type DoctypeSAXEventInterface = DoctypeSAXEventSimpleInterface | DoctypeSAXEventPublicInterface | DoctypeSAXEventSystemInterface;

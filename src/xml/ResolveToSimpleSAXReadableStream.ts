@@ -1,4 +1,4 @@
-import { CdataEvent, CommentEvent, DisplayingXMLEvent, DoctypeEvent, EndElementEvent, StartElementEvent, TextEvent, XMLDeclarationEvent } from "./event";
+import { CdataEvent, CommentEvent, DisplayingXMLEvent, DoctypeBaseEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, XMLDeclarationEvent } from "./event";
 import { SAXEventInterface } from "./event-interface";
 import { SimpleSAXResolver } from "./interface/SimpleSAXResolver";
 
@@ -25,8 +25,17 @@ export class ResolveToSimpleSAXReadableStream extends ReadableStream<SAXEventInt
   displayingXML(...args: ConstructorParameters<typeof DisplayingXMLEvent>): void {
     this.#controller.enqueue(new DisplayingXMLEvent(...args));
   }
-  doctype(...args: ConstructorParameters<typeof DoctypeEvent>): void {
-    this.#controller.enqueue(new DoctypeEvent(...args));
+  doctype(...args: ConstructorParameters<typeof DoctypeSimpleEvent>): void;
+  doctype(...args: ConstructorParameters<typeof DoctypeSystemEvent>): void;
+  doctype(...args: ConstructorParameters<typeof DoctypePublicEvent>): void;
+  doctype(...args: ConstructorParameters<typeof DoctypeSimpleEvent> | ConstructorParameters<typeof DoctypeSystemEvent> | ConstructorParameters<typeof DoctypePublicEvent>): void {
+    if (args[1]?.dtdType === "PUBLIC") {
+      this.#controller.enqueue(new DoctypePublicEvent(...args as ConstructorParameters<typeof DoctypePublicEvent>))
+    } else if (args[1]?.dtdType === "SYSTEM") {
+      this.#controller.enqueue(new DoctypeSystemEvent(...args as ConstructorParameters<typeof DoctypeSystemEvent>));
+    } else {
+      this.#controller.enqueue(new DoctypeSimpleEvent(...args as ConstructorParameters<typeof DoctypeSimpleEvent>));
+    }
   }
   endElement(...args: ConstructorParameters<typeof EndElementEvent>): void {
     this.#controller.enqueue(new EndElementEvent(...args));

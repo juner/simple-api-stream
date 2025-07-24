@@ -1,12 +1,14 @@
 import {
   CdataEvent,
   CommentEvent,
-  DoctypeEvent,
   EndElementEvent,
   StartElementEvent,
   TextEvent,
   XMLDeclarationEvent,
   DisplayingXMLEvent,
+  DoctypeSimpleEvent,
+  DoctypePublicEvent,
+  DoctypeSystemEvent,
 } from "./event";
 import { SimpleSAXHandler } from "./interface";
 
@@ -190,8 +192,7 @@ export class SimpleSAXParseXMLBuffer {
             if (mode === "simple" && 0 <= endBlock) {
               const next = endBlock + BLOCK_SUFFIX.length;
               const content = this.#buffer.slice(cursor, next);
-              const dtd = content;
-              this.#handler.onDoctype?.(new DoctypeEvent(dtd));
+              this.#handler.onDoctype?.(this.#parseDoctype(content));
               cursor = next;
               this.#acc = "";
               this.#state = parseState.Text;
@@ -200,8 +201,7 @@ export class SimpleSAXParseXMLBuffer {
             if (mode === "block" && 0 <= endBracket) {
               const next = endBracket + DOCTYPE_BLOCK_SUFFIX.length;
               const content = this.#buffer.slice(cursor, next);
-              const dtd = content;
-              this.#handler.onDoctype?.(new DoctypeEvent(dtd));
+              this.#handler.onDoctype?.(this.#parseDoctype(content));
               cursor = next;
               this.#acc = "";
               this.#state = parseState.Text;
@@ -307,19 +307,45 @@ export class SimpleSAXParseXMLBuffer {
     return attrs;
   }
 
+  #parseDoctype(source: string) {
+    const matches = /^<\!DOCTYPE\s+(?<root>[^\s]+)(?:\s+(?<dtdType>PUBLIC|SYSTEM))?(?:\s+"(?<uri1>[^"]+)")?(?:\s+"(?<uri2>[^"]+)")?(?:\s+\[(?<declarations>[\S\s]+)\])?>$/m.exec(source);
+    if (!matches)
+      throw this.#makeSyntaxError("Invalid doctype syntax", source);
+    const {root, dtdType, uri1, uri2, declarations} = matches.groups ?? {};
+    if (!root)
+      throw this.#makeSyntaxError("doctype", source);
+    if (dtdType === "PUBLIC")
+      return new DoctypePublicEvent(root, {
+        dtdType,
+        identifer: uri1,
+        uri: uri2,
+        declarations,
+      });
+    if (dtdType === "SYSTEM")
+      return new DoctypeSystemEvent(root, {
+        dtdType,
+        uri: uri1 ?? uri2,
+        declarations,
+      });
+    return new DoctypeSimpleEvent(root, {
+      declarations,
+    });
+  }
+  #makeSyntaxError(message:string, source: string) {
+    return this.#makeError(`${message}: ${source}`, {
+      cause: {
+        syntax: source,
+      }
+    })
+  }
+
   #processTag(source: string) {
     if (source.startsWith("<!") || source.startsWith("<?")) {
       return;
     }
     const tagMatch = /^<\/?([a-zA-Z0-9_:.-]+)([^>]*)\/?>$/.exec(source.trim());
-    if (!tagMatch) {
-      throw this.#makeError(`Invalid tag syntax: ${source}`,
-        {
-          cause: {
-            syntax: source,
-          }
-        });
-    }
+    if (!tagMatch)
+      throw this.#makeSyntaxError("tag", source);
 
     const [, tagName, attrStrRaw] = tagMatch;
     const isClosing = source.startsWith("</");

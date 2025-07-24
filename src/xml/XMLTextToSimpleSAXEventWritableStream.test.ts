@@ -23,8 +23,13 @@ test("parses start and end tags with attributes", async ({ expect }) => {
     onCdata({ cdata }) {
       events.push(`cdata:${cdata}`);
     },
-    onDoctype({ doctype }) {
-      events.push(`doctype:${doctype}`);
+    onDoctype({root, ...args }) {
+      if (args.dtdType === "PUBLIC")
+        events.push(`doctype:${root}:${args.dtdType}:${args.identifer}:${args.uri ?? ""}:${args.declarations ?? ""}`);
+      else if (args.dtdType === "SYSTEM")
+        events.push(`doctype:${root}:${args.dtdType}:${args.uri}:${args.declarations ?? ""}`);
+      else
+        events.push(`doctype:${root}:${args.declarations ?? ""}`)
     },
     onDisplayingXML({ contentType, href }) {
       events.push(`displayingXML:${contentType}:${href}`);
@@ -42,7 +47,7 @@ test("parses start and end tags with attributes", async ({ expect }) => {
   await writer.close();
 
   expect(events).toEqual([
-    'doctype:<!DOCTYPE hoge>',
+    'doctype:hoge:',
     'start:root:{"attr":"value"}:false',
     'text:text',
     "comment:comment",

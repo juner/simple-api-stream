@@ -34,7 +34,12 @@ function collectEvents(stream: TransformStream<string, eventInterface.SAXEventIn
           output.push(`cdata:${value.cdata}`);
           break;
         case "doctype":
-          output.push(`dtd:${value.doctype}`);
+          if (value.dtdType === "PUBLIC")
+            output.push(`doctype:${value.root}:${value.dtdType}:${value.identifer}:${value.uri}:${value.declarations ?? ""}`);
+          else if (value.dtdType === "SYSTEM")
+            output.push(`doctype:${value.root}:${value.dtdType}:${value.uri}:${value.declarations ?? ""}`);
+          else
+            output.push(`doctype:${value.root}:${value.declarations ?? ""}`);
           break;
         case "xmlDeclaration":
           output.push(`xmlDeclaration:${value.version}:${value.encoding}:${value.standalone}`);
@@ -55,7 +60,7 @@ test("SimpleSAXTransformStream parses XML stream correctly", async ({ expect }) 
   const events = await collectEvents(stream, xml);
 
   expect(events).toEqual([
-    'dtd:<!DOCTYPE root>',
+    'doctype:root:',
     'start:root:{"attr":"value"}:false',
     'text:text',
     'comment:comment',
@@ -104,7 +109,7 @@ test("parses DOCTYPE with internal subset", async ({ expect }) => {
   const stream = new XMLTextToSimpleSAXTransformStream();
   const events = await collectEvents(stream, xml);
   expect(events[0]).toEqual(
-    expect.stringMatching(/^dtd:<!DOCTYPE person \[(?:.|\n)+\]>/));
+    expect.stringMatching(/^doctype:person:/));
 
   expect(events.slice(1)).toEqual([
     "start:person:{}:false",

@@ -1,5 +1,9 @@
 export type * from "./SAXEventInterface";
 export type * from "./DoctypeSAXEventInterface";
+export type * from "./DoctypeSAXEventBaseInterface";
+export type * from "./DoctypeSAXEventSimpleInterface";
+export type * from "./DoctypeSAXEventPublicInterface";
+export type * from "./DoctypeSAXEventSystemInterface";
 export type * from "./CdataSAXEventInterface";
 export type * from "./CommentSAXEventInterface";
 export type * from "./StartElementSAXEventInterface";
