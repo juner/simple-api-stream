@@ -271,7 +271,7 @@ export class SimpleSAXParseXMLBuffer {
               return;
             }
             this.#acc += this.#buffer.slice(cursor, end + 1);
-            this.#processTag(this.#acc, this.#handler);
+            this.#processTag(this.#acc);
             cursor = end + BLOCK_SUFFIX.length;
             this.#state = parseState.Text;
             console.dir({ acc: this.#acc });
