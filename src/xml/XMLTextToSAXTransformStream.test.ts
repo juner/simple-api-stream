@@ -1,5 +1,5 @@
 import { test, describe, expect } from "vitest";
-import { XMLTextToSimpleSAXTransformStream } from ".";
+import { XMLTextToSAXTransformStream } from ".";
 import type { eventInterface } from ".";
 function collectEvents(stream: TransformStream<string, eventInterface.SAXEventInterface>, xml: string) {
   const reader = stream.readable.getReader();
@@ -56,7 +56,7 @@ function collectEvents(stream: TransformStream<string, eventInterface.SAXEventIn
 
 test("SimpleSAXTransformStream parses XML stream correctly", async ({ expect }) => {
   const xml = '<!DOCTYPE root><root attr="value">text<!--comment--><![CDATA[cdata]]><child attr2="v2"/></root>';
-  const stream = new XMLTextToSimpleSAXTransformStream();
+  const stream = new XMLTextToSAXTransformStream();
   const events = await collectEvents(stream, xml);
 
   expect(events).toEqual([
@@ -72,7 +72,7 @@ test("SimpleSAXTransformStream parses XML stream correctly", async ({ expect }) 
 });
 
 test("SimpleSAXTransformStream handles malformed XML", async ({ expect }) => {
-  const { readable, writable } = new XMLTextToSimpleSAXTransformStream();
+  const { readable, writable } = new XMLTextToSAXTransformStream();
   const writer = writable.getWriter();
   const reader = readable.getReader();
   (async () => {
@@ -86,7 +86,7 @@ test("parses xml declaration and stylesheet", async ({ expect }) => {
   const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <?xml-stylesheet type="text/xsl" href="style.xsl"?>
 <root/>`;
-  const stream = new XMLTextToSimpleSAXTransformStream();
+  const stream = new XMLTextToSAXTransformStream();
   const events = await collectEvents(stream, xml);
 
   expect(events).toEqual([
@@ -156,7 +156,7 @@ describe("pattern test", (it) => {
   it.each(entries)(
     `$name`,
     async ({ input, output }) => {
-      const { readable, writable } = new XMLTextToSimpleSAXTransformStream();
+      const { readable, writable } = new XMLTextToSAXTransformStream();
       (async (xml, writer) => {
         for (const chunk of xml.match(/.{1,10}/g) ?? []) {
           await writer.write(chunk);

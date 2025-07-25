@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { SimpleSAXToXMLTextTransform } from ".";
+import { SAXToXMLTextTransform } from ".";
 import type { eventInterface } from ".";
 
 test("empty chunks", async ({ expect }) => {
-  const { readable, writable } = new SimpleSAXToXMLTextTransform();
+  const { readable, writable } = new SAXToXMLTextTransform();
   const response = new Response(readable
     .pipeThrough(new TextEncoderStream()));
   await writable.close();
@@ -96,7 +96,7 @@ describe("pattern test", (it) => {
   it.each(entries)(
     `$name`,
     async ({ input, output }) => {
-      const { readable, writable } = new SimpleSAXToXMLTextTransform();
+      const { readable, writable } = new SAXToXMLTextTransform();
       (async (input, writer) => {
         for (const i of input)
           await writer.write(i);

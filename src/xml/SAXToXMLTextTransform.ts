@@ -14,7 +14,7 @@ const DECLARATION_SUFFIX = "?>";
 const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
 
-export type SimpleSAXToXMLTextTransformOptions = {
+export type SAXToXMLTextTransformOptions = {
   /**
    * indent size or indent character
    */
@@ -25,12 +25,12 @@ export type SimpleSAXToXMLTextTransformOptions = {
 /**
  * SimpleSAX to XML Text Transform
  */
-export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterface, string> {
-  #options?: Partial<SimpleSAXToXMLTextTransformOptions>;
+export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, string> {
+  #options?: Partial<SAXToXMLTextTransformOptions>;
   #prefix: string;
   #suffix: string;
   #starts: StartElementSAXEventInterface[];
-  constructor(options?: Partial<SimpleSAXToXMLTextTransformOptions>) {
+  constructor(options?: Partial<SAXToXMLTextTransformOptions>) {
     super({
       transform: (chunk, controller) => {
         try {

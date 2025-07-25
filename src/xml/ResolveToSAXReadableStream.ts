@@ -2,7 +2,7 @@ import { CdataEvent, CommentEvent, DisplayingXMLEvent, DoctypePublicEvent, Docty
 import { SAXEventInterface } from "./event-interface";
 import { SimpleSAXResolver } from "./interface/SimpleSAXResolver";
 
-export class ResolveToSimpleSAXReadableStream extends ReadableStream<SAXEventInterface> implements SimpleSAXResolver {
+export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface> implements SimpleSAXResolver {
   #controller!: ReadableStreamDefaultController<SAXEventInterface>;
 
   constructor() {
