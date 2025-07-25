@@ -19,6 +19,7 @@ export type SimpleSAXToXMLTextTransformOptions = {
    * indent size or indent character
    */
   indent: number | string;
+  lineBreak: string;
 }
 
 /**
@@ -27,6 +28,7 @@ export type SimpleSAXToXMLTextTransformOptions = {
 export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterface, string> {
   #options?: Partial<SimpleSAXToXMLTextTransformOptions>;
   #prefix: string;
+  #suffix: string;
   #starts: StartElementSAXEventInterface[];
   constructor(options?: Partial<SimpleSAXToXMLTextTransformOptions>) {
     super({
@@ -43,6 +45,7 @@ export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterfa
     this.#options = options;
     this.#prefix = this.#makeIndent();
     this.#starts = [];
+    this.#suffix = options?.lineBreak ?? "";
   }
   #makeIndent(num: number = 0) {
     console.assert(num >= 0);
@@ -74,13 +77,13 @@ export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterfa
     }
   }
   #cdata(chunk: CdataSAXEventInterface) {
-    return `${this.#prefix}${CDATA_PREFIX} ${chunk.cdata} ${CDATA_SUFFIX}`;
+    return `${this.#prefix}${CDATA_PREFIX} ${chunk.cdata} ${CDATA_SUFFIX}${this.#suffix}`;
   }
   #comment(chunk: CommentSAXEventInterface) {
-    return `${this.#prefix}${COMMENT_PREFIX} ${chunk.comment} ${COMMENT_SUFFIX}`;
+    return `${this.#prefix}${COMMENT_PREFIX} ${chunk.comment} ${COMMENT_SUFFIX}${this.#suffix}`;
   }
   #displayingXML(chunk: DisplayingXMLEventInterface) {
-    return `${this.#prefix}${XML_STYLESHEET_DECLARATION_PREFIX} type="${chunk.contentType}" href="${chunk.href}" ${DECLARATION_SUFFIX}`;
+    return `${this.#prefix}${XML_STYLESHEET_DECLARATION_PREFIX} type="${chunk.contentType}" href="${chunk.href}" ${DECLARATION_SUFFIX}${this.#suffix}`;
   }
   #doctype(chunk: DoctypeSAXEventInterface) {
     const joins: string[] = [];
@@ -97,13 +100,13 @@ export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterfa
     if (chunk.declarations && chunk.declarations.length > 0) {
       const indent = this.#makeIndent(1);
       joins.push(DOCTYPE_BLOCK_START);
-      joins.push(`${indent}${chunk.declarations.join(`\n${indent}`)}`);
-      return `${this.#prefix}${joins.join(" ")}${DOCTYPE_BLOCK_SUFFIX}`;
+      joins.push(`${indent}${chunk.declarations.join(`${this.#suffix}${indent}`)}`);
+      return `${this.#prefix}${joins.join(" ")}${DOCTYPE_BLOCK_SUFFIX}${this.#suffix}`;
     }
-    return `${this.#prefix}${joins.join(" ")}${BLOCK_SUFFIX}`;
+    return `${this.#prefix}${joins.join(" ")}${BLOCK_SUFFIX}${this.#suffix}`;
   }
   #text(chunk: TextSAXEventInterface) {
-    return `${this.#prefix}${escape(chunk.text)}`;
+    return `${this.#prefix}${escape(chunk.text)}${this.#suffix}`;
   }
   #xmlDeclaration(chunk: XMLdeclarationSAXEventInterface) {
     const joins: string[] = [];
@@ -115,7 +118,7 @@ export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterfa
     if ((chunk.standalone ?? "yes") !== "yes")
       joins.push(`standalone="${chunk.standalone}"`);
     joins.push(DECLARATION_SUFFIX);
-    return `${this.#prefix}${joins.join(" ")}`;
+    return `${this.#prefix}${joins.join(" ")}${this.#suffix}`;
   }
   #startElement(chunk: StartElementSAXEventInterface) {
     const joins: string[] = [];
@@ -129,7 +132,7 @@ export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterfa
     const indent = this.#prefix;
     this.#starts.push(chunk);
     this.#prefix = this.#makeIndent();
-    return `${indent}${joins.join(" ")}${BLOCK_SUFFIX}`;
+    return `${indent}${joins.join(" ")}${BLOCK_SUFFIX}${this.#suffix}`;
   }
   #endElement(chunk: EndElementSAXEventInterface) {
     const endTagName = chunk.tagName;
@@ -153,7 +156,7 @@ export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterfa
         }
       });
     if (start.selfClosing) return undefined;
-    return `${this.#prefix}${BLOCK_PREFIX}/${chunk.tagName}${BLOCK_SUFFIX}`;
+    return `${this.#prefix}${BLOCK_PREFIX}/${chunk.tagName}${BLOCK_SUFFIX}${this.#suffix}`;
   }
 }
 

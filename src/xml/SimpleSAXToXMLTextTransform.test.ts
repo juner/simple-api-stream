@@ -47,10 +47,7 @@ describe("pattern test", (it) => {
     {
       name: "DOCTYPE internal subset",
       output: [
-        `<!DOCTYPE person [ <!ELEMENT person (name, age, city)>
-<!ELEMENT name (#PCDATA)>
-<!ELEMENT age (#PCDATA)>
-<!ELEMENT city (#PCDATA)>]>`,
+        `<!DOCTYPE person [ <!ELEMENT person (name, age, city)><!ELEMENT name (#PCDATA)><!ELEMENT age (#PCDATA)><!ELEMENT city (#PCDATA)>]>`,
         `<person>`,
         `<name>`,
         `Alice`,
