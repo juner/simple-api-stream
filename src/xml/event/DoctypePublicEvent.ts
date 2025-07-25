@@ -10,8 +10,7 @@ export class DoctypePublicEvent extends DoctypeBaseEvent implements DoctypeSAXEv
     dtdType: "PUBLIC";
     uri?: string;
     identifer: string;
-    declarations?: string;
-  }) {
+  } & ConstructorParameters<typeof DoctypeBaseEvent>[1]) {
     super(root, options);
     this.dtdType = options.dtdType;
     this.uri = options.uri;

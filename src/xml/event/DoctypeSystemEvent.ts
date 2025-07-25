@@ -8,8 +8,7 @@ export class DoctypeSystemEvent extends DoctypeBaseEvent implements DoctypeSAXEv
   constructor(root: string, options: {
     dtdType: "SYSTEM";
     uri: string;
-    declarations?: string;
-  }) {
+  } & ConstructorParameters<typeof DoctypeBaseEvent>[1]) {
     super(root, options);
     this.dtdType = options.dtdType;
     this.uri = options.uri;

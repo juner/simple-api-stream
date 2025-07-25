@@ -6,8 +6,7 @@ export class DoctypeSimpleEvent extends DoctypeBaseEvent implements DoctypeSAXEv
   dtdType?: undefined = undefined;
   constructor(root: string, options?: {
     dtdType?: undefined;
-    declarations?: string;
-  }) {
+  } & ConstructorParameters<typeof DoctypeBaseEvent>[1]) {
     super(root, options);
     this.dtdType = options?.dtdType;
   }

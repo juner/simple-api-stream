@@ -312,8 +312,12 @@ export class SimpleSAXParseXMLBuffer {
     const matches = /^<![Dd][Oo][Cc][Tt][Yy][Pp][Ee]\s+(?<root>[^\s]+)(?:\s+(?<dtdType>[Pp][Uu][Bb][Ll][Ii][Cc]|[Ss][Yy][Ss][Tt][Ee][Mm]))?(?:\s+"(?<uri1>[^"]+)")?(?:\s+"(?<uri2>[^"]+)")?(?:\s+\[(?<declarations>[\S\s]+)\])?>$/m.exec(source);
     if (!matches)
       throw this.#makeSyntaxError("Invalid doctype syntax", source);
-    const {root, dtdType: dtdType_, uri1, uri2, declarations} = matches.groups ?? {};
+    const {root, dtdType: dtdType_, uri1, uri2, declarations:declarations_} = matches.groups ?? {};
     const dtdType = dtdType_?.toUpperCase();
+    const declarations = ((declarations) => {
+      if ((declarations?.length ?? 0) === 0) return undefined;
+      return Array.from(next(/<![^>]+>/gmu, declarations), r => r[0]);
+    })(declarations_);
     if (!root)
       throw this.#makeSyntaxError("doctype", source);
     if (dtdType === "PUBLIC")
@@ -388,4 +392,11 @@ export class SimpleSAXParseXMLBuffer {
       this.#handler.onEndElement?.(new EndElementEvent(tagName));
     }
   }
+}
+function* next(regexp:RegExp, source: string) {
+  console.assert(regexp.global);
+  let result : RegExpExecArray | null = null;
+  while((result = regexp.exec(source)) !== null) {
+    yield result;
+  };
 }
