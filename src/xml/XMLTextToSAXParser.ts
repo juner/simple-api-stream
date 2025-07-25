@@ -11,6 +11,7 @@ import {
   DoctypeSystemEvent,
 } from "./event";
 import { SimpleSAXHandler } from "./interface";
+import { unescape } from "./utils";
 
 const CDATA_PREFIX = "<![CDATA[";
 const CDATA_SUFFIX = "]]>";
@@ -154,7 +155,7 @@ export class SimpleSAXParseXMLBuffer {
 
     this.#acc += this.#buffer.slice(this.#cursor, nextOpen);
     if (this.#acc.trim() !== "") {
-      this.#handler.onText?.(new TextEvent(this.#acc));
+      this.#handler.onText?.(new TextEvent(unescape(this.#acc)));
     }
 
     this.#cursor = nextOpen;
@@ -201,7 +202,7 @@ export class SimpleSAXParseXMLBuffer {
       return { required: true };
     }
     const content = this.#buffer.slice(this.#cursor + COMMENT_PREFIX.length, end);
-    this.#handler.onComment?.(new CommentEvent(content));
+    this.#handler.onComment?.(new CommentEvent(unescape(content)));
     this.#cursor = end + COMMENT_SUFFIX.length;
     this.#factor = this.#text;
     return {};
@@ -295,7 +296,11 @@ export class SimpleSAXParseXMLBuffer {
       return { required: true };
     }
     const acc = this.#buffer.slice(this.#cursor, end + BLOCK_SUFFIX.length);
-    this.#processTag(acc);
+    {
+      const { start, end } = this.#parseTag(acc);
+      if (start) this.#handler.onStartElement?.(start);
+      if (end) this.#handler.onEndElement?.(end);
+    }
     this.#cursor = end + BLOCK_SUFFIX.length;
     this.#factor = this.#text;
     this.#acc = "";
@@ -344,9 +349,9 @@ export class SimpleSAXParseXMLBuffer {
     });
   }
 
-  #processTag(source: string) {
+  #parseTag(source: string): { start?: StartElementEvent, end?: EndElementEvent } {
     if (source.startsWith("<!") || source.startsWith("<?")) {
-      return;
+      return {};
     }
     const tagMatch = /^<\/?([a-zA-Z0-9_:.-]+)([^>]*)\/?>$/.exec(source.trim());
     if (!tagMatch)
@@ -358,8 +363,8 @@ export class SimpleSAXParseXMLBuffer {
       source.endsWith("/>") || attrStrRaw.trimEnd().endsWith("/");
 
     if (isClosing) {
-      this.#handler.onEndElement?.(new EndElementEvent(tagName));
-      return;
+      const end = new EndElementEvent(tagName);
+      return { end };
     }
 
     const attrStr = attrStrRaw.trim().replace(/\/$/, "").trim();
@@ -370,7 +375,7 @@ export class SimpleSAXParseXMLBuffer {
 
     while ((match = attrRegex.exec(attrStr))) {
       const [, key, val1, val2] = match;
-      attrs[key] = val1 ?? val2 ?? "";
+      attrs[key] = unescape(val1 ?? val2 ?? "");
       prevIndex = attrRegex.lastIndex;
     }
 
@@ -384,14 +389,15 @@ export class SimpleSAXParseXMLBuffer {
         });
     }
 
-    this.#handler.onStartElement?.(
-      new StartElementEvent(tagName, attrs, isSelfClosing)
-    );
+    const start = new StartElementEvent(tagName, attrs, isSelfClosing);
     if (isSelfClosing) {
-      this.#handler.onEndElement?.(new EndElementEvent(tagName));
+      const end = new EndElementEvent(tagName);
+      return { start, end };
     }
+    return { start };
   }
 }
+
 /** iterate Regexp.exec */
 function* next(regexp: RegExp, source: string) {
   console.assert(regexp.global);

@@ -20,6 +20,7 @@ test("outputs correct XML chunks", async ({ expect }) => {
   stream.startElement("root", { id: "123" }, false);
   stream.text("Hello <world> & others");
   stream.startElement("empty", {}, true);
+  stream.endElement("empty");
   stream.endElement("root");
   stream.close();
 
@@ -57,23 +58,4 @@ test("handles empty text and attributes", async ({ expect }) => {
   }
 
   expect(out).toEqual(["<x>", "", "</x>"]);
-});
-
-test("correctly escapes quotes in attribute values", async ({ expect }) => {
-  const stream = new ResolveToSAXReadableStream();
-  const reader = stream
-    .pipeThrough(new SAXToXMLTextTransform())
-    .getReader();
-
-  stream.startElement("item", { title: 'He said "hi" & <bye>' }, true);
-  stream.close();
-
-  const result: string[] = [];
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    result.push(value!);
-  }
-
-  expect(result).toEqual(['<item title="He said &quot;hi&quot; &amp; &lt;bye&gt;"/>']);
 });

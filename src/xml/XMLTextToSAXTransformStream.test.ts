@@ -151,6 +151,18 @@ describe("pattern test", (it) => {
       output: [
         { type: "doctype", dtdType: "SYSTEM", root: "myown", uri: "file:///HD/docs/dtd/myown.dtd" },
       ]
+    },
+    {
+      name: "outputs correct XML chunks",
+      input: `
+          <root id="123">Hello &lt;world&gt; &amp; others<empty/></root>`,
+      output: [
+        { type: "startElement", tagName: "root", attrs: { id: "123" }, selfClosing: false },
+        { type: "text", text: "Hello <world> & others" },
+        { type: "startElement", tagName: "empty", attrs: {}, selfClosing: true },
+        { type: "endElement", tagName: "empty" },
+        { type: "endElement", tagName: "root" },
+      ],
     }
   ];
   it.each(entries)(

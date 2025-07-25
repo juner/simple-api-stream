@@ -43,9 +43,9 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
       }
     });
     this.#options = options;
-    this.#prefix = this.#makeIndent();
     this.#starts = [];
     this.#suffix = options?.lineBreak ?? "";
+    this.#prefix = this.#makeIndent();
   }
   #makeIndent(num: number = 0) {
     console.assert(num >= 0);
@@ -126,11 +126,11 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
     if (chunk.attrs)
       for (const [key, value] of Object.entries(chunk.attrs))
         joins.push(`${key}="${escape(value)}"`);
+    const indent = this.#prefix;
+    this.#starts.push(chunk);
     if (chunk.selfClosing) {
       return `${this.#prefix}${joins.join(" ")}/${BLOCK_SUFFIX}`;
     }
-    const indent = this.#prefix;
-    this.#starts.push(chunk);
     this.#prefix = this.#makeIndent();
     return `${indent}${joins.join(" ")}${BLOCK_SUFFIX}${this.#suffix}`;
   }
@@ -139,7 +139,7 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
     const start = this.#starts.pop();
     this.#prefix = this.#makeIndent();
     if (!start)
-      throw new Error(`mismatch startElement not found.`, {
+      throw new Error(`mismatch startElement not found. endTagName: ${endTagName}`, {
         cause: {
           endTagName,
           chunk,
