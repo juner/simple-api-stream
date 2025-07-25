@@ -44,12 +44,13 @@ export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterfa
     this.#prefix = this.#makeIndent();
     this.#starts = [];
   }
-  #makeIndent() {
+  #makeIndent(num: number = 0) {
+    console.assert(num >= 0);
     const indent = this.#options?.indent;
     if (indent === undefined) return "";
     return (typeof indent === "string"
-      ? this.#starts.map(() => indent)
-      : Array.from({ length: indent }, () => " ")
+      ? (num == 0 ? this.#starts : Array.from({length: this.#starts.length + num})).map(() => indent)
+      : Array.from({ length: indent + num }, () => " ")
     ).join("");
   }
   #convert(chunk: SAXEventInterface): string | undefined {
@@ -73,9 +74,10 @@ export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterfa
           joins.push("SYSTEM");
           joins.push(`"${chunk.uri}"`);
         }
-        if (chunk.declarations) {
+        if (chunk.declarations && chunk.declarations.length > 0) {
+          const indent = this.#makeIndent(1);
           joins.push(DOCTYPE_BLOCK_START);
-          joins.push(chunk.declarations);
+          joins.push(`${indent}${chunk.declarations.join(`\n${indent}`)}`);
           joins.push(DOCTYPE_BLOCK_SUFFIX);
         } else {
           joins.push(BLOCK_SUFFIX);
