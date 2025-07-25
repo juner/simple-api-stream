@@ -3,7 +3,7 @@ import { DoctypeBaseEvent } from "./DoctypeBaseEvent";
 
 
 export class DoctypeSystemEvent extends DoctypeBaseEvent implements DoctypeSAXEventSystemInterface {
-  dtdType: "SYSTEM" = "SYSTEM";
+  dtdType: "SYSTEM";
   uri: string;
   constructor(root: string, options: {
     dtdType: "SYSTEM";
@@ -11,6 +11,7 @@ export class DoctypeSystemEvent extends DoctypeBaseEvent implements DoctypeSAXEv
     declarations?: string;
   }) {
     super(root, options);
+    this.dtdType = options.dtdType;
     this.uri = options.uri;
   }
 }

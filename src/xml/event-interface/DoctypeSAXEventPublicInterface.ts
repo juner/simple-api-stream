@@ -5,5 +5,5 @@ export interface DoctypeSAXEventPublicInterface extends DoctypeSAXEventBaseInter
   /** public identifer */
   identifer: string;
   /** uri reference */
-  uri: string;
+  uri?: string;
 }

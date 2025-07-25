@@ -29,7 +29,7 @@ test("parses start and end tags with attributes", async ({ expect }) => {
       else if (args.dtdType === "SYSTEM")
         events.push(`doctype:${root}:${args.dtdType}:${args.uri}:${args.declarations ?? ""}`);
       else
-        events.push(`doctype:${root}:${args.declarations ?? ""}`)
+        events.push(`doctype:${root}:${args.declarations ?? ""}`);
     },
     onDisplayingXML({ contentType, href }) {
       events.push(`displayingXML:${contentType}:${href}`);
