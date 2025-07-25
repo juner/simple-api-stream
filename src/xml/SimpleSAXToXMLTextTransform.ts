@@ -80,7 +80,7 @@ export class SimpleSAXToXMLTextTransform extends TransformStream<SAXEventInterfa
         } else {
           joins.push(BLOCK_SUFFIX);
         }
-        return `${this.#prefix}${joins.join(" ")}`
+        return `${this.#prefix}${joins.join(" ")}`;
       }
       case "text":
         return `${this.#prefix}${escape(chunk.text)}`;

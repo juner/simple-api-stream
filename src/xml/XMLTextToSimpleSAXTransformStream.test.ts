@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import { test, it, describe, expect } from "vitest";
 import { XMLTextToSimpleSAXTransformStream } from ".";
 import type { eventInterface } from ".";
 function collectEvents(stream: TransformStream<string, eventInterface.SAXEventInterface>, xml: string) {
@@ -124,4 +124,71 @@ test("parses DOCTYPE with internal subset", async ({ expect }) => {
     "end:city",
     "end:person"
   ]);
+});
+  describe("pattern test", () => {
+
+  const doctypes: { name: string, input: string, output: eventInterface.SAXEventInterface[] }[] = [
+    
+    {
+      name: "HTML 4.01 Strict",
+      input: `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">`,
+      output: [
+        { type: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
+      ]
+    },
+    {
+      name: "HTML 4.01 Transitional",
+      input: `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">`,
+      output: [
+        { type: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01 Transitional//EN", uri: "http://www.w3.org/TR/html4/loose.dtd" }
+      ]
+    },
+    {
+      name: "DOCTYPE internal subset",
+      input: `<!DOCTYPE person [
+      <!ELEMENT person (name, age, city)>
+      <!ELEMENT name (#PCDATA)>
+      <!ELEMENT age (#PCDATA)>
+      <!ELEMENT city (#PCDATA)>
+    ]>
+    <person><name>Alice</name><age>30</age><city>New York</city></person>`,
+      output: [
+        {
+          type: "doctype", root: "person", declarations: `      <!ELEMENT person (name, age, city)>      <!ELEMENT name (#PCDATA)>      <!ELEMENT age (#PCDATA)>      <!ELEMENT city (#PCDATA)>    `
+        },
+        { type: "startElement", tagName: "person", attrs: {}, selfClosing: false },
+        { type: "startElement", tagName: "name", attrs: {}, selfClosing: false },
+        { type: "text", text: "Alice" },
+        { type: "endElement", tagName: "name" },
+        { type: "startElement", tagName: "age", attrs: {}, selfClosing: false },
+        { type: "text", text: "30" },
+        { type: "endElement", tagName: "age" },
+        { type: "startElement", tagName: "city", attrs: {}, selfClosing: false },
+        { type: "text", text: "New York" },
+        { type: "endElement", tagName: "city" },
+        { type: "endElement", tagName: "person" },
+      ]
+    },
+    {
+      name: "INTERNAL DOCTYPE HTML",
+      input: `<!doctype myown system "file:///HD/docs/dtd/myown.dtd">`,
+      output: [
+        {type: "doctype", dtdType: "SYSTEM", root: "myown", uri: "file:///HD/docs/dtd/myown.dtd"},
+      ]
+    }
+  ];
+  it.each(doctypes)(
+    `pass DOCTYPE $name`,
+    async ({input, output}) => {
+      const { readable, writable } = new XMLTextToSimpleSAXTransformStream();
+      (async (xml, writer) => {
+        for (const chunk of xml.match(/.{1,10}/g) ?? []) {
+          await writer.write(chunk);
+        }
+        await writer.close();
+      })(input, writable.getWriter());
+      const array = await Array.fromAsync(readable);
+      expect(array).toEqual(output);
+    }
+  );
 });

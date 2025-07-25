@@ -118,12 +118,13 @@ export class SimpleSAXParseXMLBuffer {
             this.#acc = "";
 
             const remaining = this.#buffer.slice(cursor);
+            const remaingin_upper = remaining.toUpperCase();
 
             if (remaining.startsWith(COMMENT_PREFIX)) {
               this.#state = parseState.Comment;
             } else if (remaining.startsWith(CDATA_PREFIX)) {
               this.#state = parseState.Cdata;
-            } else if (remaining.startsWith(DOCTYPE_PREFIX)) {
+            } else if (remaingin_upper.startsWith(DOCTYPE_PREFIX)) {
               this.#state = parseState.Doctype;
             } else if (remaining.startsWith(XML_STYLESHEET_DECLARATION_PREFIX)) {
               this.#state = parseState.DisplayingXML;
@@ -131,7 +132,7 @@ export class SimpleSAXParseXMLBuffer {
               this.#state = parseState.XMLDeclaration;
             } else if (
               CDATA_PREFIX.startsWith(remaining) ||
-              DOCTYPE_PREFIX.startsWith(remaining) ||
+              DOCTYPE_PREFIX.startsWith(remaingin_upper) ||
               COMMENT_PREFIX.startsWith(remaining) ||
               XML_STYLESHEET_DECLARATION_PREFIX.startsWith(remaining) ||
               XML_DECLARATION_PREFIX.startsWith(remaining)
@@ -308,10 +309,11 @@ export class SimpleSAXParseXMLBuffer {
   }
 
   #parseDoctype(source: string) {
-    const matches = /^<\!DOCTYPE\s+(?<root>[^\s]+)(?:\s+(?<dtdType>PUBLIC|SYSTEM))?(?:\s+"(?<uri1>[^"]+)")?(?:\s+"(?<uri2>[^"]+)")?(?:\s+\[(?<declarations>[\S\s]+)\])?>$/m.exec(source);
+    const matches = /^<![Dd][Oo][Cc][Tt][Yy][Pp][Ee]\s+(?<root>[^\s]+)(?:\s+(?<dtdType>[Pp][Uu][Bb][Ll][Ii][Cc]|[Ss][Yy][Ss][Tt][Ee][Mm]))?(?:\s+"(?<uri1>[^"]+)")?(?:\s+"(?<uri2>[^"]+)")?(?:\s+\[(?<declarations>[\S\s]+)\])?>$/m.exec(source);
     if (!matches)
       throw this.#makeSyntaxError("Invalid doctype syntax", source);
-    const {root, dtdType, uri1, uri2, declarations} = matches.groups ?? {};
+    const {root, dtdType: dtdType_, uri1, uri2, declarations} = matches.groups ?? {};
+    const dtdType = dtdType_?.toUpperCase();
     if (!root)
       throw this.#makeSyntaxError("doctype", source);
     if (dtdType === "PUBLIC")
@@ -336,7 +338,7 @@ export class SimpleSAXParseXMLBuffer {
       cause: {
         syntax: source,
       }
-    })
+    });
   }
 
   #processTag(source: string) {
