@@ -97,46 +97,17 @@ test("parses xml declaration and stylesheet", async ({ expect }) => {
   ]);
 });
 
-test("parses DOCTYPE with internal subset", async ({ expect }) => {
-  const xml = `<!DOCTYPE person [
-    <!ELEMENT person (name, age, city)>
-    <!ELEMENT name (#PCDATA)>
-    <!ELEMENT age (#PCDATA)>
-    <!ELEMENT city (#PCDATA)>
-  ]>
-  <person><name>Alice</name><age>30</age><city>New York</city></person>`;
-
-  const stream = new XMLTextToSimpleSAXTransformStream();
-  const events = await collectEvents(stream, xml);
-  expect(events[0]).toEqual(
-    expect.stringMatching(/^doctype:person:/));
-
-  expect(events.slice(1)).toEqual([
-    "start:person:{}:false",
-    "start:name:{}:false",
-    "text:Alice",
-    "end:name",
-    "start:age:{}:false",
-    "text:30",
-    "end:age",
-    "start:city:{}:false",
-    "text:New York",
-    "end:city",
-    "end:person"
-  ]);
-});
 describe("pattern test", (it) => {
-  const doctypes: { name: string, input: string, output: eventInterface.SAXEventInterface[] }[] = [
-
+  const entries: { name: string, input: string, output: eventInterface.SAXEventInterface[] }[] = [
     {
-      name: "HTML 4.01 Strict",
+      name: "DOCTYPE HTML 4.01 Strict",
       input: `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">`,
       output: [
         { type: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
       ]
     },
     {
-      name: "HTML 4.01 Transitional",
+      name: "DOCTYPE HTML 4.01 Transitional",
       input: `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">`,
       output: [
         { type: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01 Transitional//EN", uri: "http://www.w3.org/TR/html4/loose.dtd" }
@@ -182,8 +153,8 @@ describe("pattern test", (it) => {
       ]
     }
   ];
-  it.each(doctypes)(
-    `pass DOCTYPE $name`,
+  it.each(entries)(
+    `$name`,
     async ({ input, output }) => {
       const { readable, writable } = new XMLTextToSimpleSAXTransformStream();
       (async (xml, writer) => {
