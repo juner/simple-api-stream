@@ -5,8 +5,7 @@ import type {
   DoctypeSAXEventInterface,
   CdataSAXEventInterface,
   CommentSAXEventInterface,
-  DisplayingXMLEventInterface,
-  XMLdeclarationSAXEventInterface,
+  ProcessingInstructionEventInterface,
 } from "../event-interface";
 
 export interface SimpleSAXHandler {
@@ -17,8 +16,7 @@ export interface SimpleSAXHandler {
   onCdata: (arg: CdataSAXEventInterface) => void;
   onComment: (arg: CommentSAXEventInterface) => void;
   onError: (err: unknown) => void;
-  onDisplayingXML: (arg: DisplayingXMLEventInterface) => void;
-  onXmlDeclaration: (arg: XMLdeclarationSAXEventInterface) => void;
+  onProcessingInstruction: (arg: ProcessingInstructionEventInterface<string>) => void;
 }
 
 

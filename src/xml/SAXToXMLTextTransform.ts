@@ -1,4 +1,4 @@
-import type { CdataSAXEventInterface, CommentSAXEventInterface, DisplayingXMLEventInterface, DoctypeSAXEventInterface, EndElementSAXEventInterface, SAXEventInterface, StartElementSAXEventInterface, TextSAXEventInterface, XMLdeclarationSAXEventInterface } from "./event-interface";
+import type { CdataSAXEventInterface, CommentSAXEventInterface, XMLStylesheetDeclarationSAXEventInterface, DoctypeSAXEventInterface, EndElementSAXEventInterface, SAXEventInterface, StartElementSAXEventInterface, TextSAXEventInterface, XMLdeclarationSAXEventInterface } from "./event-interface";
 import { escape } from "./utils";
 
 const CDATA_PREFIX = "<![CDATA[";
@@ -82,7 +82,7 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
   #comment(chunk: CommentSAXEventInterface) {
     return `${this.#prefix}${COMMENT_PREFIX} ${chunk.comment} ${COMMENT_SUFFIX}${this.#suffix}`;
   }
-  #displayingXML(chunk: DisplayingXMLEventInterface) {
+  #displayingXML(chunk: XMLStylesheetDeclarationSAXEventInterface) {
     return `${this.#prefix}${XML_STYLESHEET_DECLARATION_PREFIX} type="${chunk.contentType}" href="${chunk.href}" ${DECLARATION_SUFFIX}${this.#suffix}`;
   }
   #doctype(chunk: DoctypeSAXEventInterface) {

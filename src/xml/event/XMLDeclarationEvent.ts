@@ -1,15 +1,25 @@
 import type { XMLdeclarationSAXEventInterface } from "../event-interface";
-import { SAXEvent } from "./SAXEvent";
+import { ProcessingInstructionBaseEvent } from "./ProcessingInstructionBaseEvent";
 
-export const SAX_XML_DECLARATION_EVENT_TYPE = "xmlDeclaration";
-export class XMLDeclarationEvent extends SAXEvent<typeof SAX_XML_DECLARATION_EVENT_TYPE> implements XMLdeclarationSAXEventInterface {
+export const SAX_XML_DECLARATION_TARGET_TYPE = "xml";
+export class XMLDeclarationEvent extends ProcessingInstructionBaseEvent<typeof SAX_XML_DECLARATION_TARGET_TYPE> implements XMLdeclarationSAXEventInterface {
   version: string;
   encoding: string;
   standalone: "yes" | "no";
-  constructor(version: string = "1.0", encoding: string = "UTF-8", standalone: "yes" | "no" = "yes") {
-    super(SAX_XML_DECLARATION_EVENT_TYPE);
+  constructor({target, version = "1.0", encoding = "UTF-8", standalone = "yes"}:{target: typeof SAX_XML_DECLARATION_TARGET_TYPE, version: string, encoding: string, standalone: "yes" | "no"}) {
+    super({target, data:XMLDeclarationEvent.#makeData(version, encoding, standalone)});
     this.version = version;
     this.encoding = encoding;
     this.standalone = standalone;
+  }
+  static #makeData(version: string, encoding: string, standalone: "yes"|"no" = "yes") {
+    const joins:string[] = [];
+    if (version)
+      joins.push(`version="${version}"`);
+    if (encoding)
+      joins.push(`encoding="${encoding}"`);
+    if (standalone !== "yes")
+      joins.push(`standalone="${standalone}"`);
+    return joins.join(" ");
   }
 }

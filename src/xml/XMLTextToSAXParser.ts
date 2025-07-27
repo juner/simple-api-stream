@@ -5,7 +5,7 @@ import {
   StartElementEvent,
   TextEvent,
   XMLDeclarationEvent,
-  DisplayingXMLEvent,
+  XMLStylesheetDeclarationEvent,
   DoctypeSimpleEvent,
   DoctypePublicEvent,
   DoctypeSystemEvent,
@@ -257,7 +257,7 @@ export class SimpleSAXParseXMLBuffer {
     const attrs = this.#parseAttributes(acc);
     if (attrs.type && attrs.href) {
       this.#handler.onDisplayingXML?.(
-        new DisplayingXMLEvent(attrs.type, attrs.href)
+        new XMLStylesheetDeclarationEvent(attrs.type, attrs.href)
       );
     } else {
       throw this.#makeError(`Invalid xml-stylesheet declaration: ${this.#acc}`, {

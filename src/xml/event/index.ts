@@ -1,12 +1,19 @@
 export * from "./SAXEvent";
+// #region doctype
+export type * from "./DoctypeEvent";
 export * from "./DoctypeBaseEvent";
 export * from "./DoctypeSimpleEvent";
 export * from "./DoctypePublicEvent";
 export * from "./DoctypeSystemEvent";
+// #endregion
 export * from "./StartElementEvent";
 export * from "./EndElementEvent";
 export * from "./TextEvent";
 export * from "./CdataEvent";
 export * from "./CommentEvent";
+// #region processingInstruction
+export type * from "./ProcessingInstructionEvent";
+export * from "./ProcessingInstructionOtherEvent";
 export * from "./XMLDeclarationEvent";
-export * from "./DisplayingXMLEvent";
+export * from "./XMLStylesheetDeclarationEvent";
+// #endregion

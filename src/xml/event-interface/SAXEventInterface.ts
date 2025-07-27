@@ -5,7 +5,8 @@ import type { DoctypeSAXEventInterface } from "./DoctypeSAXEventInterface";
 import type { CommentSAXEventInterface } from "./CommentSAXEventInterface";
 import type { CdataSAXEventInterface } from "./CdataSAXEventInterface";
 import { XMLdeclarationSAXEventInterface } from "./XMLdeclarationSAXEventInterface";
-import { DisplayingXMLEventInterface } from "./DisplayingXMLEventInterface";
+import { XMLStylesheetDeclarationSAXEventInterface } from "./XMLStylesheetDeclarationSAXEventInterface";
+import { ProcessingInstructionEventInterface } from "./ProcessingInstructionEventInterface";
 
 export type SAXEventInterface =
   DoctypeSAXEventInterface
@@ -15,4 +16,5 @@ export type SAXEventInterface =
   | CommentSAXEventInterface
   | CdataSAXEventInterface
   | XMLdeclarationSAXEventInterface
-  | DisplayingXMLEventInterface;
+  | XMLStylesheetDeclarationSAXEventInterface
+  | ProcessingInstructionEventInterface;
