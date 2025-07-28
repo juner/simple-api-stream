@@ -111,16 +111,75 @@ describe("pattern test", (it) => {
         name: "outputs correct XML chunks",
         input: [
           { type: "startElement", tagName: "root", attrs: { id: "123" } },
-          { type: "text", text: "Hello <world> & others" },
+          { type: "text", text: "'Hello <world> & others'" },
           { type: "startElement", tagName: "empty", selfClosing: true },
           { type: "endElement", tagName: "empty" },
+          { type: "comment", comment: "" },
           { type: "endElement", tagName: "root" },
         ],
         output: [
           '<root id="123">',
-          'Hello &lt;world&gt; &amp; others',
+          '&#39;Hello &lt;world&gt; &amp; others&#39;',
           '<empty/>',
+          '<!---->',
           '</root>'
+        ],
+      }, {
+        name: "all type",
+        input: [
+          {
+            "data": `version="1.0" encoding="UTF-8"`,
+            "encoding": "UTF-8",
+            "standalone": "yes",
+            "target": "xml",
+            "type": "processingInstruction",
+            "version": "1.0",
+          },
+          {
+            "contentType": "text/xls",
+            "data": `type="text/xls" href="./style.xls"`,
+            "href": "./style.xls",
+            "target": "xml-stylesheet",
+            "type": "processingInstruction",
+          },
+          {
+            "attrs": {},
+            "selfClosing": false,
+            "tagName": "root",
+            "type": "startElement",
+          },
+          {
+            "cdata": " hoge ",
+            "type": "cdata",
+          }, {
+            "comment": " fuga ",
+            "type": "comment",
+          }, {
+            "attrs": {},
+            "selfClosing": false,
+            "tagName": "element",
+            "type": "startElement",
+          }, {
+            "text": "piyo",
+            "type": "text",
+          }, {
+            "tagName": "element",
+            "type": "endElement",
+          }, {
+            "tagName": "root",
+            "type": "endElement",
+          },
+        ],
+        output: [
+          `<?xml version="1.0" encoding="UTF-8" ?>`,
+          `<?xml-stylesheet type="text/xls" href="./style.xls" ?>`,
+          `<root>`,
+          `<![CDATA[ hoge ]]>`,
+          `<!-- fuga -->`,
+          `<element>`,
+          `piyo`,
+          `</element>`,
+          `</root>`
         ],
       }
     ];

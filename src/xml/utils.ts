@@ -4,7 +4,7 @@ const escapeRegexp = [
   [/</g, "&lt;"],
   [/>/g, "&gt;"],
   [/"/g, "&quot;"],
-  [/'/g, "&39;"],
+  [/'/g, "&#39;"],
 ] as const;
 const unescapeRegexp = /&(?:#x([A-z0-9]+)|#([A-z0-9]+)|([A-z0-9]+));/gmu;
 

@@ -74,10 +74,10 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
     }
   }
   #cdata(chunk: CdataSAXEventInterface) {
-    return `${this.#prefix}${CDATA_PREFIX} ${chunk.cdata} ${CDATA_SUFFIX}${this.#suffix}`;
+    return `${this.#prefix}${CDATA_PREFIX}${chunk.cdata}${CDATA_SUFFIX}${this.#suffix}`;
   }
   #comment(chunk: CommentSAXEventInterface) {
-    return `${this.#prefix}${COMMENT_PREFIX} ${chunk.comment} ${COMMENT_SUFFIX}${this.#suffix}`;
+    return `${this.#prefix}${COMMENT_PREFIX}${chunk.comment}${COMMENT_SUFFIX}${this.#suffix}`;
   }
   #doctype(chunk: DoctypeSAXEventInterface) {
     const joins: string[] = [];

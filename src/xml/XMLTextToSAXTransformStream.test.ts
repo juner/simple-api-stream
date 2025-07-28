@@ -87,38 +87,44 @@ test("parses xml declaration and stylesheet", async ({ expect }) => {
   const events = await collectEvents(stream, xml);
 
   expect(events).toEqual([
-  `processingInstruction:xml:version="1.0" encoding="UTF-8"`,
-  `processingInstruction:xml-stylesheet:type="text/xsl" href="style.xsl"`,
+    `processingInstruction:xml:version="1.0" encoding="UTF-8"`,
+    `processingInstruction:xml-stylesheet:type="text/xsl" href="style.xsl"`,
     "start:root:{}:true",
     "end:root"
   ]);
 });
 
 describe("pattern test", (it) => {
-  const entries: { name: string, input: string, output: xml.eventInterface.SAXEventInterface[] }[] = [
+  const entries: { name: string, input: string[], output: xml.eventInterface.SAXEventInterface[] }[] = [
     {
       name: "DOCTYPE HTML 4.01 Strict",
-      input: `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">`,
-      output: [
+      input: [
+        `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">`,
+      ]
+      , output: [
         { type: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
       ]
     },
     {
       name: "DOCTYPE HTML 4.01 Transitional",
-      input: `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">`,
+      input: [
+        `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">`,
+      ],
       output: [
         { type: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01 Transitional//EN", uri: "http://www.w3.org/TR/html4/loose.dtd" }
       ]
     },
     {
       name: "DOCTYPE internal subset",
-      input: `<!DOCTYPE person [
+      input: [
+        `<!DOCTYPE person [
       <!ELEMENT person (name, age, city)>
       <!ELEMENT name (#PCDATA)>
       <!ELEMENT age (#PCDATA)>
       <!ELEMENT city (#PCDATA)>
     ]>
     <person><name>Alice</name><age>30</age><city>New York</city></person>`,
+      ],
       output: [
         {
           type: "doctype", root: "person",
@@ -144,21 +150,75 @@ describe("pattern test", (it) => {
     },
     {
       name: "INTERNAL DOCTYPE HTML",
-      input: `<!doctype myown system "file:///HD/docs/dtd/myown.dtd">`,
+      input: [
+        `<!doctype myown system "file:///HD/docs/dtd/myown.dtd">`,
+      ],
       output: [
         { type: "doctype", dtdType: "SYSTEM", root: "myown", uri: "file:///HD/docs/dtd/myown.dtd" },
       ]
     },
     {
       name: "outputs correct XML chunks",
-      input: `
-          <root id="123">Hello &lt;world&gt; &amp; others<empty/></root>`,
+      input: [`
+          <root id="123">Hello &lt;world&gt; &amp; othe&#x72;&#115;<empty/><!----></root>`,
+      ],
       output: [
         { type: "startElement", tagName: "root", attrs: { id: "123" }, selfClosing: false },
         { type: "text", text: "Hello <world> & others" },
         { type: "startElement", tagName: "empty", attrs: {}, selfClosing: true },
         { type: "endElement", tagName: "empty" },
+        { type: "comment", comment: "" },
         { type: "endElement", tagName: "root" },
+      ],
+    },
+    {
+      name: "all type",
+      input: [
+        `<?xml version="1.0 ?><?xml-stylesheet type="text/xls" href="./style.xls" ?><root><![CDATA[ hoge ]]><!-- fuga --><element>piyo</element></root>`,
+      ],
+      output: [
+        {
+          "data": `version="1.0" encoding="UTF-8"`,
+          "encoding": "UTF-8",
+          "standalone": "yes",
+          "target": "xml",
+          "type": "processingInstruction",
+          "version": "1.0",
+        },
+        {
+          "contentType": "text/xls",
+          "data": `type="text/xls" href="./style.xls"`,
+          "href": "./style.xls",
+          "target": "xml-stylesheet",
+          "type": "processingInstruction",
+        },
+        {
+          "attrs": {},
+          "selfClosing": false,
+          "tagName": "root",
+          "type": "startElement",
+        },
+        {
+          "cdata": " hoge ",
+          "type": "cdata",
+        }, {
+          "comment": " fuga ",
+          "type": "comment",
+        }, {
+          "attrs": {},
+          "selfClosing": false,
+          "tagName": "element",
+          "type": "startElement",
+        }, {
+          "text": "piyo",
+          "type": "text",
+        }, {
+          "tagName": "element",
+          "type": "endElement",
+        }, {
+          "tagName": "root",
+          "type": "endElement",
+        },
       ],
     }
   ];
@@ -167,9 +227,10 @@ describe("pattern test", (it) => {
     async ({ input, output }) => {
       const { readable, writable } = new XMLTextToSAXTransformStream();
       (async (xml, writer) => {
-        for (const chunk of xml.match(/.{1,10}/g) ?? []) {
-          await writer.write(chunk);
-        }
+        for (const x of xml)
+          for (const chunk of x.match(/.{1,10}/g) ?? []) {
+            await writer.write(chunk);
+          }
         await writer.close();
       })(input, writable.getWriter());
       const array = await Array.fromAsync(readable);
