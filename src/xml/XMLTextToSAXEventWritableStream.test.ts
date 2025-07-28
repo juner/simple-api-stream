@@ -1,10 +1,10 @@
-import { test, vi } from "vitest";
-import { XMLTextToSAXEventWritableStream, events } from "..";
-import type { SimpleSAXHandler } from "./interface";
+import { test, vi, describe, expect } from "vitest";
+import { XMLTextToSAXEventWritableStream, events } from ".";
+import type { interfaces } from ".";
 
-test("parses start and end tags with attributes", async ({ expect }) => {
+function makeStringListHandlerAndArray() {
   const events: string[] = [];
-  const handler: SimpleSAXHandler = {
+  const handler: interfaces.SimpleSAXHandler = {
     onStartElement({ tagName, attrs, selfClosing }) {
       events.push(`start:${tagName}:${JSON.stringify(attrs)}:${selfClosing}`);
     },
@@ -23,7 +23,7 @@ test("parses start and end tags with attributes", async ({ expect }) => {
     onCdata({ cdata }) {
       events.push(`cdata:${cdata}`);
     },
-    onDoctype({root, ...args }) {
+    onDoctype({ root, ...args }) {
       if (args.dtdType === "PUBLIC")
         events.push(`doctype:${root}:${args.dtdType}:${args.identifer}:${args.uri ?? ""}:${args.declarations ?? ""}`);
       else if (args.dtdType === "SYSTEM")
@@ -31,35 +31,49 @@ test("parses start and end tags with attributes", async ({ expect }) => {
       else
         events.push(`doctype:${root}:${args.declarations ?? ""}`);
     },
-    onDisplayingXML({ contentType, href }) {
-      events.push(`displayingXML:${contentType}:${href}`);
+    onProcessingInstruction({ target, data }) {
+      events.push(`processingInstruction:${target}:${data}`);
     },
-    onXmlDeclaration({ version, encoding, standalone }) {
-      events.push(`xmlDeclaration:${version}:${encoding}:${standalone}`);
-    }
   };
+  return [handler, events] as const;
+}
 
-  const xml = '<!DOCTYPE hoge><root \nattr="value">text<!--comment\n--><![CDATA[ \ncdata ]]><child attr2="v2"/></root>';
-  const stream = new XMLTextToSAXEventWritableStream(handler);
-  const writer = stream.getWriter();
-  for (const chunk of xml.match(/.{1,10}/g) ?? [])
-    await writer.write(chunk);
-  await writer.close();
+describe("pattern test", (it) => {
+  const entries: {
+    name: string;
+    input: string;
+    output: string[];
+  }[] = [
+      {
+        name: "parses start and end tags with attributes",
+        input: '<!DOCTYPE hoge><root \nattr="value">text<!--comment\n--><![CDATA[ \ncdata ]]><child attr2="v2"/></root>',
+        output: [
+          'doctype:hoge:',
+          'start:root:{"attr":"value"}:false',
+          'text:text',
+          "comment:comment",
+          "cdata: cdata ",
+          'start:child:{"attr2":"v2"}:true',
+          'end:child',
+          'end:root'
+        ]
+      }
+    ];
+  it.each(entries)("$name", async ({ input: xml, output }) => {
+    const [handler, events] = makeStringListHandlerAndArray();
+    const stream = new XMLTextToSAXEventWritableStream(handler);
+    const writer = stream.getWriter();
+    for (const chunk of xml.match(/.{1,10}/g) ?? [])
+      await writer.write(chunk);
+    await writer.close();
 
-  expect(events).toEqual([
-    'doctype:hoge:',
-    'start:root:{"attr":"value"}:false',
-    'text:text',
-    "comment:comment",
-    "cdata: cdata ",
-    'start:child:{"attr2":"v2"}:true',
-    'end:child',
-    'end:root'
-  ]);
+    expect(events).toEqual(output);
+
+  });
 });
 
 test("handles malformed XML gracefully", async ({ expect }) => {
-  const handler: Partial<SimpleSAXHandler> = {
+  const handler: Partial<interfaces.SimpleSAXHandler> = {
     onError: vi.fn()
   };
   const stream = new XMLTextToSAXEventWritableStream(handler);
@@ -68,7 +82,7 @@ test("handles malformed XML gracefully", async ({ expect }) => {
 });
 
 test("handles only text nodes", async ({ expect }) => {
-  const handler: Partial<SimpleSAXHandler> = {
+  const handler: Partial<interfaces.SimpleSAXHandler> = {
     onText: vi.fn(),
   };
   const stream = new XMLTextToSAXEventWritableStream(handler);
@@ -79,7 +93,7 @@ test("handles only text nodes", async ({ expect }) => {
 });
 
 test("handles missing handlers gracefully", async ({ expect }) => {
-  const handler: Partial<SimpleSAXHandler> = {}; // すべて未定義
+  const handler: Partial<interfaces.SimpleSAXHandler> = {}; // すべて未定義
   const stream = new XMLTextToSAXEventWritableStream(handler);
   const writer = stream.getWriter();
   await writer.write('<a attr="1"/>SomeText</a>');
@@ -88,7 +102,7 @@ test("handles missing handlers gracefully", async ({ expect }) => {
 });
 
 test("handles malformed attributes and catches errors", async ({ expect }) => {
-  const handler: Partial<SimpleSAXHandler> = {
+  const handler: Partial<interfaces.SimpleSAXHandler> = {
     onError: vi.fn()
   };
   const stream = new XMLTextToSAXEventWritableStream(handler);
@@ -102,7 +116,7 @@ test("handles malformed attributes and catches errors", async ({ expect }) => {
 });
 
 test("parseBuffer throws synchronously in write and handled in onError", async ({ expect }) => {
-  const handler: Partial<SimpleSAXHandler> = {
+  const handler: Partial<interfaces.SimpleSAXHandler> = {
     onError: vi.fn(),
     onStartElement() {
       throw new Error("handler error");

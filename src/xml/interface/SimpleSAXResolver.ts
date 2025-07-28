@@ -1,4 +1,4 @@
-import type { CdataEvent, CommentEvent, XMLStylesheetDeclarationEvent, EndElementEvent, StartElementEvent, TextEvent, XMLDeclarationEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, ProcessingInstructionEvent, SAX_XML_DECLARATION_TARGET_TYPE, SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE } from "../event";
+import type { CdataEvent, CommentEvent, XMLStylesheetDeclarationEvent, EndElementEvent, StartElementEvent, TextEvent, XMLDeclarationEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, ProcessingInstructionEvent } from "../event";
 export interface SimpleSAXResolver {
   cdata(...args: ConstructorParameters<typeof CdataEvent>): void;
   comment(...args: ConstructorParameters<typeof CommentEvent>): void;
