@@ -1,7 +1,7 @@
 import { test, describe, expect } from "vitest";
-import { XMLTextToSAXTransformStream } from ".";
-import type { eventInterface } from ".";
-function collectEvents(stream: TransformStream<string, eventInterface.SAXEventInterface>, xml: string) {
+import { XMLTextToSAXTransformStream } from "..";
+import type { xml } from "..";
+function collectEvents(stream: TransformStream<string, xml.eventInterface.SAXEventInterface>, xml: string) {
   const reader = stream.readable.getReader();
   const writer = stream.writable.getWriter();
   const output: string[] = [];
@@ -95,7 +95,7 @@ test("parses xml declaration and stylesheet", async ({ expect }) => {
 });
 
 describe("pattern test", (it) => {
-  const entries: { name: string, input: string, output: eventInterface.SAXEventInterface[] }[] = [
+  const entries: { name: string, input: string, output: xml.eventInterface.SAXEventInterface[] }[] = [
     {
       name: "DOCTYPE HTML 4.01 Strict",
       input: `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">`,

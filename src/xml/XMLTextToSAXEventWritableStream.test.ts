@@ -1,10 +1,9 @@
 import { test, vi, describe, expect } from "vitest";
-import { XMLTextToSAXEventWritableStream, events } from ".";
-import type { interfaces } from ".";
+import { XMLTextToSAXEventWritableStream, xml } from "..";
 
 function makeStringListHandlerAndArray() {
   const events: string[] = [];
-  const handler: interfaces.SimpleSAXHandler = {
+  const handler: xml.interfaces.SimpleSAXHandler = {
     onStartElement({ tagName, attrs, selfClosing }) {
       events.push(`start:${tagName}:${JSON.stringify(attrs)}:${selfClosing}`);
     },
@@ -73,7 +72,7 @@ describe("pattern test", (it) => {
 });
 
 test("handles malformed XML gracefully", async ({ expect }) => {
-  const handler: Partial<interfaces.SimpleSAXHandler> = {
+  const handler: Partial<xml.interfaces.SimpleSAXHandler> = {
     onError: vi.fn()
   };
   const stream = new XMLTextToSAXEventWritableStream(handler);
@@ -82,18 +81,18 @@ test("handles malformed XML gracefully", async ({ expect }) => {
 });
 
 test("handles only text nodes", async ({ expect }) => {
-  const handler: Partial<interfaces.SimpleSAXHandler> = {
+  const handler: Partial<xml.interfaces.SimpleSAXHandler> = {
     onText: vi.fn(),
   };
   const stream = new XMLTextToSAXEventWritableStream(handler);
   const writer = stream.getWriter();
   await writer.write("   just text   ");
   await writer.close();
-  expect(handler.onText).toHaveBeenCalledWith(new events.TextEvent("   just text   "));
+  expect(handler.onText).toHaveBeenCalledWith(new xml.events.TextEvent("   just text   "));
 });
 
 test("handles missing handlers gracefully", async ({ expect }) => {
-  const handler: Partial<interfaces.SimpleSAXHandler> = {}; // すべて未定義
+  const handler: Partial<xml.interfaces.SimpleSAXHandler> = {}; // すべて未定義
   const stream = new XMLTextToSAXEventWritableStream(handler);
   const writer = stream.getWriter();
   await writer.write('<a attr="1"/>SomeText</a>');
@@ -102,7 +101,7 @@ test("handles missing handlers gracefully", async ({ expect }) => {
 });
 
 test("handles malformed attributes and catches errors", async ({ expect }) => {
-  const handler: Partial<interfaces.SimpleSAXHandler> = {
+  const handler: Partial<xml.interfaces.SimpleSAXHandler> = {
     onError: vi.fn()
   };
   const stream = new XMLTextToSAXEventWritableStream(handler);
@@ -116,7 +115,7 @@ test("handles malformed attributes and catches errors", async ({ expect }) => {
 });
 
 test("parseBuffer throws synchronously in write and handled in onError", async ({ expect }) => {
-  const handler: Partial<interfaces.SimpleSAXHandler> = {
+  const handler: Partial<xml.interfaces.SimpleSAXHandler> = {
     onError: vi.fn(),
     onStartElement() {
       throw new Error("handler error");

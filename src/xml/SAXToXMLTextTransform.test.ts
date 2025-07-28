@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { SAXToXMLTextTransform } from ".";
-import type { eventInterface } from ".";
-
+import { SAXToXMLTextTransform } from "..";
+import type { xml } from "..";
 test("empty chunks", async ({ expect }) => {
   const { readable, writable } = new SAXToXMLTextTransform();
   const response = new Response(readable
@@ -15,7 +14,7 @@ describe("pattern test", (it) => {
   const entries: {
     name: string,
     options?: ConstructorParameters<typeof SAXToXMLTextTransform>[0];
-    input: eventInterface.SAXEventInterface[],
+    input: xml.eventInterface.SAXEventInterface[],
     output: string[]
   }[] = [
       {

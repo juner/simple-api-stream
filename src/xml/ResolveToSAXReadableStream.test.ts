@@ -1,5 +1,5 @@
 import { test } from "vitest";
-import { ResolveToSAXReadableStream, SAXToXMLTextTransform } from ".";
+import { ResolveToSAXReadableStream, SAXToXMLTextTransform } from "..";
 
 test("empty chunks", async ({ expect }) => {
   const stream = new ResolveToSAXReadableStream();
