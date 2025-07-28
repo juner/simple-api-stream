@@ -15,5 +15,4 @@ export type * from "./TextSAXEventInterface";
 export type * from "./XMLdeclarationSAXEventInterface";
 export type * from "./XMLStylesheetDeclarationSAXEventInterface";
 export type * from "./ProcessingInstructionEventInterface";
-export type * from "./ProcessingInstructionOtherEventInterface";
 // #endregion

@@ -9,6 +9,7 @@ import {
   DoctypeSimpleEvent,
   DoctypePublicEvent,
   DoctypeSystemEvent,
+  ProcessingInstructionEvent,
 } from "./event";
 import { SimpleSAXHandler } from "./interface";
 import { unescape } from "./utils";
@@ -20,21 +21,19 @@ const DOCTYPE_PREFIX = "<!DOCTYPE";
 const DOCTYPE_BLOCK_START = "[";
 const DOCTYPE_BLOCK_SUFFIX = "]>";
 const BLOCK_SUFFIX = ">";
-const DECLARATION_PREFIX = "<?";
-const XML_STYLESHEET_DECLARATION_PREFIX = "<?xml-stylesheet ";
-const XML_DECLARATION_PREFIX = "<?xml ";
-const DECLARATION_SUFFIX = "?>";
+const PROCESSING_INSTRUCTION_PREFIX = "<?";
+const PROCESSING_INSTRUCTION_SUFFIX = "?>";
 const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
 
-export class XMLTextToSAXParser extends Error {
+export class XMLTextToSAXParserError extends Error {
   constructor(...args: ConstructorParameters<typeof Error>) {
     super(...args);
-    this.name = "SimpleSAXParseXMLBufferError";
+    this.name = "XMLTextToSAXParserError";
   }
 }
 
-export class SimpleSAXParseXMLBuffer {
+export class XMLTextToSAXParser {
   #buffer: string = "";
   #handler: Partial<SimpleSAXHandler>;
   #acc: string = "";
@@ -92,7 +91,7 @@ export class SimpleSAXParseXMLBuffer {
       ...(options?.cause ?? {})
     };
     (options ??= {}).cause = cause;
-    return new XMLTextToSAXParser(message, options);
+    return new XMLTextToSAXParserError(message, options);
   }
 
   /**
@@ -170,26 +169,16 @@ export class SimpleSAXParseXMLBuffer {
       this.#factor = this.#cdata;
     } else if (remaingin_upper.startsWith(DOCTYPE_PREFIX)) {
       this.#factor = this.#doctype;
-    } else if (remaining.startsWith(XML_STYLESHEET_DECLARATION_PREFIX)) {
-      this.#factor = this.#displayingXML;
-    } else if (remaining.startsWith(XML_DECLARATION_PREFIX)) {
-      this.#factor = this.#xmlDeclaration;
+    } else if (remaining.startsWith(PROCESSING_INSTRUCTION_PREFIX)) {
+      this.#factor = this.#processingInstruction;
     } else if (
       CDATA_PREFIX.startsWith(remaining) ||
       DOCTYPE_PREFIX.startsWith(remaingin_upper) ||
       COMMENT_PREFIX.startsWith(remaining) ||
-      XML_STYLESHEET_DECLARATION_PREFIX.startsWith(remaining) ||
-      XML_DECLARATION_PREFIX.startsWith(remaining)
+      PROCESSING_INSTRUCTION_PREFIX.startsWith(remaining)
     ) {
       this.#buffer = this.#buffer.slice(this.#cursor); // 不完全トークン
       return { required: true };
-    } else if (remaining.startsWith(DECLARATION_PREFIX)) {
-      const end = this.#buffer.indexOf(DECLARATION_SUFFIX, this.#cursor);
-      if (end === -1) {
-        this.#buffer = this.#buffer.slice(this.#cursor);
-        return { required: true };
-      }
-      this.#cursor = end + DECLARATION_SUFFIX.length;
     } else {
       this.#factor = this.#tag;
     }
@@ -247,45 +236,57 @@ export class SimpleSAXParseXMLBuffer {
     this.#buffer = this.#buffer.slice(this.#cursor);
     return { required: true };
   }
-  #displayingXML(): { required?: true } {
-    const end = this.#buffer.indexOf(DECLARATION_SUFFIX, this.#cursor);
+  #processingInstruction(): { required?: true } {
+    const end = this.#buffer.indexOf(PROCESSING_INSTRUCTION_SUFFIX, this.#cursor);
     if (end === -1) {
       this.#buffer = this.#buffer.slice(this.#cursor);
       return { required: true };
     }
     const acc = this.#buffer.slice(this.#cursor, end);
-    const attrs = this.#parseAttributes(acc);
-    if (attrs.type && attrs.href) {
-      this.#handler.onDisplayingXML?.(
-        new XMLStylesheetDeclarationEvent(attrs.type, attrs.href)
-      );
-    } else {
-      throw this.#makeError(`Invalid xml-stylesheet declaration: ${this.#acc}`, {
-        cause: {
-          syntax: this.#acc,
+    const [target, data] = ((acc) => {
+      const indexOf = acc.indexOf(" ");
+      if (indexOf < 0) throw this.#makeSyntaxError(`syntax error processing instruction: ${acc}`, acc);
+      const target = acc.substring(PROCESSING_INSTRUCTION_PREFIX.length, indexOf);
+      const orlater = acc.substring(indexOf + " ".length, acc.length);
+      return [target, orlater];
+    })(acc);
+    const event = ((target, data) => {
+      if (target === "xml" || target === "xml-stylesheet") {
+        const attrs = this.#parseAttributes(data);
+        if (target === "xml") {
+          const version = attrs.version ?? "1.0";
+          const encoding = attrs.encoding ?? "UTF-8";
+          const standalone = (attrs.standalone ?? "yes") as "yes" | "no";
+          return new XMLDeclarationEvent({
+            target,
+            version,
+            encoding,
+            standalone,
+          });
+        } else {
+          const contentType = attrs.type as string;
+          const href = attrs.href as string;
+          if (contentType && href) {
+            return new XMLStylesheetDeclarationEvent({
+              target,
+              contentType,
+              href,
+            });
+          }
+          throw this.#makeSyntaxError(`Invalid xml-stylesheet declaration: ${this.#acc}`, this.#acc);
         }
-      });
-    }
-    this.#cursor = end + DECLARATION_SUFFIX.length;
-    this.#factor = this.#text;
-    return {};
-  }
-  #xmlDeclaration(): { required?: true } {
-    const end = this.#buffer.indexOf(DECLARATION_SUFFIX, this.#cursor);
-    if (end === -1) {
-      this.#buffer = this.#buffer.slice(this.#cursor);
-      return { required: true };
-    }
-    const acc = this.#buffer.slice(this.#cursor, end);
-    const attrs = this.#parseAttributes(acc);
-    this.#handler.onXmlDeclaration?.(
-      new XMLDeclarationEvent(
-        attrs.version ?? "1.0",
-        attrs.encoding ?? "UTF-8",
-        attrs.standalone === "no" ? "no" : "yes"
-      )
+      } else {
+        return new ProcessingInstructionEvent({
+          target,
+          data,
+        });
+      }
+    })(target, data);
+
+    this.#handler.onProcessingInstruction?.(
+      event
     );
-    this.#cursor = end + DECLARATION_SUFFIX.length;
+    this.#cursor = end + PROCESSING_INSTRUCTION_SUFFIX.length;
     this.#factor = this.#text;
     return {};
   }

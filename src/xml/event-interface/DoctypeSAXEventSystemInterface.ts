@@ -1,4 +1,4 @@
-import { DoctypeSAXEventBaseInterface } from "./DoctypeSAXEventBaseInterface";
+import type { DoctypeSAXEventBaseInterface } from "./DoctypeSAXEventBaseInterface";
 
 export interface DoctypeSAXEventSystemInterface extends DoctypeSAXEventBaseInterface {
   dtdType: "SYSTEM";

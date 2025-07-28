@@ -12,8 +12,7 @@ export * from "./TextEvent";
 export * from "./CdataEvent";
 export * from "./CommentEvent";
 // #region processingInstruction
-export type * from "./ProcessingInstructionEvent";
-export * from "./ProcessingInstructionOtherEvent";
+export * from "./ProcessingInstructionEvent";
 export * from "./XMLDeclarationEvent";
 export * from "./XMLStylesheetDeclarationEvent";
 // #endregion

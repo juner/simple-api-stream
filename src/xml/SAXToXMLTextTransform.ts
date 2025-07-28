@@ -1,4 +1,4 @@
-import type { CdataSAXEventInterface, CommentSAXEventInterface, XMLStylesheetDeclarationSAXEventInterface, DoctypeSAXEventInterface, EndElementSAXEventInterface, SAXEventInterface, StartElementSAXEventInterface, TextSAXEventInterface, XMLdeclarationSAXEventInterface } from "./event-interface";
+import type { CdataSAXEventInterface, CommentSAXEventInterface, DoctypeSAXEventInterface, EndElementSAXEventInterface, SAXEventInterface, StartElementSAXEventInterface, TextSAXEventInterface, ProcessingInstructionEventInterface } from "./event-interface";
 import { escape } from "./utils";
 
 const CDATA_PREFIX = "<![CDATA[";
@@ -8,9 +8,8 @@ const BLOCK_SUFFIX = ">";
 const DOCTYPE_PREFIX = "<!DOCTYPE";
 const DOCTYPE_BLOCK_START = "[";
 const DOCTYPE_BLOCK_SUFFIX = "]>";
-const XML_STYLESHEET_DECLARATION_PREFIX = "<?xml-stylesheet";
-const XML_DECLARATION_PREFIX = "<?xml";
-const DECLARATION_SUFFIX = "?>";
+const PROCESSING_INSTRUCTION_PREFIX = "<?";
+const PROCESSING_INSTRUCTION_SUFFIX = "?>";
 const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
 
@@ -62,14 +61,12 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
         return this.#cdata(chunk);
       case "comment":
         return this.#comment(chunk);
-      case "displayingXML":
-        return this.#displayingXML(chunk);
+      case "processingInstruction":
+        return this.#processingInstruction(chunk);
       case "doctype":
         return this.#doctype(chunk);
       case "text":
         return this.#text(chunk);
-      case "xmlDeclaration":
-        return this.#xmlDeclaration(chunk);
       case "startElement":
         return this.#startElement(chunk);
       case "endElement":
@@ -81,9 +78,6 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
   }
   #comment(chunk: CommentSAXEventInterface) {
     return `${this.#prefix}${COMMENT_PREFIX} ${chunk.comment} ${COMMENT_SUFFIX}${this.#suffix}`;
-  }
-  #displayingXML(chunk: XMLStylesheetDeclarationSAXEventInterface) {
-    return `${this.#prefix}${XML_STYLESHEET_DECLARATION_PREFIX} type="${chunk.contentType}" href="${chunk.href}" ${DECLARATION_SUFFIX}${this.#suffix}`;
   }
   #doctype(chunk: DoctypeSAXEventInterface) {
     const joins: string[] = [];
@@ -108,16 +102,11 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
   #text(chunk: TextSAXEventInterface) {
     return `${this.#prefix}${escape(chunk.text)}${this.#suffix}`;
   }
-  #xmlDeclaration(chunk: XMLdeclarationSAXEventInterface) {
+  #processingInstruction(chunk: ProcessingInstructionEventInterface) {
     const joins: string[] = [];
-    joins.push(XML_DECLARATION_PREFIX);
-    if (chunk.version)
-      joins.push(`version="${chunk.version}"`);
-    if (chunk.encoding)
-      joins.push(`encoding="${chunk.encoding}"`);
-    if ((chunk.standalone ?? "yes") !== "yes")
-      joins.push(`standalone="${chunk.standalone}"`);
-    joins.push(DECLARATION_SUFFIX);
+    joins.push(`${PROCESSING_INSTRUCTION_PREFIX}${chunk.target}`);
+    joins.push(`${chunk.data}`);
+    joins.push(PROCESSING_INSTRUCTION_SUFFIX);
     return `${this.#prefix}${joins.join(" ")}${this.#suffix}`;
   }
   #startElement(chunk: StartElementSAXEventInterface) {

@@ -1,5 +1,13 @@
-import { ProcessingInstructionOtherEvent } from "./ProcessingInstructionOtherEvent";
-import { XMLDeclarationEvent } from "./XMLDeclarationEvent";
-import { XMLStylesheetDeclarationEvent } from "./XMLStylesheetDeclarationEvent";
+import { ProcessingInstructionEventInterface } from "../event-interface";
+import { SAXEvent } from "./SAXEvent";
 
-export type ProcessingInstructionEvent = typeof ProcessingInstructionOtherEvent | typeof XMLDeclarationEvent | typeof XMLStylesheetDeclarationEvent;
+export const SAX_PROCESSING_INSTRUCTION_EVENT_TYPE = "processingInstruction";
+export class ProcessingInstructionEvent<T extends string = string> extends SAXEvent<typeof SAX_PROCESSING_INSTRUCTION_EVENT_TYPE> implements ProcessingInstructionEventInterface {
+  target: T;
+  data: string;
+  constructor(options: {target: T, data?: string}) {
+    super(SAX_PROCESSING_INSTRUCTION_EVENT_TYPE);
+    this.target = options.target;
+    this.data = options.data ?? "";
+  }
+}

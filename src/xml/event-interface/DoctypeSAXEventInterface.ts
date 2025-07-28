@@ -1,5 +1,5 @@
-import { DoctypeSAXEventPublicInterface } from "./DoctypeSAXEventPublicInterface";
-import { DoctypeSAXEventSimpleInterface } from "./DoctypeSAXEventSimpleInterface";
-import { DoctypeSAXEventSystemInterface } from "./DoctypeSAXEventSystemInterface";
+import type { DoctypeSAXEventPublicInterface } from "./DoctypeSAXEventPublicInterface";
+import type { DoctypeSAXEventSimpleInterface } from "./DoctypeSAXEventSimpleInterface";
+import type { DoctypeSAXEventSystemInterface } from "./DoctypeSAXEventSystemInterface";
 
 export type DoctypeSAXEventInterface = DoctypeSAXEventSimpleInterface | DoctypeSAXEventPublicInterface | DoctypeSAXEventSystemInterface;

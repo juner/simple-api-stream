@@ -1,14 +1,14 @@
-import { SimpleSAXParseXMLBuffer } from "./XMLTextToSAXParser";
+import { XMLTextToSAXParser } from "./XMLTextToSAXParser";
 import { SimpleSAXHandler } from "./interface";
 import { SAXEventInterface } from "./event-interface";
 
 export class XMLTextToSAXTransformStream extends TransformStream<string, SAXEventInterface> {
   constructor() {
-    let buffer!: SimpleSAXParseXMLBuffer;
+    let buffer!: XMLTextToSAXParser;
     super({
       start(controller) {
         const handler = toHandler(controller);;
-        buffer = new SimpleSAXParseXMLBuffer({handler});
+        buffer = new XMLTextToSAXParser({handler});
       },
       transform(chunk) {
         buffer.enqueue(chunk);
@@ -48,10 +48,7 @@ function toHandler(controller: TransformStreamDefaultController<SAXEventInterfac
     onDoctype: (arg) => {
       controller.enqueue(arg);
     },
-    onDisplayingXML: (arg) => {
-      controller.enqueue(arg);
-    },
-    onXmlDeclaration: (arg) => {
+    onProcessingInstruction: (arg) => {
       controller.enqueue(arg);
     },
   };

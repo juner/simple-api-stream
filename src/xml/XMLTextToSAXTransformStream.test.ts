@@ -41,11 +41,8 @@ function collectEvents(stream: TransformStream<string, eventInterface.SAXEventIn
           else
             output.push(`doctype:${value.root}:${value.declarations ?? ""}`);
           break;
-        case "xmlDeclaration":
-          output.push(`xmlDeclaration:${value.version}:${value.encoding}:${value.standalone}`);
-          break;
-        case "displayingXML":
-          output.push(`displayingXML:${value.contentType}:${value.href}`);
+        case "processingInstruction":
+          output.push(`processingInstruction:${value.target}:${value.data}`);
           break;
       }
     }
@@ -90,8 +87,8 @@ test("parses xml declaration and stylesheet", async ({ expect }) => {
   const events = await collectEvents(stream, xml);
 
   expect(events).toEqual([
-    "xmlDeclaration:1.0:UTF-8:yes",
-    "displayingXML:text/xsl:style.xsl",
+  `processingInstruction:xml:version="1.0" encoding="UTF-8"`,
+  `processingInstruction:xml-stylesheet:type="text/xsl" href="style.xsl"`,
     "start:root:{}:true",
     "end:root"
   ]);

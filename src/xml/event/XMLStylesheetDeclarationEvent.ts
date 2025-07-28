@@ -1,8 +1,8 @@
 import type { XMLStylesheetDeclarationSAXEventInterface } from "../event-interface";
-import { ProcessingInstructionBaseEvent } from "./ProcessingInstructionBaseEvent";
+import { ProcessingInstructionEvent } from "./ProcessingInstructionEvent";
 
 export const SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE = "xml-stylesheet";
-export class XMLStylesheetDeclarationEvent extends ProcessingInstructionBaseEvent<typeof SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE> implements XMLStylesheetDeclarationSAXEventInterface {
+export class XMLStylesheetDeclarationEvent extends ProcessingInstructionEvent<typeof SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE> implements XMLStylesheetDeclarationSAXEventInterface {
   contentType: string;
   href: string;
   constructor({ target, contentType, href }: { target: typeof SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE, contentType: string, href: string }) {

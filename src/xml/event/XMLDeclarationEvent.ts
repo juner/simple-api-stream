@@ -1,8 +1,8 @@
 import type { XMLdeclarationSAXEventInterface } from "../event-interface";
-import { ProcessingInstructionBaseEvent } from "./ProcessingInstructionBaseEvent";
+import { ProcessingInstructionEvent } from "./ProcessingInstructionEvent";
 
 export const SAX_XML_DECLARATION_TARGET_TYPE = "xml";
-export class XMLDeclarationEvent extends ProcessingInstructionBaseEvent<typeof SAX_XML_DECLARATION_TARGET_TYPE> implements XMLdeclarationSAXEventInterface {
+export class XMLDeclarationEvent extends ProcessingInstructionEvent<typeof SAX_XML_DECLARATION_TARGET_TYPE> implements XMLdeclarationSAXEventInterface {
   version: string;
   encoding: string;
   standalone: "yes" | "no";

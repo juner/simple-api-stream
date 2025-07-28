@@ -1,4 +1,4 @@
-import { CdataEvent, CommentEvent, XMLStylesheetDeclarationEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, XMLDeclarationEvent, ProcessingInstructionOtherEvent, SAX_XML_DECLARATION_TARGET_TYPE, SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE } from "./event";
+import { CdataEvent, CommentEvent, XMLStylesheetDeclarationEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, XMLDeclarationEvent, ProcessingInstructionEvent, SAX_XML_DECLARATION_TARGET_TYPE, SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE } from "./event";
 import { SAXEventInterface } from "./event-interface";
 import { SimpleSAXResolver } from "./interface/SimpleSAXResolver";
 
@@ -18,8 +18,8 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
   }
   processingInstruction(options: ConstructorParameters<typeof XMLDeclarationEvent>[0]): void;
   processingInstruction(options: ConstructorParameters<typeof XMLStylesheetDeclarationEvent>[0]): void
-  processingInstruction(options: ConstructorParameters<typeof ProcessingInstructionOtherEvent>[0]): void
-  processingInstruction(options: ConstructorParameters<typeof ProcessingInstructionOtherEvent | typeof XMLDeclarationEvent | typeof XMLStylesheetDeclarationEvent>[0]): void {
+  processingInstruction(options: ConstructorParameters<typeof ProcessingInstructionEvent>[0]): void
+  processingInstruction(options: ConstructorParameters<typeof ProcessingInstructionEvent | typeof XMLDeclarationEvent | typeof XMLStylesheetDeclarationEvent>[0]): void {
     if (options.target === "xml"){
       options
     }
