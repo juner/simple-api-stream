@@ -1,5 +1,6 @@
-import { test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { ResolveToSAXReadableStream, SAXToXMLTextTransform } from "..";
+import type { xml } from "..";
 
 test("empty chunks", async ({ expect }) => {
   const stream = new ResolveToSAXReadableStream();
@@ -59,3 +60,78 @@ test("handles empty text and attributes", async ({ expect }) => {
 
   expect(out).toEqual(["<x>", "", "</x>"]);
 });
+
+describe("pattern", (it) => {
+  const entries: {
+    name: string;
+    input: ((stream: InstanceType<typeof ResolveToSAXReadableStream>) => void)[];
+    output: xml.eventInterface.SAXEventInterface[];
+  }[] = [
+      {
+        name: "all type",
+        input: [
+          stream => stream.processingInstruction({ target: "xml", data: `version="1.0" encoding="UTF-8"` }),
+          stream => stream.processingInstruction({ target: "xml-stylesheet", data: `type="text/xls" href="./style.xls"` }),
+          stream => stream.startElement("root"),
+          stream => stream.cdata(" hoge "),
+          stream => stream.comment(" fuga "),
+          stream => stream.startElement("element"),
+          stream => stream.text("piyo"),
+          stream => stream.endElement("element"),
+          stream => stream.endElement("root"),
+        ],
+        output: [
+          {
+            "data": `version="1.0" encoding="UTF-8"`,
+            "target": "xml",
+            "type": "processingInstruction",
+          },
+          {
+            "data": `type="text/xls" href="./style.xls"`,
+            "target": "xml-stylesheet",
+            "type": "processingInstruction",
+          },
+          {
+            "attrs": {},
+            "selfClosing": false,
+            "tagName": "root",
+            "type": "startElement",
+          },
+          {
+            "cdata": " hoge ",
+            "type": "cdata",
+          },
+          {
+            "comment": " fuga ",
+            "type": "comment",
+          },
+          {
+            "attrs": {},
+            "selfClosing": false,
+            "tagName": "element",
+            "type": "startElement",
+          },
+          {
+            "text": "piyo",
+            "type": "text",
+          },
+          {
+            "tagName": "element",
+            "type": "endElement",
+          },
+          {
+            "tagName": "root",
+            "type": "endElement",
+          },
+        ],
+      }
+    ];
+  it.each(entries)("$name", async ({ input, output }) => {
+    const stream = new ResolveToSAXReadableStream();
+    for (const i of input)
+      i(stream);
+    stream.close();
+    const result = await Array.fromAsync(stream);
+    expect(result).toEqual(output);
+  })
+})
