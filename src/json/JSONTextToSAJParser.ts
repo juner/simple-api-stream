@@ -1,15 +1,6 @@
-import { SAJHandler } from "./interface/SAJHandler";
-
-const BLOCK_START = "{";
-const BLOCK_END = "}";
-const ARRAY_START = "[";
-const ARRAY_END = "]";
-const STRING_START = "\"";
-const STRING_END = "\"";
-const ESCAPED_STRING = "\\\"";
-const SEPARATOR = ",";
-
-const SPACE = " \r\n\t";
+import type { SimpleApiParser } from "../interface";
+import { EndArrayEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
+import type { SAJHandler } from "./interface/SAJHandler";
 
 export class JSONTextToSAJParserError extends Error {
   constructor(...args: ConstructorParameters<typeof Error>) {
@@ -18,49 +9,28 @@ export class JSONTextToSAJParserError extends Error {
   }
 }
 
-export class JSONTextToSAJParser {
-  #buffer: string = "";
+type StateFunction = (ch: string) => void;
+
+export class JSONTextToSAJParser implements SimpleApiParser<string> {
+  #buffer = '';
+  #pos = 0;
+  #state: StateFunction = this.#parseDefault;
+  #acc = '';
+  #key: string | null = null;
+  #stack: ('object' | 'array')[] = [];
   #handler: Partial<SAJHandler>;
-  #acc: string = "";
-  #cursor: number = 0;
-  #factor: (flush: boolean) => { required?: true };
-
-  get buffer() {
-    return this.#buffer;
-  }
-
-  get state() {
-    return this.#factor.name.slice(1);
-  }
-
-  get acc() {
-    return this.#acc;
-  }
 
   #status() {
     return {
       buffer: this.#buffer,
-      state: this.state,
+      pos: this.#pos,
+      state: this.#state.name.startsWith("#parse")
+        ? this.#state.name.slice("#parse".length)
+        : this.#state.name,
       acc: this.#acc,
+      key: this.#key,
+      stack: this.#stack.slice(),
     };
-  }
-
-  constructor({ handler }: { handler: Partial<SAJHandler> }) {
-    this.#handler = handler;
-    this.#factor = this.#nofactor;
-  }
-
-  enqueue(chunk: string) {
-    this.#buffer += chunk;
-    this.#parseBuffer();
-  }
-
-  flush() {
-    this.#parseBuffer(true);
-  }
-
-  error(reasone: unknown) {
-    this.#handler?.onError?.(reasone);
   }
 
   /**
@@ -79,12 +49,8 @@ export class JSONTextToSAJParser {
     return new JSONTextToSAJParserError(message, options);
   }
 
-  /**
-   * make not complete error
-   * @returns
-   */
-  #makeNotCompleteError() {
-    return this.#makeError(`not complete syntax error. buffer:${this.#buffer}`);
+  constructor({ handler }: { handler: Partial<SAJHandler> }) {
+    this.#handler = handler;
   }
 
   /**
@@ -100,44 +66,278 @@ export class JSONTextToSAJParser {
       }
     });
   }
-  #parseBuffer(flush: boolean = false): void {
+
+  enqueue(chunk: string): void {
+    this.#buffer += chunk;
     try {
-      this.#cursor = 0;
-      while (this.#cursor < this.#buffer.length) {
-        const { required } = this.#factor(flush);
-        if (required)
-          if (flush) this.#makeNotCompleteError();
-          else return;
-      }
-      if (flush && this.#acc.length > 0) {
-        this.#makeNotCompleteError();
-      }
-      this.#buffer = "";
-      return;
-    } catch (error: unknown) {
-      this.#handler.onError?.(error instanceof Error
-        ? error
-        : this.#makeError(String(error), {
-          cause: {
-            instance: this,
-          }
-        })
-      );
+      this.#parse();
+    } catch (err) {
+      this.#handler.onError?.(err);
     }
   }
-  #nofactor(): { required?: true } {
-    if (this.#cursor == 0 && this.#buffer.length > 0) {
-      const indexOf = Array.prototype.findIndex.call(this.#buffer, (char) => {
-        for (const s of SPACE) {
-          if (s !== char) return true;
-        }
-        return false;
+
+  flush(): void {
+    try {
+      this.#parse(true);
+    } catch (err) {
+      this.#handler.onError?.(err);
+    }
+  }
+
+  #parse(isFlush = false) {
+    while (this.#pos < this.#buffer.length) {
+      const ch = this.#buffer[this.#pos++];
+      this.#state(ch);
+      console.dir(this.#status());
+    }
+
+    if (isFlush && this.#state !== this.#parseDefault) {
+      throw this.#makeError('Unexpected EOF');
+    }
+  }
+
+  #parseDefault(ch: string) {
+    if (/\s/.test(ch)) return;
+
+    switch (ch) {
+      case '{':
+        this.#handler.onStartObject?.(new StartObjectEvent());
+        this.#stack.push('object');
+        this.#state = this.#parseKeyOrEndObject;
+        break;
+      case '[':
+        this.#handler.onStartArray?.(new StartArrayEvent());
+        this.#stack.push('array');
+        this.#state = this.#parseValueOrEndArray;
+        break;
+      case '"':
+        this.#acc = '';
+        this.#state = this.#parseString(this.#handleStandaloneValue);
+        break;
+      case 't':
+      case 'f':
+      case 'n':
+        this.#acc = ch;
+        this.#state = this.#parseLiteral(this.#handleStandaloneValue);
+        break;
+      case '-':
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+        this.#acc = ch;
+        this.#state = this.#parseNumber(this.#handleStandaloneValue);
+        break;
+      default:
+        throw this.#makeSyntaxError(`Unexpected token ${ch}`, ch);
+    }
+  };
+
+  #handleStandaloneValue<T extends number | string | boolean | null>(val: T) {
+    this.#state = this.#parseDefault;
+    this.#handler.onValue?.(this.#wrapValue(val));
+  };
+
+  #wrapValue<T extends number | string | boolean | null>(val: T) {
+    if (typeof val === 'string') return new ValueStringEvent("string", val);
+    if (typeof val === 'number') return new ValueNumberEvent("number", val);
+    if (typeof val === 'boolean') return new ValueBooleanEvent("boolean", val);
+    return new ValueNullEvent("null");
+  }
+
+  #parseKeyOrEndObject(ch: string) {
+    if (/\s/.test(ch)) return;
+    if (ch === '}') {
+      this.#handler.onEndObject?.(new EndObjectEvent());
+      this.#stack.pop();
+      this.#state = this.#parseAfterValue;
+    } else if (ch === '"') {
+      this.#acc = '';
+      this.#state = this.#parseString((key) => {
+        this.#key = key;
+        this.#handler.onKey?.(new KeyEvent(key));
+        this.#state = this.#parseColon;
       });
-      if (indexOf < 0) {
-        this.#buffer = "";
-        return {required: true};
-      }
+    } else {
+      throw this.#makeSyntaxError(`Unexpected token in object: ${ch}`, ch);
     }
-    return {};
-  }
+  };
+
+  #parseColon(ch: string) {
+    if (/\s/.test(ch)) return;
+    if (ch === ':') {
+      this.#state = this.#parseValue;
+    } else {
+      throw this.#makeSyntaxError(`Expected colon after key but got ${ch}`, ch);
+    }
+  };
+
+  #parseValue(ch: string) {
+    if (/\s/.test(ch)) return;
+
+    switch (ch) {
+      case '"':
+        this.#acc = '';
+        this.#state = this.#parseString(this.#emitKeyValue);
+        break;
+      case '{':
+        this.#handler.onStartObject?.(new StartObjectEvent());
+        this.#stack.push('object');
+        this.#state = this.#parseKeyOrEndObject;
+        break;
+      case '[':
+        this.#handler.onStartArray?.(new StartArrayEvent());
+        this.#stack.push('array');
+        this.#state = this.#parseValueOrEndArray;
+        break;
+      case 't':
+      case 'f':
+      case 'n':
+        this.#acc = ch;
+        this.#state = this.#parseLiteral(this.#emitKeyValue);
+        break;
+      default:
+        if (ch === '-' || /\d/.test(ch)) {
+          this.#acc = ch;
+          this.#state = this.#parseNumber(this.#emitKeyValue);
+        } else {
+          throw this.#makeSyntaxError(`Unexpected value: ${ch}`, ch);
+        }
+    }
+  };
+
+  #emitKeyValue<T extends string | number | boolean | null>(val: T) {
+    this.#handler.onValue?.(this.#wrapValue(val));
+    this.#key = null;
+    this.#state = this.#parseCommaOrEndObject;
+  };
+
+  #parseCommaOrEndObject(ch: string) {
+    if (/\s/.test(ch)) return;
+    if (ch === ',') {
+      this.#state = this.#parseKeyOrEndObject;
+    } else if (ch === '}') {
+      this.#handler.onEndObject?.(new EndObjectEvent());
+      this.#stack.pop();
+      this.#state = this.#parseAfterValue;
+    } else {
+      throw this.#makeSyntaxError(`Expected , or } but got ${ch}`, ch);
+    }
+  };
+
+  #parseValueOrEndArray(ch: string) {
+    if (/\s/.test(ch)) return;
+    if (ch === ']') {
+      this.#handler.onEndArray?.(new EndArrayEvent());
+      this.#stack.pop();
+      this.#state = this.#parseAfterValue;
+    } else {
+      this.#pos--; // unread
+      this.#state = this.#parseValueInArray;
+    }
+  };
+
+  #parseValueInArray(ch: string) {
+    this.#parseValue(ch);
+    this.#state = this.#parseCommaOrEndArray;
+  };
+
+  #parseCommaOrEndArray(ch: string) {
+    if (/\s/.test(ch)) return;
+    if (ch === ',') {
+      this.#state = this.#parseValueInArray;
+    } else if (ch === ']') {
+      this.#handler.onEndArray?.(new EndArrayEvent());
+      this.#stack.pop();
+      this.#state = this.#parseAfterValue;
+    } else {
+      throw this.#makeSyntaxError(`Expected , or ] but got ${ch}`, ch);
+    }
+  };
+
+  #parseAfterValue(ch: string) {
+    if (/\s/.test(ch)) return;
+    const parent = this.#stack[this.#stack.length - 1];
+    if (parent === 'object') {
+      this.#parseCommaOrEndObject(ch);
+    } else if (parent === 'array') {
+      this.#parseCommaOrEndArray(ch);
+    } else {
+      this.#state = this.#parseDefault;
+      this.#parseDefault(ch);
+    }
+  };
+
+  #parseString(onEnd: (this: typeof this, s: string) => void): StateFunction {
+    let escape = false;
+    let unicode = '';
+    const handler: StateFunction = (ch) => {
+      if (escape) {
+        if (unicode !== '') {
+          unicode += ch;
+          if (unicode.length === 4) {
+            this.#acc += String.fromCharCode(parseInt(unicode, 16));
+            unicode = '';
+            escape = false;
+          }
+        } else if (ch === 'u') {
+          unicode = '';
+        } else {
+          const esc = {
+            '"': '"', '\\': '\\', '/': '/',
+            b: '\b', f: '\f', n: '\n', r: '\r', t: '\t'
+          }[ch];
+          if (esc === undefined) throw this.#makeSyntaxError(`Invalid escape: \\${ch}`, ch);
+          this.#acc += esc;
+          escape = false;
+        }
+      } else if (ch === '\\') {
+        escape = true;
+      } else if (ch === '"') {
+        this.#state = this.#parseDefault;
+        onEnd.call(this, this.#acc);
+      } else {
+        this.#acc += ch;
+      }
+    };
+    return handler;
+  };
+
+  #parseLiteral(onEnd: (this: typeof this, val: string | boolean | null) => void): StateFunction {
+    const handler: StateFunction = (ch) => {
+      this.#acc += ch;
+      if (/^(true|false|null)$/.test(this.#acc)) {
+        const val = this.#acc === 'true' ? true :
+          this.#acc === 'false' ? false : null;
+        this.#state = this.#parseDefault;
+        onEnd.call(this, val);
+      } else if (!["true", "false", "null"].some(prefix => prefix.startsWith(this.#acc))) {
+        throw this.#makeSyntaxError(`Invalid literal: ${this.#acc}`, this.#acc);
+      }
+    };
+    return handler;
+  };
+
+  #parseNumber(onEnd: (this: typeof this, val: number) => void): StateFunction {
+    const handler: StateFunction = (ch) => {
+      if (/[0-9eE+.-]/.test(ch)) {
+        this.#acc += ch;
+      } else {
+        this.#pos--; // unread
+        const num = Number(this.#acc);
+        if (Number.isNaN(num)) {
+          throw this.#makeSyntaxError(`Invalid number: ${this.#acc}`, this.#acc);
+        }
+        this.#state = this.#parseDefault;
+        onEnd.call(this, num);
+      }
+    };
+    return handler;
+  };
 }

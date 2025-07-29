@@ -1,3 +1,4 @@
+import type { SimpleApiParser } from "../interface";
 import {
   CdataEvent,
   CommentEvent,
@@ -33,7 +34,7 @@ export class XMLTextToSAXParserError extends Error {
   }
 }
 
-export class XMLTextToSAXParser {
+export class XMLTextToSAXParser implements SimpleApiParser<string>{
   #buffer: string = "";
   #handler: Partial<SAXHandler>;
   #acc: string = "";
