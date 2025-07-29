@@ -17,7 +17,7 @@ function collectEvents(stream: TransformStream<string, xml.eventInterface.SAXEve
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      switch (value.type) {
+      switch (value.name) {
         case "startElement":
           output.push(`start:${value.tagName}:${JSON.stringify(value.attrs)}:${value.selfClosing}`);
           break;
@@ -102,7 +102,7 @@ describe("pattern test", (it) => {
         `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">`,
       ]
       , output: [
-        { type: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
+        { name: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
       ]
     },
     {
@@ -111,7 +111,7 @@ describe("pattern test", (it) => {
         `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">`,
       ],
       output: [
-        { type: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01 Transitional//EN", uri: "http://www.w3.org/TR/html4/loose.dtd" }
+        { name: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01 Transitional//EN", uri: "http://www.w3.org/TR/html4/loose.dtd" }
       ]
     },
     {
@@ -127,7 +127,7 @@ describe("pattern test", (it) => {
       ],
       output: [
         {
-          type: "doctype", root: "person",
+          name: "doctype", root: "person",
           declarations: [
             `<!ELEMENT person (name, age, city)>`,
             `<!ELEMENT name (#PCDATA)>`,
@@ -135,17 +135,17 @@ describe("pattern test", (it) => {
             `<!ELEMENT city (#PCDATA)>`,
           ],
         },
-        { type: "startElement", tagName: "person", attrs: {}, selfClosing: false },
-        { type: "startElement", tagName: "name", attrs: {}, selfClosing: false },
-        { type: "text", text: "Alice" },
-        { type: "endElement", tagName: "name" },
-        { type: "startElement", tagName: "age", attrs: {}, selfClosing: false },
-        { type: "text", text: "30" },
-        { type: "endElement", tagName: "age" },
-        { type: "startElement", tagName: "city", attrs: {}, selfClosing: false },
-        { type: "text", text: "New York" },
-        { type: "endElement", tagName: "city" },
-        { type: "endElement", tagName: "person" },
+        { name: "startElement", tagName: "person", attrs: {}, selfClosing: false },
+        { name: "startElement", tagName: "name", attrs: {}, selfClosing: false },
+        { name: "text", text: "Alice" },
+        { name: "endElement", tagName: "name" },
+        { name: "startElement", tagName: "age", attrs: {}, selfClosing: false },
+        { name: "text", text: "30" },
+        { name: "endElement", tagName: "age" },
+        { name: "startElement", tagName: "city", attrs: {}, selfClosing: false },
+        { name: "text", text: "New York" },
+        { name: "endElement", tagName: "city" },
+        { name: "endElement", tagName: "person" },
       ]
     },
     {
@@ -154,7 +154,7 @@ describe("pattern test", (it) => {
         `<!doctype myown system "file:///HD/docs/dtd/myown.dtd">`,
       ],
       output: [
-        { type: "doctype", dtdType: "SYSTEM", root: "myown", uri: "file:///HD/docs/dtd/myown.dtd" },
+        { name: "doctype", dtdType: "SYSTEM", root: "myown", uri: "file:///HD/docs/dtd/myown.dtd" },
       ]
     },
     {
@@ -163,12 +163,12 @@ describe("pattern test", (it) => {
           <root id="123">Hello &lt;world&gt; &amp; othe&#x72;&#115;<empty/><!----></root>`,
       ],
       output: [
-        { type: "startElement", tagName: "root", attrs: { id: "123" }, selfClosing: false },
-        { type: "text", text: "Hello <world> & others" },
-        { type: "startElement", tagName: "empty", attrs: {}, selfClosing: true },
-        { type: "endElement", tagName: "empty" },
-        { type: "comment", comment: "" },
-        { type: "endElement", tagName: "root" },
+        { name: "startElement", tagName: "root", attrs: { id: "123" }, selfClosing: false },
+        { name: "text", text: "Hello <world> & others" },
+        { name: "startElement", tagName: "empty", attrs: {}, selfClosing: true },
+        { name: "endElement", tagName: "empty" },
+        { name: "comment", comment: "" },
+        { name: "endElement", tagName: "root" },
       ],
     },
     {
@@ -182,42 +182,42 @@ describe("pattern test", (it) => {
           "encoding": "UTF-8",
           "standalone": "yes",
           "target": "xml",
-          "type": "processingInstruction",
+          "name": "processingInstruction",
           "version": "1.0",
         },
         {
-          "contentType": "text/xls",
+          "type": "text/xls",
           "data": `type="text/xls" href="./style.xls"`,
           "href": "./style.xls",
           "target": "xml-stylesheet",
-          "type": "processingInstruction",
+          "name": "processingInstruction",
         },
         {
           "attrs": {},
           "selfClosing": false,
           "tagName": "root",
-          "type": "startElement",
+          "name": "startElement",
         },
         {
           "cdata": " hoge ",
-          "type": "cdata",
+          "name": "cdata",
         }, {
           "comment": " fuga ",
-          "type": "comment",
+          "name": "comment",
         }, {
           "attrs": {},
           "selfClosing": false,
           "tagName": "element",
-          "type": "startElement",
+          "name": "startElement",
         }, {
           "text": "piyo",
-          "type": "text",
+          "name": "text",
         }, {
           "tagName": "element",
-          "type": "endElement",
+          "name": "endElement",
         }, {
           "tagName": "root",
-          "type": "endElement",
+          "name": "endElement",
         },
       ],
     }

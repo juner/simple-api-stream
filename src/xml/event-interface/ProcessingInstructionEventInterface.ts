@@ -1,7 +1,7 @@
 import type { SAX_PROCESSING_INSTRUCTION_EVENT_TYPE } from "../event";
 
 export interface ProcessingInstructionEventInterface<T extends string = string> {
-  type: typeof SAX_PROCESSING_INSTRUCTION_EVENT_TYPE;
+  name: typeof SAX_PROCESSING_INSTRUCTION_EVENT_TYPE;
   target: T;
   data: string;
 }

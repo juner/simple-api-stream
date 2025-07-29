@@ -99,7 +99,7 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
     ).join("");
   }
   #convert(chunk: SAXEventInterface): string | undefined {
-    switch (chunk.type) {
+    switch (chunk.name) {
       case "cdata":
         return this.#cdata(chunk);
       case "comment":

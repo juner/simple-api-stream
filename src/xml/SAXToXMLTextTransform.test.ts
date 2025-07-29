@@ -21,9 +21,9 @@ describe("pattern test", (it) => {
         name: "html sample.",
         options: { indent: `\t`, lineBreak: `\n` },
         input: [
-          { type: "startElement", tagName: "a", attrs: { href: "http://example.com" } },
-          { type: "text", text: "🐈" },
-          { type: "endElement", tagName: "a" },
+          { name: "startElement", tagName: "a", attrs: { href: "http://example.com" } },
+          { name: "text", text: "🐈" },
+          { name: "endElement", tagName: "a" },
         ],
         output: [
           `<a href="http://example.com">\n`,
@@ -34,7 +34,7 @@ describe("pattern test", (it) => {
       {
         name: "DOCTYPE HTML 4.01 Strict",
         input: [
-          { type: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
+          { name: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
         ],
         output: [
           `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">`,
@@ -43,7 +43,7 @@ describe("pattern test", (it) => {
       {
         name: "DOCTYPE HTML 4.01 Transitional",
         input: [
-          { type: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01 Transitional//EN", uri: "http://www.w3.org/TR/html4/loose.dtd" }
+          { name: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01 Transitional//EN", uri: "http://www.w3.org/TR/html4/loose.dtd" }
         ],
         output: [
           `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">`,
@@ -67,7 +67,7 @@ describe("pattern test", (it) => {
         ],
         input: [
           {
-            type: "doctype", root: "person",
+            name: "doctype", root: "person",
             declarations: [
               `<!ELEMENT person (name, age, city)>`,
               `<!ELEMENT name (#PCDATA)>`,
@@ -75,23 +75,23 @@ describe("pattern test", (it) => {
               `<!ELEMENT city (#PCDATA)>`,
             ],
           },
-          { type: "startElement", tagName: "person", attrs: {}, selfClosing: false },
-          { type: "startElement", tagName: "name", attrs: {}, selfClosing: false },
-          { type: "text", text: "Alice" },
-          { type: "endElement", tagName: "name" },
-          { type: "startElement", tagName: "age", attrs: {}, selfClosing: false },
-          { type: "text", text: "30" },
-          { type: "endElement", tagName: "age" },
-          { type: "startElement", tagName: "city", attrs: {}, selfClosing: false },
-          { type: "text", text: "New York" },
-          { type: "endElement", tagName: "city" },
-          { type: "endElement", tagName: "person" },
+          { name: "startElement", tagName: "person", attrs: {}, selfClosing: false },
+          { name: "startElement", tagName: "name", attrs: {}, selfClosing: false },
+          { name: "text", text: "Alice" },
+          { name: "endElement", tagName: "name" },
+          { name: "startElement", tagName: "age", attrs: {}, selfClosing: false },
+          { name: "text", text: "30" },
+          { name: "endElement", tagName: "age" },
+          { name: "startElement", tagName: "city", attrs: {}, selfClosing: false },
+          { name: "text", text: "New York" },
+          { name: "endElement", tagName: "city" },
+          { name: "endElement", tagName: "person" },
         ]
       },
       {
         name: "INTERNAL DOCTYPE HTML",
         input: [
-          { type: "doctype", dtdType: "SYSTEM", root: "myown", uri: "file:///HD/docs/dtd/myown.dtd" },
+          { name: "doctype", dtdType: "SYSTEM", root: "myown", uri: "file:///HD/docs/dtd/myown.dtd" },
         ],
         output: [
           `<!DOCTYPE myown SYSTEM "file:///HD/docs/dtd/myown.dtd">`,
@@ -100,8 +100,8 @@ describe("pattern test", (it) => {
       {
         name: "correctly escapes quotes in attribute values",
         input: [
-          { type: "startElement", tagName: "item", attrs: { title: 'He said "hi" & <bye>' }, selfClosing: true },
-          { type: "endElement", tagName: "item" },
+          { name: "startElement", tagName: "item", attrs: { title: 'He said "hi" & <bye>' }, selfClosing: true },
+          { name: "endElement", tagName: "item" },
         ],
         output: [
           '<item title="He said &quot;hi&quot; &amp; &lt;bye&gt;"/>',
@@ -110,12 +110,12 @@ describe("pattern test", (it) => {
       {
         name: "outputs correct XML chunks",
         input: [
-          { type: "startElement", tagName: "root", attrs: { id: "123" } },
-          { type: "text", text: "'Hello <world> & others'" },
-          { type: "startElement", tagName: "empty", selfClosing: true },
-          { type: "endElement", tagName: "empty" },
-          { type: "comment", comment: "" },
-          { type: "endElement", tagName: "root" },
+          { name: "startElement", tagName: "root", attrs: { id: "123" } },
+          { name: "text", text: "'Hello <world> & others'" },
+          { name: "startElement", tagName: "empty", selfClosing: true },
+          { name: "endElement", tagName: "empty" },
+          { name: "comment", comment: "" },
+          { name: "endElement", tagName: "root" },
         ],
         output: [
           '<root id="123">',
@@ -132,42 +132,42 @@ describe("pattern test", (it) => {
             "encoding": "UTF-8",
             "standalone": "yes",
             "target": "xml",
-            "type": "processingInstruction",
+            "name": "processingInstruction",
             "version": "1.0",
           },
           {
-            "contentType": "text/xls",
+            "type": "text/xls",
             "data": `type="text/xls" href="./style.xls"`,
             "href": "./style.xls",
             "target": "xml-stylesheet",
-            "type": "processingInstruction",
+            "name": "processingInstruction",
           },
           {
             "attrs": {},
             "selfClosing": false,
             "tagName": "root",
-            "type": "startElement",
+            "name": "startElement",
           },
           {
             "cdata": " hoge ",
-            "type": "cdata",
+            "name": "cdata",
           }, {
             "comment": " fuga ",
-            "type": "comment",
+            "name": "comment",
           }, {
             "attrs": {},
             "selfClosing": false,
             "tagName": "element",
-            "type": "startElement",
+            "name": "startElement",
           }, {
             "text": "piyo",
-            "type": "text",
+            "name": "text",
           }, {
             "tagName": "element",
-            "type": "endElement",
+            "name": "endElement",
           }, {
             "tagName": "root",
-            "type": "endElement",
+            "name": "endElement",
           },
         ],
         output: [

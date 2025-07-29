@@ -3,11 +3,11 @@ import { ProcessingInstructionEvent } from "./ProcessingInstructionEvent";
 
 export const SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE = "xml-stylesheet";
 export class XMLStylesheetDeclarationEvent extends ProcessingInstructionEvent<typeof SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE> implements XMLStylesheetDeclarationSAXEventInterface {
-  contentType: string;
+  type: string;
   href: string;
   constructor({ target, contentType, href }: { target: typeof SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE, contentType: string, href: string }) {
     super(target, XMLStylesheetDeclarationEvent.#makeData(contentType, href));
-    this.contentType = contentType;
+    this.type = contentType;
     this.href = href;
   }
   static #makeData(contentType: string, href: string) {
