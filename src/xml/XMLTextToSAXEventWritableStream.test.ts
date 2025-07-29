@@ -3,7 +3,7 @@ import { XMLTextToSAXEventWritableStream, xml } from "..";
 
 function makeStringListHandlerAndArray() {
   const events: string[] = [];
-  const handler: xml.interfaces.SimpleSAXHandler = {
+  const handler: xml.interfaces.SAXHandler = {
     onStartElement({ tagName, attrs, selfClosing }) {
       events.push(`start:${tagName}:${JSON.stringify(attrs)}:${selfClosing}`);
     },
@@ -72,7 +72,7 @@ describe("pattern test", (it) => {
 });
 
 test("handles malformed XML gracefully", async ({ expect }) => {
-  const handler: Partial<xml.interfaces.SimpleSAXHandler> = {
+  const handler: Partial<xml.interfaces.SAXHandler> = {
     onError: vi.fn()
   };
   const stream = new XMLTextToSAXEventWritableStream(handler);
@@ -81,7 +81,7 @@ test("handles malformed XML gracefully", async ({ expect }) => {
 });
 
 test("handles only text nodes", async ({ expect }) => {
-  const handler: Partial<xml.interfaces.SimpleSAXHandler> = {
+  const handler: Partial<xml.interfaces.SAXHandler> = {
     onText: vi.fn(),
   };
   const stream = new XMLTextToSAXEventWritableStream(handler);
@@ -92,7 +92,7 @@ test("handles only text nodes", async ({ expect }) => {
 });
 
 test("handles missing handlers gracefully", async ({ expect }) => {
-  const handler: Partial<xml.interfaces.SimpleSAXHandler> = {}; // すべて未定義
+  const handler: Partial<xml.interfaces.SAXHandler> = {}; // すべて未定義
   const stream = new XMLTextToSAXEventWritableStream(handler);
   const writer = stream.getWriter();
   await writer.write('<a attr="1"/>SomeText</a>');
@@ -101,7 +101,7 @@ test("handles missing handlers gracefully", async ({ expect }) => {
 });
 
 test("handles malformed attributes and catches errors", async ({ expect }) => {
-  const handler: Partial<xml.interfaces.SimpleSAXHandler> = {
+  const handler: Partial<xml.interfaces.SAXHandler> = {
     onError: vi.fn()
   };
   const stream = new XMLTextToSAXEventWritableStream(handler);
@@ -115,7 +115,7 @@ test("handles malformed attributes and catches errors", async ({ expect }) => {
 });
 
 test("parseBuffer throws synchronously in write and handled in onError", async ({ expect }) => {
-  const handler: Partial<xml.interfaces.SimpleSAXHandler> = {
+  const handler: Partial<xml.interfaces.SAXHandler> = {
     onError: vi.fn(),
     onStartElement() {
       throw new Error("handler error");

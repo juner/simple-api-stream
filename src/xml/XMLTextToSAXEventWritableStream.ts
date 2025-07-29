@@ -1,5 +1,5 @@
 import { XMLTextToSAXParser } from "./XMLTextToSAXParser";
-import { SimpleSAXHandler } from "./interface/SimpleSAXHandler";
+import { SAXHandler } from "./interface/SAXHandler";
 
 /**
  * A `WritableStream` that accepts XML text chunks and emits SAX-style events
@@ -32,11 +32,11 @@ import { SimpleSAXHandler } from "./interface/SimpleSAXHandler";
  * stream.getWriter().close();
  *
  * @see XMLTextToSAXParser
- * @see SimpleSAXHandler
+ * @see SAXHandler
  */
 export class XMLTextToSAXEventWritableStream extends WritableStream<string> {
 
-  constructor(handler: Partial<SimpleSAXHandler>) {
+  constructor(handler: Partial<SAXHandler>) {
     const buffer = new XMLTextToSAXParser({ handler });
     super({
 

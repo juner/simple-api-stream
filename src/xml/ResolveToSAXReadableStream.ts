@@ -1,6 +1,6 @@
 import { CdataEvent, CommentEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, ProcessingInstructionEvent, XMLStylesheetDeclarationEvent, XMLDeclarationEvent } from "./event";
 import { SAXEventInterface } from "./event-interface";
-import { SimpleSAXResolver } from "./interface";
+import { SAXResolver } from "./interface";
 
 
 export class ResolveToSAXReadableStreamError extends Error {
@@ -38,8 +38,8 @@ export class ResolveToSAXReadableStreamError extends Error {
  * }
  * ```
  *
- * @implements {SimpleSAXResolver}
- * @see SimpleSAXResolver
+ * @implements {SAXResolver}
+ * @see SAXResolver
  * @see SAXEventInterface
  * @see CdataEvent
  * @see DoctypeSimpleEvent
@@ -47,7 +47,7 @@ export class ResolveToSAXReadableStreamError extends Error {
  * @see XMLDeclarationEvent
  * @see XMLStylesheetDeclarationEvent
  */
-export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface> implements SimpleSAXResolver {
+export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface> implements SAXResolver {
   #controller!: ReadableStreamDefaultController<SAXEventInterface>;
 
   constructor() {

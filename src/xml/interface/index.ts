@@ -1,2 +1,2 @@
-export type * from "./SimpleSAXHandler";
-export type * from "./SimpleSAXResolver";
+export type * from "./SAXHandler";
+export type * from "./SAXResolver";

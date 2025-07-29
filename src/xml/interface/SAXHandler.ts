@@ -8,7 +8,7 @@ import type {
   ProcessingInstructionEventInterface,
 } from "../event-interface";
 
-export interface SimpleSAXHandler {
+export interface SAXHandler {
   onDoctype: (arg: DoctypeSAXEventInterface) => void;
   onStartElement: (arg: StartElementSAXEventInterface) => void;
   onEndElement: (arg: EndElementSAXEventInterface) => void;

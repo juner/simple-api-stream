@@ -1,5 +1,5 @@
 import { XMLTextToSAXParser } from "./XMLTextToSAXParser";
-import { SimpleSAXHandler } from "./interface";
+import { SAXHandler } from "./interface";
 import { SAXEventInterface } from "./event-interface";
 
 /**
@@ -37,7 +37,7 @@ import { SAXEventInterface } from "./event-interface";
  * ```
  *
  * @see XMLTextToSAXParser
- * @see SimpleSAXHandler
+ * @see SAXHandler
  * @see SAXEventInterface
  */
 export class XMLTextToSAXTransformStream extends TransformStream<string, SAXEventInterface> {
@@ -77,7 +77,7 @@ export class XMLTextToSAXTransformStream extends TransformStream<string, SAXEven
  * @param controller
  * @returns
  */
-function toHandler(controller: TransformStreamDefaultController<SAXEventInterface>): SimpleSAXHandler {
+function toHandler(controller: TransformStreamDefaultController<SAXEventInterface>): SAXHandler {
   return {
     onStartElement: (arg) => {
       controller.enqueue(arg);

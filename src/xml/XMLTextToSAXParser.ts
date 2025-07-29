@@ -11,7 +11,7 @@ import {
   DoctypeSystemEvent,
   ProcessingInstructionEvent,
 } from "./event";
-import { SimpleSAXHandler } from "./interface";
+import { SAXHandler } from "./interface";
 import { unescape } from "./utils";
 
 const CDATA_PREFIX = "<![CDATA[";
@@ -35,7 +35,7 @@ export class XMLTextToSAXParserError extends Error {
 
 export class XMLTextToSAXParser {
   #buffer: string = "";
-  #handler: Partial<SimpleSAXHandler>;
+  #handler: Partial<SAXHandler>;
   #acc: string = "";
   #cursor: number = 0;
   #factor!: (flush: boolean) => { required?: true };
@@ -60,7 +60,7 @@ export class XMLTextToSAXParser {
     };
   }
 
-  constructor({ handler }: { handler: Partial<SimpleSAXHandler> }) {
+  constructor({ handler }: { handler: Partial<SAXHandler> }) {
     this.#handler = handler;
     this.#factor = this.#text;
   }
