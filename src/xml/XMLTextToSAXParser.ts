@@ -276,10 +276,10 @@ export class XMLTextToSAXParser {
           throw this.#makeSyntaxError(`Invalid xml-stylesheet declaration: ${this.#acc}`, this.#acc);
         }
       } else {
-        return new ProcessingInstructionEvent({
+        return new ProcessingInstructionEvent(
           target,
           data,
-        });
+        );
       }
     })(target, data);
 

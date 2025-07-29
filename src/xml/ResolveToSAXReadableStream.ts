@@ -1,4 +1,4 @@
-import { CdataEvent, CommentEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, ProcessingInstructionEvent } from "./event";
+import { CdataEvent, CommentEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, ProcessingInstructionEvent, XMLStylesheetDeclarationEvent, XMLDeclarationEvent } from "./event";
 import { SAXEventInterface } from "./event-interface";
 import { SimpleSAXResolver } from "./interface/SimpleSAXResolver";
 
@@ -16,8 +16,20 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
     });
     this.#controller = controller_;
   }
-  processingInstruction(options: ConstructorParameters<typeof ProcessingInstructionEvent>[0]): void {
-    this.#controller.enqueue(new ProcessingInstructionEvent(options));
+  processingInstruction(...args: ConstructorParameters<typeof ProcessingInstructionEvent | typeof XMLDeclarationEvent | typeof XMLStylesheetDeclarationEvent>): void {
+    if (typeof args[0] === "string") {
+      this.#controller.enqueue(new ProcessingInstructionEvent(...args as ConstructorParameters<typeof ProcessingInstructionEvent>));
+      return;
+    }
+    const options = args[0] as ConstructorParameters<typeof XMLDeclarationEvent | typeof XMLStylesheetDeclarationEvent>[0];
+    if (options.target === "xml") {
+      this.#controller.enqueue(new XMLDeclarationEvent(options));
+      return;
+    } else if (options.target === "xml-stylesheet") {
+      this.#controller.enqueue(new XMLStylesheetDeclarationEvent(options));
+      return;
+    }
+    throw new Error(`not support parameter.`, { cause: { args } });
   }
 
   cdata(...args: ConstructorParameters<typeof CdataEvent>): void {

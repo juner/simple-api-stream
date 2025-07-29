@@ -6,7 +6,7 @@ export class XMLStylesheetDeclarationEvent extends ProcessingInstructionEvent<ty
   contentType: string;
   href: string;
   constructor({ target, contentType, href }: { target: typeof SAX_XML_DECLARATION_STYLESHEET_TARGET_TYPE, contentType: string, href: string }) {
-    super({ target, data: XMLStylesheetDeclarationEvent.#makeData(contentType, href) });
+    super(target, XMLStylesheetDeclarationEvent.#makeData(contentType, href));
     this.contentType = contentType;
     this.href = href;
   }

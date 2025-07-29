@@ -70,8 +70,8 @@ describe("pattern", (it) => {
       {
         name: "all type",
         input: [
-          stream => stream.processingInstruction({ target: "xml", data: `version="1.0" encoding="UTF-8"` }),
-          stream => stream.processingInstruction({ target: "xml-stylesheet", data: `type="text/xls" href="./style.xls"` }),
+          stream => stream.processingInstruction({ target: "xml", version: "1.0", encoding: "UTF-8" }),
+          stream => stream.processingInstruction({ target: "xml-stylesheet", contentType: `text/xls`, href: `./style.xls` }),
           stream => stream.startElement("root"),
           stream => stream.cdata(" hoge "),
           stream => stream.comment(" fuga "),
@@ -83,11 +83,16 @@ describe("pattern", (it) => {
         output: [
           {
             "data": `version="1.0" encoding="UTF-8"`,
+            "encoding": "UTF-8",
+            "standalone": "yes",
             "target": "xml",
             "type": "processingInstruction",
+            "version": "1.0",
           },
           {
+            "contentType": "text/xls",
             "data": `type="text/xls" href="./style.xls"`,
+            "href": "./style.xls",
             "target": "xml-stylesheet",
             "type": "processingInstruction",
           },
@@ -133,5 +138,5 @@ describe("pattern", (it) => {
     stream.close();
     const result = await Array.fromAsync(stream);
     expect(result).toEqual(output);
-  })
-})
+  });
+});
