@@ -70,6 +70,7 @@ describe("pattern", (it) => {
       {
         name: "all type",
         input: [
+          stream => stream.processingInstruction("xml", `version="1.0" encoding="UTF-8"`),
           stream => stream.processingInstruction({ target: "xml", version: "1.0", encoding: "UTF-8" }),
           stream => stream.processingInstruction({ target: "xml-stylesheet", contentType: `text/xls`, href: `./style.xls` }),
           stream => stream.startElement("root"),
@@ -81,6 +82,11 @@ describe("pattern", (it) => {
           stream => stream.endElement("root"),
         ],
         output: [
+          {
+            "data": `version="1.0" encoding="UTF-8"`,
+            "target": "xml",
+            "type": "processingInstruction",
+          },
           {
             "data": `version="1.0" encoding="UTF-8"`,
             "encoding": "UTF-8",

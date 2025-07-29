@@ -43,7 +43,7 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
   doctype(...args: ConstructorParameters<typeof DoctypeSimpleEvent>): void;
   doctype(...args: ConstructorParameters<typeof DoctypeSystemEvent>): void;
   doctype(...args: ConstructorParameters<typeof DoctypePublicEvent>): void;
-  doctype(...args: ConstructorParameters<typeof DoctypeSimpleEvent> | ConstructorParameters<typeof DoctypeSystemEvent> | ConstructorParameters<typeof DoctypePublicEvent>): void {
+  doctype(...args: ConstructorParameters<typeof DoctypeSimpleEvent | typeof DoctypeSystemEvent | typeof DoctypePublicEvent>): void {
     if (args[1]?.dtdType === "PUBLIC") {
       this.#controller.enqueue(new DoctypePublicEvent(...args as ConstructorParameters<typeof DoctypePublicEvent>));
     } else if (args[1]?.dtdType === "SYSTEM") {
