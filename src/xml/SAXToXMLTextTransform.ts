@@ -21,8 +21,39 @@ export type SAXToXMLTextTransformOptions = {
   lineBreak: string;
 }
 
+export class SAXToXMLTextTransformError extends Error {
+  constructor(...args: ConstructorParameters<typeof Error>) {
+    super(...args);
+    this.name = "SAXToXMLTextTransformError";
+  }
+}
+
 /**
- * SimpleSAX to XML Text Transform
+ * A `TransformStream` that converts a stream of `SAXEventInterface` objects
+ * into well-formed XML text.
+ *
+ * This class is part of the SimpleSAX toolchain and allows serialized
+ * reconstruction of XML data from SAX-style events such as element start/end,
+ * character data, comments, CDATA sections, doctype declarations, and
+ * processing instructions.
+ *
+ * ## Features:
+ * - Pretty-prints output with configurable indentation and line breaks.
+ * - Escapes special characters in text and attributes.
+ * - Validates tag name matching for start and end elements.
+ * - Supports self-closing tags and internal DTD subsets.
+ *
+ * ## Options:
+ * - `indent`: Number of spaces or a string used for each indentation level.
+ * - `lineBreak`: Line separator to use after each XML block (e.g., `"\n"`).
+ *
+ * ## Example:
+ * ```ts
+ * const transform = new SAXToXMLTextTransform({ indent: 2, lineBreak: "\n" });
+ * readable.pipeThrough(transform).pipeTo(writable);
+ * ```
+ *
+ * @throws {SAXToXMLTextTransformError} If an unexpected structure or mismatch occurs.
  */
 export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, string> {
   #options?: Partial<SAXToXMLTextTransformOptions>;
@@ -45,6 +76,18 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
     this.#starts = [];
     this.#suffix = options?.lineBreak ?? "";
     this.#prefix = this.#makeIndent();
+  }
+  #makeError(message: string, options: ErrorOptions) {
+    const cause = {
+      instance: this,
+      starts: [...this.#starts],
+      options: this.#options,
+      suffix: this.#suffix,
+      prefix: this.#prefix,
+      ...(options?.cause ?? {})
+    };
+    (options ??= {}).cause = cause;
+    return new SAXToXMLTextTransformError(message, options);
   }
   #makeIndent(num: number = 0) {
     console.assert(num >= 0);
@@ -128,7 +171,7 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
     const start = this.#starts.pop();
     this.#prefix = this.#makeIndent();
     if (!start)
-      throw new Error(`mismatch startElement not found. endTagName: ${endTagName}`, {
+      throw this.#makeError(`mismatch startElement not found. endTagName: ${endTagName}`, {
         cause: {
           endTagName,
           chunk,
@@ -136,7 +179,7 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
       });
     const startTagName = start.tagName;
     if (startTagName !== endTagName)
-      throw new Error(`mismatch startElement tagName ${startTagName} / endTagName ${endTagName}`, {
+      throw this.#makeError(`mismatch startElement tagName ${startTagName} / endTagName ${endTagName}`, {
         cause: {
           startTagName,
           endTagName,

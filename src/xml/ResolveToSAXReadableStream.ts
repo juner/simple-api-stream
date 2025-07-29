@@ -1,7 +1,52 @@
 import { CdataEvent, CommentEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, ProcessingInstructionEvent, XMLStylesheetDeclarationEvent, XMLDeclarationEvent } from "./event";
 import { SAXEventInterface } from "./event-interface";
-import { SimpleSAXResolver } from "./interface/SimpleSAXResolver";
+import { SimpleSAXResolver } from "./interface";
 
+
+export class ResolveToSAXReadableStreamError extends Error {
+  constructor(...args: ConstructorParameters<typeof Error>) {
+    super(...args);
+    this.name = "ResolveToSAXReadableStreamError";
+  }
+}
+
+/**
+ * A `ReadableStream` implementation that emits SAX-style XML events
+ * by providing an imperative API via the `SimpleSAXResolver` interface.
+ *
+ * Instead of parsing XML text, this stream allows you to manually
+ * emit SAX event objects (such as elements, text, CDATA, comments, etc.)
+ * through method calls, which are then pushed to the readable stream.
+ *
+ * This is particularly useful for scenarios where you want to **programmatically construct** or
+ * transform SAX event streams, rather than derive them from XML text input.
+ *
+ * ## Example:
+ * ```ts
+ * const stream = new ResolveToSAXReadableStream();
+ * const reader = stream.getReader();
+ *
+ * stream.startElement("greeting", {});
+ * stream.text("Hello");
+ * stream.endElement("greeting");
+ * stream.close();
+ *
+ * while (true) {
+ *   const { value, done } = await reader.read();
+ *   if (done) break;
+ *   console.log(value); // instance of SAXEventInterface
+ * }
+ * ```
+ *
+ * @implements {SimpleSAXResolver}
+ * @see SimpleSAXResolver
+ * @see SAXEventInterface
+ * @see CdataEvent
+ * @see DoctypeSimpleEvent
+ * @see ProcessingInstructionEvent
+ * @see XMLDeclarationEvent
+ * @see XMLStylesheetDeclarationEvent
+ */
 export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface> implements SimpleSAXResolver {
   #controller!: ReadableStreamDefaultController<SAXEventInterface>;
 
@@ -16,6 +61,14 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
     });
     this.#controller = controller_;
   }
+  #makeError(message: string, options: ErrorOptions) {
+    const cause = {
+      instance: this,
+      ...(options?.cause ?? {})
+    };
+    (options ??= {}).cause = cause;
+    return new ResolveToSAXReadableStreamError(message, options);
+  }
   processingInstruction(...args: ConstructorParameters<typeof ProcessingInstructionEvent | typeof XMLDeclarationEvent | typeof XMLStylesheetDeclarationEvent>): void {
     if (typeof args[0] === "string") {
       this.#controller.enqueue(new ProcessingInstructionEvent(...args as ConstructorParameters<typeof ProcessingInstructionEvent>));
@@ -29,7 +82,7 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
       this.#controller.enqueue(new XMLStylesheetDeclarationEvent(options));
       return;
     }
-    throw new Error(`not support parameter.`, { cause: { args } });
+    throw this.#makeError(`not support parameter.`, { cause: { args } });
   }
 
   cdata(...args: ConstructorParameters<typeof CdataEvent>): void {

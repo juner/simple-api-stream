@@ -18,5 +18,3 @@ export interface SimpleSAXHandler {
   onError: (err: unknown) => void;
   onProcessingInstruction: (arg: ProcessingInstructionEventInterface<string>) => void;
 }
-
-
