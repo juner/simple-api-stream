@@ -69,7 +69,7 @@ describe("pattern", (it) => {
     ];
   it.each(entries)("$name", async ({ input, output }) => {
     const result = await (() => {
-      const stream = new SAJToObjectTransform;
+      const stream = new SAJToObjectTransform();
       (async () => {
         const writer = stream.writable.getWriter();
         for (const entry of input) {

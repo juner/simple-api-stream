@@ -2,7 +2,7 @@ import type { SAJEventInterface } from "./event-interface";
 
 const NON = Symbol.for("SAJToObjectTransform.NON");
 
-export class SAJToObjectTransform<T> extends TransformStream<SAJEventInterface, T> {
+export class SAJToObjectTransform<T = unknown> extends TransformStream<SAJEventInterface, T> {
   #controller!:TransformStreamDefaultController<T>;
   constructor() {
     let controller_!: TransformStreamDefaultController<T>;
