@@ -24,13 +24,23 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     return {
       buffer: this.#buffer,
       pos: this.#pos,
-      state: this.#state.name.startsWith("#parse")
-        ? this.#state.name.slice("#parse".length)
-        : this.#state.name,
+      state: toState(this.#state),
       acc: this.#acc,
       key: this.#key,
       stack: this.#stack.slice(),
     };
+    function toState(state: StateFunction) {
+      if (state.name.startsWith("#parse")) {
+        return state.name.slice("#parse".length);
+      }
+      if (state.name.startsWith("#")) {
+        return state.name.slice('#'.length);
+      }
+      if (state.name.startsWith("parse")) {
+        return state.name.slice("parse".length);
+      }
+      return state.name;
+    }
   }
 
   /**
@@ -88,7 +98,6 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     while (this.#pos < this.#buffer.length) {
       const ch = this.#buffer[this.#pos++];
       this.#state(ch);
-      console.dir(this.#status());
     }
 
     if (isFlush && this.#state !== this.#parseDefault) {
@@ -135,7 +144,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
         this.#state = this.#parseNumber(this.#handleStandaloneValue);
         break;
       default:
-        throw this.#makeSyntaxError(`Unexpected token ${ch}`, ch);
+        throw this.#makeSyntaxError(`Unexpected token`, ch);
     }
   };
 
@@ -165,7 +174,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
         this.#state = this.#parseColon;
       });
     } else {
-      throw this.#makeSyntaxError(`Unexpected token in object: ${ch}`, ch);
+      throw this.#makeSyntaxError(`Unexpected token in object`, ch);
     }
   };
 
@@ -174,7 +183,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     if (ch === ':') {
       this.#state = this.#parseValue;
     } else {
-      throw this.#makeSyntaxError(`Expected colon after key but got ${ch}`, ch);
+      throw this.#makeSyntaxError(`Expected colon after key but got`, ch);
     }
   };
 
@@ -207,7 +216,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
           this.#acc = ch;
           this.#state = this.#parseNumber(this.#emitKeyValue);
         } else {
-          throw this.#makeSyntaxError(`Unexpected value: ${ch}`, ch);
+          throw this.#makeSyntaxError(`Unexpected value`, ch);
         }
     }
   };
@@ -215,7 +224,11 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   #emitKeyValue<T extends string | number | boolean | null>(val: T) {
     this.#handler.onValue?.(this.#wrapValue(val));
     this.#key = null;
-    this.#state = this.#parseCommaOrEndObject;
+    const parent = this.#stack.at(-1);
+    if (parent === "object")
+      this.#state = this.#parseCommaOrEndObject;
+    else if (parent === "array")
+      this.#state = this.#parseCommaOrEndArray;
   };
 
   #parseCommaOrEndObject(ch: string) {
@@ -225,9 +238,12 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     } else if (ch === '}') {
       this.#handler.onEndObject?.(new EndObjectEvent());
       this.#stack.pop();
-      this.#state = this.#parseAfterValue;
+      if (this.#stack.at(-1))
+        this.#state = this.#parseAfterValue;
+      else
+        this.#state = this.#parseDefault;
     } else {
-      throw this.#makeSyntaxError(`Expected , or } but got ${ch}`, ch);
+      throw this.#makeSyntaxError(`Expected , or } but got`, ch);
     }
   };
 
@@ -244,8 +260,8 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   };
 
   #parseValueInArray(ch: string) {
-    this.#parseValue(ch);
     this.#state = this.#parseCommaOrEndArray;
+    this.#parseValue(ch);
   };
 
   #parseCommaOrEndArray(ch: string) {
@@ -255,29 +271,37 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     } else if (ch === ']') {
       this.#handler.onEndArray?.(new EndArrayEvent());
       this.#stack.pop();
-      this.#state = this.#parseAfterValue;
+      if (this.#stack.at(-1))
+        this.#state = this.#parseAfterValue;
+      else
+        this.#state = this.#parseDefault;
     } else {
-      throw this.#makeSyntaxError(`Expected , or ] but got ${ch}`, ch);
+      throw this.#makeSyntaxError(`Expected , or ] but got`, ch);
     }
   };
 
   #parseAfterValue(ch: string) {
     if (/\s/.test(ch)) return;
-    const parent = this.#stack[this.#stack.length - 1];
+    const parent = this.#stack.at(-1);
     if (parent === 'object') {
-      this.#parseCommaOrEndObject(ch);
+      this.#pos--;
+      this.#state = this.#parseCommaOrEndObject;
+      return;
     } else if (parent === 'array') {
-      this.#parseCommaOrEndArray(ch);
+      this.#pos--;
+      this.#state = this.#parseCommaOrEndArray;
+      return;
     } else {
+      this.#pos--;
       this.#state = this.#parseDefault;
-      this.#parseDefault(ch);
+      return;
     }
   };
 
   #parseString(onEnd: (this: typeof this, s: string) => void): StateFunction {
     let escape = false;
     let unicode = '';
-    const handler: StateFunction = (ch) => {
+    const parseStringHandler: StateFunction = (ch) => {
       if (escape) {
         if (unicode !== '') {
           unicode += ch;
@@ -293,7 +317,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
             '"': '"', '\\': '\\', '/': '/',
             b: '\b', f: '\f', n: '\n', r: '\r', t: '\t'
           }[ch];
-          if (esc === undefined) throw this.#makeSyntaxError(`Invalid escape: \\${ch}`, ch);
+          if (esc === undefined) throw this.#makeError(`Invalid escape: \\${ch}`, { cause: { syntax: ch } });
           this.#acc += esc;
           escape = false;
         }
@@ -306,11 +330,11 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
         this.#acc += ch;
       }
     };
-    return handler;
+    return parseStringHandler;
   };
 
   #parseLiteral(onEnd: (this: typeof this, val: string | boolean | null) => void): StateFunction {
-    const handler: StateFunction = (ch) => {
+    const parseLiteralHandler: StateFunction = (ch) => {
       this.#acc += ch;
       if (/^(true|false|null)$/.test(this.#acc)) {
         const val = this.#acc === 'true' ? true :
@@ -318,26 +342,26 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
         this.#state = this.#parseDefault;
         onEnd.call(this, val);
       } else if (!["true", "false", "null"].some(prefix => prefix.startsWith(this.#acc))) {
-        throw this.#makeSyntaxError(`Invalid literal: ${this.#acc}`, this.#acc);
+        throw this.#makeSyntaxError(`Invalid literal`, this.#acc);
       }
     };
-    return handler;
+    return parseLiteralHandler;
   };
 
   #parseNumber(onEnd: (this: typeof this, val: number) => void): StateFunction {
-    const handler: StateFunction = (ch) => {
+    const parseNumberHandler: StateFunction = (ch) => {
       if (/[0-9eE+.-]/.test(ch)) {
         this.#acc += ch;
       } else {
         this.#pos--; // unread
         const num = Number(this.#acc);
         if (Number.isNaN(num)) {
-          throw this.#makeSyntaxError(`Invalid number: ${this.#acc}`, this.#acc);
+          throw this.#makeSyntaxError(`Invalid number`, this.#acc);
         }
         this.#state = this.#parseDefault;
         onEnd.call(this, num);
       }
     };
-    return handler;
+    return parseNumberHandler;
   };
 }

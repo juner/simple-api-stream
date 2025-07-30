@@ -13,7 +13,7 @@ describe("pattern", (it) => {
         input: [
           `{"num":0,"str":"value", \n`,
           `"bool1": true, "bool2": false, "arry": [
-        "test",
+        "test"
         ]}`,
         ],
         output: [
@@ -36,7 +36,7 @@ describe("pattern", (it) => {
     ];
   it.each(entries)("$name", async ({ input, output }) => {
     const result = await (() => {
-      const { resolve, reject, promise } = Promise.withResolvers<SAJEventInterface[]>()
+      const { resolve, reject, promise } = Promise.withResolvers<SAJEventInterface[]>();
 
       const result: SAJEventInterface[] = [];
       const stream = new JSONTextToSAJEventWritableStream({
@@ -58,11 +58,11 @@ describe("pattern", (it) => {
         resolve(result);
       })();
       promise.catch((error) => {
-        console.dir(result);
-        console.dir(error);
-      })
+        console.dir(result, 5);
+        console.dir(error, 5);
+      });
       return promise;
     })();
     expect(result).toEqual(output);
-  })
-})
+  });
+});
