@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 import type { json } from "..";
-import { JSONTextToSAJTransformStream } from "./JSONTextToSAJTransformStream";
+import { JSONTextToSAJTransformStream } from "..";
 
 type SAJEventInterface = json.eventInterface.SAJEventInterface;
 describe("pattern", (it) => {

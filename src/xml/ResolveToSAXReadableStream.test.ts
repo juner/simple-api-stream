@@ -138,10 +138,12 @@ describe("pattern", (it) => {
       }
     ];
   it.each(entries)("$name", async ({ input, output }) => {
-    const stream = new ResolveToSAXReadableStream();
-    for (const i of input)
-      i(stream);
-    stream.close();
+    const stream = (() => {
+      using stream = new ResolveToSAXReadableStream();
+      for (const i of input)
+        i(stream);
+      return stream;
+    })();
     const result = await Array.fromAsync(stream);
     expect(result).toEqual(output);
   });

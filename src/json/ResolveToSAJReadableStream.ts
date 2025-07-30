@@ -43,6 +43,12 @@ export class ResolveToSAJReadableStream extends ReadableStream<SAJEventInterface
     }
     this.#controller.enqueue(new ValueNullEvent(type));
   }
+  close() {
+    this.#controller.close();
+  }
+  [Symbol.dispose]() {
+    this.close();
+  }
 }
 
 
