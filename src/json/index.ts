@@ -7,11 +7,14 @@ export type * as interfaces from "./interface";
 import * as JSONTextToSAJEventWritableStreamModule from "./JSONTextToSAJEventWritableStream";
 import * as ResolveToSAJReadableStreamModule from "./ResolveToSAJReadableStream";
 import * as JSONTextToSAJTransformStreamModule from "./JSONTextToSAJTransformStream";
+import * as SAJToObjectTransformModule from "./SAJToObjectTransform";
 
 export const streams = {
   ...JSONTextToSAJEventWritableStreamModule,
   ...ResolveToSAJReadableStreamModule,
+  ...SAJToObjectTransformModule,
 };
 export const JSONTextToSAJEventWritableStream = JSONTextToSAJEventWritableStreamModule.JSONTextToSAJEventWritableStream;
 export const ResolveToSAJReadableStream = ResolveToSAJReadableStreamModule.ResolveToSAJReadableStream;
 export const JSONTextToSAJTransformStream = JSONTextToSAJTransformStreamModule.JSONTextToSAJTransformStream;
+export const SAJToObjectTransform = SAJToObjectTransformModule.SAJToObjectTransform;
