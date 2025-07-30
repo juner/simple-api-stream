@@ -1,4 +1,4 @@
-import { describe, expect } from "vitest";
+import { describe, expect, vi } from "vitest";
 import type { json } from "..";
 import { JSONTextToSAJEventWritableStream } from "..";
 
@@ -135,5 +135,17 @@ describe("pattern", (it) => {
       return promise;
     })();
     expect(result).toEqual(output);
+  });
+});
+describe("error onError", (it) => {
+  it.concurrent("", async ({expect}) => {
+    const handler: Partial<json.interfaces.SAJHandler> = {
+      onError: vi.fn(),
+    };
+    const stream = new JSONTextToSAJEventWritableStream(handler);
+    stream.abort(new Error("error"));
+    // onError 実行タイミングは queueMicrotask 後
+    await (null as unknown as Promise<void>);
+    expect(handler.onError).toHaveBeenCalledWith(expect.any(Error));
   });
 });
