@@ -29,13 +29,12 @@ describe("pattern", (it) => {
           { name: "endArray" },
           { name: "endObject" },
         ],
-        output: [
-          {
-            "num": 0, "str": "value", "bool1": true, "bool2": false, "nullable": null, "arry": [
-              "test"
-            ]
-          },
-        ]
+        output:
+        {
+          "num": 0, "str": "value", "bool1": true, "bool2": false, "nullable": null, "arry": [
+            "test"
+          ]
+        }
       },
       {
         name: "simple value number",
