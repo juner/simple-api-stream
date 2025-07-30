@@ -10,15 +10,31 @@ export class JSONTextToSAJParserError extends Error {
 }
 
 type StateFunction = (ch: string) => void;
+type Status = {
+  buffer: string;
+  pos: number;
+  state: string;
+  acc: string;
+  key: string | null;
+  stack: ("object" | "array")[];
+};
+
+export type JSONTextToSAJParserAdditionalHandler = {
+  onParseBefore(arg: Status): void;
+  onParseRoopBefore(arg: Status): void;
+  onParseRoopAfter(arg: Status): void;
+  onParseAfter(arg: Status): void;
+}
 
 export class JSONTextToSAJParser implements SimpleApiParser<string> {
+
   #buffer = '';
   #pos = 0;
   #state: StateFunction = this.#parseDefault;
   #acc = '';
   #key: string | null = null;
   #stack: ('object' | 'array')[] = [];
-  #handler: Partial<SAJHandler>;
+  #handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>;
 
   #status() {
     return {
@@ -59,7 +75,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     return new JSONTextToSAJParserError(message, options);
   }
 
-  constructor({ handler }: { handler: Partial<SAJHandler> }) {
+  constructor({ handler }: { handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler> }) {
     this.#handler = handler;
   }
 
@@ -95,14 +111,18 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   }
 
   #parse(isFlush = false) {
+    this.#handler.onParseBefore?.(this.#status());
     while (this.#pos < this.#buffer.length) {
+      this.#handler.onParseRoopBefore?.(this.#status());
       const ch = this.#buffer[this.#pos++];
       this.#state(ch);
+      this.#handler.onParseRoopAfter?.(this.#status());
     }
 
     if (isFlush && this.#state !== this.#parseDefault) {
       throw this.#makeError('Unexpected EOF');
     }
+    this.#handler.onParseAfter?.(this.#status());
   }
 
   #parseDefault(ch: string) {
@@ -165,7 +185,10 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     if (ch === '}') {
       this.#handler.onEndObject?.(new EndObjectEvent());
       this.#stack.pop();
-      this.#state = this.#parseAfterValue;
+      if (this.#stack.at(-1))
+        this.#state = this.#parseAfterValue;
+      else
+        this.#state = this.#parseDefault;
     } else if (ch === '"') {
       this.#acc = '';
       this.#state = this.#parseString((key) => {

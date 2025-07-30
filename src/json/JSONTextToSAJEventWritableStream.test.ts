@@ -32,7 +32,30 @@ describe("pattern", (it) => {
           { name: "endArray" },
           { name: "endObject" },
         ]
-      }
+      },
+      {
+        name: "space and array",
+        input: [
+          `       [    true   ]         `
+        ],
+        output: [
+          { name: "startArray", type: "array" },
+          { name: "value", type: "boolean", value: true },
+          { name: "endArray" },
+        ]
+      },
+      {
+        name: "space and object",
+        input: [
+          `       {    "value": 1,   }         `
+        ],
+        output: [
+          { name: "startObject", type: "object" },
+          { name: "key", key: "value" },
+          { name: "value", type: "number", value: 1 },
+          { name: "endObject" },
+        ]
+      },
     ];
   it.each(entries)("$name", async ({ input, output }) => {
     const result = await (() => {
@@ -47,6 +70,9 @@ describe("pattern", (it) => {
         onStartObject(arg) { result.push(arg); },
         onValue(arg) { result.push(arg); },
         onError(arg) { reject(arg); },
+        onParseRoopAfter(arg) {
+          console.dir(arg);
+        },
       });
       (async () => {
         const writer = stream.getWriter();

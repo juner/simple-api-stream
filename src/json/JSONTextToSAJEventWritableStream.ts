@@ -1,9 +1,10 @@
-import { SAJHandler } from "./interface/SAJHandler";
+import type { SAJHandler } from "./interface";
+import type { JSONTextToSAJParserAdditionalHandler } from "./JSONTextToSAJParser";
 import { JSONTextToSAJParser } from "./JSONTextToSAJParser";
 
 export class JSONTextToSAJEventWritableStream extends WritableStream<string> {
 
-  constructor(handler: Partial<SAJHandler>) {
+  constructor(handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>) {
     const buffer = new JSONTextToSAJParser({ handler });
     super({
 
