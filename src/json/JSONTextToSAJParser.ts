@@ -9,7 +9,7 @@ export class JSONTextToSAJParserError extends Error {
   }
 }
 
-type StateFunction = (ch: string) => void;
+type StateFunction = (ch: Ch) => void;
 type Status = {
   buffer: string;
   pos: number;
@@ -25,6 +25,9 @@ export type JSONTextToSAJParserAdditionalHandler = {
   onParseRoopAfter(arg: Status): void;
   onParseAfter(arg: Status): void;
 }
+const EOL = Symbol.for("JSONTextToSAJParser.EOL");
+
+type Ch = string|typeof EOL;
 
 export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
@@ -93,6 +96,14 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     });
   }
 
+  /**
+   * make not complete error
+   * @returns
+   */
+  #makeNotCompleteError() {
+    return this.#makeError(`not complete syntax error. buffer:${this.#buffer}`);
+  }
+
   enqueue(chunk: string): void {
     this.#buffer += chunk;
     try {
@@ -118,14 +129,17 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       this.#state(ch);
       this.#handler.onParseRoopAfter?.(this.#status());
     }
-
+    if (isFlush && this.#pos === this.#buffer.length) {
+      this.#state(EOL);
+    }
     if (isFlush && this.#state !== this.#parseDefault) {
       throw this.#makeError('Unexpected EOF');
     }
     this.#handler.onParseAfter?.(this.#status());
   }
 
-  #parseDefault(ch: string) {
+  #parseDefault(ch: Ch) {
+    if (ch === EOL) return;
     if (/\s/.test(ch)) return;
 
     switch (ch) {
@@ -180,15 +194,16 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     return new ValueNullEvent("null");
   }
 
-  #parseKeyOrEndObject(ch: string) {
+  #parseKeyOrEndObject(ch: Ch) {
+    if (ch === EOL) {
+      this.#state = this.#parseDefault;
+      return;
+    }
     if (/\s/.test(ch)) return;
     if (ch === '}') {
       this.#handler.onEndObject?.(new EndObjectEvent());
       this.#stack.pop();
-      if (this.#stack.at(-1))
-        this.#state = this.#parseAfterValue;
-      else
-        this.#state = this.#parseDefault;
+      this.#state = this.#parseAfterValue;
     } else if (ch === '"') {
       this.#acc = '';
       this.#state = this.#parseString((key) => {
@@ -201,7 +216,8 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     }
   };
 
-  #parseColon(ch: string) {
+  #parseColon(ch: Ch) {
+    if (ch === EOL) throw this.#makeError("invalid state parseColon");
     if (/\s/.test(ch)) return;
     if (ch === ':') {
       this.#state = this.#parseValue;
@@ -210,7 +226,8 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     }
   };
 
-  #parseValue(ch: string) {
+  #parseValue(ch: Ch) {
+    if (ch === EOL) throw this.#makeNotCompleteError();
     if (/\s/.test(ch)) return;
 
     switch (ch) {
@@ -254,23 +271,25 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       this.#state = this.#parseCommaOrEndArray;
   };
 
-  #parseCommaOrEndObject(ch: string) {
+  #parseCommaOrEndObject(ch: Ch) {
+    if (ch === EOL) {
+      this.#state = this.#parseDefault;
+      return;
+    }
     if (/\s/.test(ch)) return;
     if (ch === ',') {
       this.#state = this.#parseKeyOrEndObject;
     } else if (ch === '}') {
       this.#handler.onEndObject?.(new EndObjectEvent());
       this.#stack.pop();
-      if (this.#stack.at(-1))
-        this.#state = this.#parseAfterValue;
-      else
-        this.#state = this.#parseDefault;
+      this.#state = this.#parseAfterValue;
     } else {
       throw this.#makeSyntaxError(`Expected , or } but got`, ch);
     }
   };
 
-  #parseValueOrEndArray(ch: string) {
+  #parseValueOrEndArray(ch: Ch) {
+    if (ch === EOL) throw this.#makeNotCompleteError();
     if (/\s/.test(ch)) return;
     if (ch === ']') {
       this.#handler.onEndArray?.(new EndArrayEvent());
@@ -282,28 +301,34 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     }
   };
 
-  #parseValueInArray(ch: string) {
+  #parseValueInArray(ch: Ch) {
+    if (ch === EOL) throw this.#makeNotCompleteError();
     this.#state = this.#parseCommaOrEndArray;
     this.#parseValue(ch);
   };
 
-  #parseCommaOrEndArray(ch: string) {
+  #parseCommaOrEndArray(ch: Ch) {
+    if (ch === EOL) {
+      this.#state = this.#parseDefault;
+      return;
+    }
     if (/\s/.test(ch)) return;
     if (ch === ',') {
       this.#state = this.#parseValueInArray;
     } else if (ch === ']') {
       this.#handler.onEndArray?.(new EndArrayEvent());
       this.#stack.pop();
-      if (this.#stack.at(-1))
-        this.#state = this.#parseAfterValue;
-      else
-        this.#state = this.#parseDefault;
+      this.#state = this.#parseAfterValue;
     } else {
       throw this.#makeSyntaxError(`Expected , or ] but got`, ch);
     }
   };
 
-  #parseAfterValue(ch: string) {
+  #parseAfterValue(ch: Ch) {
+    if (ch === EOL) {
+      this.#state = this.#parseDefault;
+      return;
+    }
     if (/\s/.test(ch)) return;
     const parent = this.#stack.at(-1);
     if (parent === 'object') {
@@ -325,6 +350,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     let escape = false;
     let unicode = '';
     const parseStringHandler: StateFunction = (ch) => {
+      if (ch === EOL) throw this.#makeNotCompleteError();
       if (escape) {
         if (unicode !== '') {
           unicode += ch;
@@ -358,6 +384,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #parseLiteral(onEnd: (this: typeof this, val: string | boolean | null) => void): StateFunction {
     const parseLiteralHandler: StateFunction = (ch) => {
+      if (ch === EOL) throw this.#makeNotCompleteError();
       this.#acc += ch;
       if (/^(true|false|null)$/.test(this.#acc)) {
         const val = this.#acc === 'true' ? true :
@@ -373,10 +400,11 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #parseNumber(onEnd: (this: typeof this, val: number) => void): StateFunction {
     const parseNumberHandler: StateFunction = (ch) => {
-      if (/[0-9eE+.-]/.test(ch)) {
+      if (ch !== EOL && /[0-9eE+.-]/.test(ch)) {
         this.#acc += ch;
       } else {
-        this.#pos--; // unread
+        if (ch !== EOL)
+          this.#pos--; // unread
         const num = Number(this.#acc);
         if (Number.isNaN(num)) {
           throw this.#makeSyntaxError(`Invalid number`, this.#acc);

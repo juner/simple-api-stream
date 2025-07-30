@@ -1,7 +1,8 @@
 import { describe, expect } from "vitest";
-import { SAJEventInterface } from "./event-interface";
-import { JSONTextToSAJEventWritableStream } from ".";
+import type { json } from "..";
+import { JSONTextToSAJEventWritableStream } from "..";
 
+type SAJEventInterface = json.eventInterface.SAJEventInterface;
 describe("pattern", (it) => {
   const entries: {
     name: string;
@@ -12,7 +13,7 @@ describe("pattern", (it) => {
         name: "all type",
         input: [
           `{"num":0,"str":"value", \n`,
-          `"bool1": true, "bool2": false, "arry": [
+          `"bool1": true, "bool2": false, "nullable":null,   "arry": [
         "test"
         ]}`,
         ],
@@ -26,6 +27,8 @@ describe("pattern", (it) => {
           { name: "value", type: "boolean", value: true },
           { name: "key", key: "bool2" },
           { name: "value", type: "boolean", value: false },
+          { name: "key", key: "nullable" },
+          { name: "value", type: "null", value: null },
           { name: "key", key: "arry" },
           { name: "startArray", type: "array" },
           { name: "value", type: "string", value: "test" },
@@ -56,6 +59,51 @@ describe("pattern", (it) => {
           { name: "endObject" },
         ]
       },
+      {
+        name: "simple value number",
+        input: [
+          `1`,
+        ],
+        output: [
+          { name: "value", type: "number", value: 1 },
+        ]
+      },
+      {
+        name: "simple value string",
+        input: [
+          `"hoge"`,
+        ],
+        output: [
+          { name: "value", type: "string", value: "hoge" },
+        ]
+      },
+      {
+        name: "escaped value string",
+        input: [
+          `"hoge\\"fuga"`,
+        ],
+        output: [
+          { name: "value", type: "string", value: "hoge\"fuga" },
+        ]
+      },
+      {
+        name: "simple value boolean",
+        input: [
+          `false`,
+        ],
+        output: [
+          { name: "value", type: "boolean", value: false },
+        ]
+      },
+      {
+        name: "simple value null",
+        input: [
+          `null`,
+        ],
+        output: [
+          { name: "value", type: "null", value: null },
+        ]
+      },
     ];
   it.each(entries)("$name", async ({ input, output }) => {
     const result = await (() => {
@@ -70,9 +118,6 @@ describe("pattern", (it) => {
         onStartObject(arg) { result.push(arg); },
         onValue(arg) { result.push(arg); },
         onError(arg) { reject(arg); },
-        onParseRoopAfter(arg) {
-          console.dir(arg);
-        },
       });
       (async () => {
         const writer = stream.getWriter();

@@ -10,6 +10,6 @@ import * as ResolveToSAJReadableStreamModule from "./ResolveToSAJReadableStream"
 export const streams = {
   ...JSONTextToSAJEventWritableStreamModule,
   ...ResolveToSAJReadableStreamModule,
-}
+};
 export const JSONTextToSAJEventWritableStream = JSONTextToSAJEventWritableStreamModule.JSONTextToSAJEventWritableStream;
 export const ResolveToSAJReadableStream = ResolveToSAJReadableStreamModule.ResolveToSAJReadableStream;
