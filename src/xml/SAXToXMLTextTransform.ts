@@ -64,20 +64,21 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
     super({
       transform: (chunk, controller) => {
         try {
-          const str = this.#convert(chunk);
+          const str = this.#enqueue(chunk);
           if (str === undefined) return;
           controller.enqueue(str);
         } catch (e: unknown) {
           controller.error(e);
         }
-      }
+      },
+      flush: () => this.#flush(),
     });
     this.#options = options;
     this.#starts = [];
     this.#suffix = options?.lineBreak ?? "";
     this.#prefix = this.#makeIndent();
   }
-  #makeError(message: string, options: ErrorOptions) {
+  #makeError(message: string, options?: ErrorOptions) {
     const cause = {
       instance: this,
       starts: [...this.#starts],
@@ -89,6 +90,13 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
     (options ??= {}).cause = cause;
     return new SAXToXMLTextTransformError(message, options);
   }
+  /**
+   * make not complete error
+   * @returns
+   */
+  #makeNotCompleteError() {
+    return this.#makeError(`not complete error.`);
+  }
   #makeIndent(num: number = 0) {
     console.assert(num >= 0);
     const indent = this.#options?.indent;
@@ -98,7 +106,11 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
       : Array.from({ length: indent + num }, () => " ")
     ).join("");
   }
-  #convert(chunk: SAXEventInterface): string | undefined {
+  #flush() {
+    if (this.#starts.length === 0) return;
+    throw this.#makeNotCompleteError();
+  }
+  #enqueue(chunk: SAXEventInterface): string | undefined {
     switch (chunk.name) {
       case "cdata":
         return this.#cdata(chunk);
