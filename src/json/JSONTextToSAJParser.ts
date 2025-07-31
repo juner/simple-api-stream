@@ -27,7 +27,7 @@ export type JSONTextToSAJParserAdditionalHandler = {
 }
 const EOL = Symbol.for("JSONTextToSAJParser.EOL");
 
-type Ch = string|typeof EOL;
+type Ch = string | typeof EOL;
 
 export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
@@ -106,36 +106,33 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   enqueue(chunk: string): void {
     this.#buffer += chunk;
-    try {
-      this.#parse();
-    } catch (err) {
-      this.#handler.onError?.(err);
-    }
+    this.#parse();
   }
 
   flush(): void {
-    try {
-      this.#parse(true);
-    } catch (err) {
-      this.#handler.onError?.(err);
-    }
+    this.#parse(true);
   }
 
   #parse(isFlush = false) {
     this.#handler.onParseBefore?.(this.#status());
-    while (this.#pos < this.#buffer.length) {
-      this.#handler.onParseRoopBefore?.(this.#status());
-      const ch = this.#buffer[this.#pos++];
-      this.#state(ch);
-      this.#handler.onParseRoopAfter?.(this.#status());
+    try {
+      while (this.#pos < this.#buffer.length) {
+        this.#handler.onParseRoopBefore?.(this.#status());
+        const ch = this.#buffer[this.#pos++];
+        this.#state(ch);
+        this.#handler.onParseRoopAfter?.(this.#status());
+      }
+      if (isFlush && this.#pos === this.#buffer.length) {
+        this.#state(EOL);
+      }
+      if (isFlush && this.#state !== this.#parseDefault) {
+        throw this.#makeError('Unexpected EOF');
+      }
+    } catch (e: unknown) {
+      this.#handler.onError?.(e);
+    } finally {
+      this.#handler.onParseAfter?.(this.#status());
     }
-    if (isFlush && this.#pos === this.#buffer.length) {
-      this.#state(EOL);
-    }
-    if (isFlush && this.#state !== this.#parseDefault) {
-      throw this.#makeError('Unexpected EOF');
-    }
-    this.#handler.onParseAfter?.(this.#status());
   }
 
   #parseDefault(ch: Ch) {
