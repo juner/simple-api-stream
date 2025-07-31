@@ -21,7 +21,7 @@ export type SAXToXMLTextTransformOptions = {
   lineBreak: string;
 }
 
-export class SAXToXMLTextTransformError extends Error {
+export class SAXToXMLTextTransformStreamError extends Error {
   constructor(...args: ConstructorParameters<typeof Error>) {
     super(...args);
     this.name = "SAXToXMLTextTransformError";
@@ -53,9 +53,9 @@ export class SAXToXMLTextTransformError extends Error {
  * readable.pipeThrough(transform).pipeTo(writable);
  * ```
  *
- * @throws {SAXToXMLTextTransformError} If an unexpected structure or mismatch occurs.
+ * @throws {SAXToXMLTextTransformStreamError} If an unexpected structure or mismatch occurs.
  */
-export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, string> {
+export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterface, string> {
   #options?: Partial<SAXToXMLTextTransformOptions>;
   #prefix: string;
   #suffix: string;
@@ -88,7 +88,7 @@ export class SAXToXMLTextTransform extends TransformStream<SAXEventInterface, st
       ...(options?.cause ?? {})
     };
     (options ??= {}).cause = cause;
-    return new SAXToXMLTextTransformError(message, options);
+    return new SAXToXMLTextTransformStreamError(message, options);
   }
   /**
    * make not complete error
