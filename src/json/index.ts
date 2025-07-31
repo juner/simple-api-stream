@@ -17,4 +17,4 @@ export const streams = {
 export const JSONTextToSAJEventWritableStream = JSONTextToSAJEventWritableStreamModule.JSONTextToSAJEventWritableStream;
 export const ResolveToSAJReadableStream = ResolveToSAJReadableStreamModule.ResolveToSAJReadableStream;
 export const JSONTextToSAJTransformStream = JSONTextToSAJTransformStreamModule.JSONTextToSAJTransformStream;
-export const SAJToObjectTransform = SAJToObjectTransformModule.SAJToObjectTransformStream;
+export const SAJToObjectTransformStream = SAJToObjectTransformModule.SAJToObjectTransformStream;

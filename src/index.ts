@@ -19,5 +19,5 @@ export {
 export const JSONTextToSAJEventWritableStream = json.JSONTextToSAJEventWritableStream;
 export const ResolveToSAJReadableStream = json.ResolveToSAJReadableStream;
 export const JSONTextToSAJTransformStream = json.JSONTextToSAJTransformStream;
-export const SAJToObjectTransform = json.SAJToObjectTransform;
+export const SAJToObjectTransformStream = json.SAJToObjectTransformStream;
 // #endregion

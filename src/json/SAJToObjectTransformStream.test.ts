@@ -1,13 +1,29 @@
-import { describe, expect } from "vitest";
+import { describe, expect,test } from "vitest";
 import type { json } from "..";
-import { SAJToObjectTransform } from "..";
+import { SAJToObjectTransformStream } from "..";
+import { SAJToObjectTransformStreamError, SAJToObjectTransformStreamOptions } from "./SAJToObjectTransformStream";
 
 type SAJEventInterface = json.eventInterface.SAJEventInterface;
+
+test("single error", async ({expect}) => {
+  const {readable, writable} = new SAJToObjectTransformStream();
+  const wait2 = (async () => {
+    const writer = writable.getWriter();
+    await writer.write({name: "value", type:"null", value: null});
+    await writer.write({name: "value", type: "string", value: "hoge"});
+    await writer.close();
+  })();
+  const wait = Array.fromAsync(readable);
+  await expect(wait).rejects.toThrowError(expect.any(SAJToObjectTransformStreamError));
+  await expect(wait2).rejects.toThrowError(expect.any(TypeError));
+});
+
 describe("pattern", (it) => {
   const entries: {
     name: string;
+    options?: Partial<SAJToObjectTransformStreamOptions>;
     input: SAJEventInterface[];
-    output: unknown;
+    output: unknown[];
   }[] = [
       {
         name: "all type",
@@ -29,33 +45,34 @@ describe("pattern", (it) => {
           { name: "endArray" },
           { name: "endObject" },
         ],
-        output:
-        {
-          "num": 0, "str": "value", "bool1": true, "bool2": false, "nullable": null, "arry": [
-            "test"
-          ]
-        }
+        output: [
+          {
+            "num": 0, "str": "value", "bool1": true, "bool2": false, "nullable": null, "arry": [
+              "test"
+            ]
+          }
+        ]
       },
       {
         name: "simple value number",
         input: [
           { name: "value", type: "number", value: 1 },
         ],
-        output: 1,
+        output: [1],
       },
       {
         name: "simple value string",
         input: [
           { name: "value", type: "string", value: "hoge" },
         ],
-        output: "hoge"
+        output: ["hoge"],
       },
       {
         name: "simple value boolean",
         input: [
           { name: "value", type: "boolean", value: false },
         ],
-        output: false,
+        output: [false],
 
       },
       {
@@ -63,19 +80,32 @@ describe("pattern", (it) => {
         input: [
           { name: "value", type: "null", value: null },
         ],
-        output: null,
+        output: [null],
+      },
+      {
+        name: "multiple test",
+        options: { multiple: true },
+        input: [
+          { name: "value", type: "boolean", value: true },
+          { name: "value", type: "boolean", value: false },
+        ],
+        output: [
+          true,
+          false,
+        ]
       },
     ];
-  it.each(entries)("$name", async ({ input, output }) => {
+  it.each(entries)("$name", async ({ input, output, options }) => {
     const result = await (() => {
-      const stream = new SAJToObjectTransform();
+      const stream = new SAJToObjectTransformStream(options);
       (async () => {
         const writer = stream.writable.getWriter();
         for (const entry of input) {
           await writer.write(entry);
         }
+        await writer.close();
       })();
-      return stream.value();
+      return Array.fromAsync(stream.readable);
     })();
     expect(result).toEqual(output);
   });
