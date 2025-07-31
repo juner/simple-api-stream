@@ -47,10 +47,6 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         this.#controller.enqueue(event.value as T);
         break;
 
-      case "value":
-        this.#controller.enqueue(null as T);
-        break;
-
       default:
         throw new Error(`Unexpected ${event.name} at root`);
     }
