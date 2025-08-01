@@ -14,10 +14,17 @@ export default defineConfig([
   },
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], plugins: { js }, extends: ["js/recommended"] },
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], languageOptions: { globals: { ...globals.browser, ...globals.node } } },
-  tseslint.configs.recommended,
+  tseslint.configs.recommended as unknown as Parameters<typeof defineConfig>,
   {
     rules: {
       "semi": "error",
+      "@typescript-eslint/no-unused-vars": ["error", {
+        argsIgnorePattern: "^_",
+        // catch も同様のルール
+        caughtErrorsIgnorePattern: "^_",
+        destructuredArrayIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+      }],
     }
   },
   { files: ["**/*.json"], ignores: ["**/tsconfig.json", "package-lock.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
