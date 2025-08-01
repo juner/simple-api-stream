@@ -82,7 +82,6 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
       case "value":
         return this.#value(chunk);
     }
-    return undefined;
   }
   #makeError(message: string, options?: ErrorOptions) {
     const cause = {
@@ -118,7 +117,12 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
     const top = this.#containerStack.pop();
     this.#firstItemStack.pop();
     if (top !== type) {
-      throw this.#makeError(`Mismatched end${type}, expected to close ${top}`);
+      throw this.#makeError(`Mismatched end${type}, expected to close ${top}`, {
+        cause: {
+          type,
+          top,
+        }
+      });
     }
     out.push(type === "object" ? "}" : "]");
     // この構造自体が親の中の項目なので、親ではカンマを入れるべき状態にする
@@ -130,7 +134,11 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
 
   #key({ key }: KeySAJEventInterface): string[] {
     if (!this.#peekContainerIsObject()) {
-      throw this.#makeError("Key event outside of object");
+      throw this.#makeError("Key event outside of object", {
+        cause: {
+          key,
+        }
+      });
     }
     const out: string[] = [];
     if (!this.#isFirstItem()) {
@@ -165,7 +173,11 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
         serialized = JSON.stringify(chunk.value);
         break;
       default:
-        throw this.#makeError(`Unknown value type: ${(chunk as { type: unknown }).type}`);
+        throw this.#makeError(`Unknown value type: ${(chunk as { type: unknown }).type}`, {
+          cause: {
+            chunk
+          },
+        });
     }
     out.push(serialized);
     // この値を出したので次はカンマが必要になる
