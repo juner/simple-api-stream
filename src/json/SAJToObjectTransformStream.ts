@@ -31,7 +31,7 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         throw this.#makeError("Incomplete JSON structure");
       }
     });
-    ({ multiple: this.#multiple = false } = options ?? {})
+    ({ multiple: this.#multiple = false } = options ?? {});
     this.#controller = controller_;
   }
 
@@ -106,7 +106,7 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         this.#state = this.#inObjectExpectingValue;
         return;
 
-      case "endObject":
+      case "endObject": {
         this.#stack.pop();
         const obj = top.container;
         if (this.#stack.length > 0) {
@@ -115,6 +115,7 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         }
         this.#endEntry(obj);
         return;
+      }
     }
     throw this.#makeError(`Unexpected ${event.name} in object`, {
       cause: {
@@ -135,19 +136,20 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         this.#state = this.#inObject;
         return;
 
-      case "startObject":
+      case "startObject": {
         const newObj: Record<string, unknown> = {};
         obj[key] = newObj;
         this.#stack.push({ container: newObj });
         this.#state = this.#inObject;
         return;
-
-      case "startArray":
+      }
+      case "startArray": {
         const newArr: unknown[] = [];
         obj[key] = newArr;
         this.#stack.push({ container: newArr });
         this.#state = this.#inArray;
         return;
+      }
     }
     throw this.#makeError(`Unexpected ${event.name} after key`);
   }
@@ -160,21 +162,23 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         arr.push(event.value);
         return;
 
-      case "startObject":
+      case "startObject": {
         const newObj: unknown = {};
         arr.push(newObj);
         this.#stack.push({ container: newObj });
         this.#state = this.#inObject;
         return;
+      }
 
-      case "startArray":
+      case "startArray": {
         const newArr: unknown[] = [];
         arr.push(newArr);
         this.#stack.push({ container: newArr });
         this.#state = this.#inArray;
         return;
+      }
 
-      case "endArray":
+      case "endArray": {
         this.#stack.pop();
         const finished = arr;
         if (this.#stack.length > 0) {
@@ -183,6 +187,7 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         }
         this.#endEntry(finished);
         return;
+      }
     }
     throw this.#makeError(`Unexpected ${event.name} in array`);
   }
