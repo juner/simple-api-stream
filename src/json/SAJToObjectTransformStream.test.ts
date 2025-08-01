@@ -97,15 +97,15 @@ describe("pattern", (it) => {
     ];
   it.each(entries)("$name", async ({ input, output, options }) => {
     const result = await (() => {
-      const stream = new SAJToObjectTransformStream(options);
+      const {readable, writable} = new SAJToObjectTransformStream(options);
       (async () => {
-        const writer = stream.writable.getWriter();
+        const writer = writable.getWriter();
         for (const entry of input) {
           await writer.write(entry);
         }
         await writer.close();
       })();
-      return Array.fromAsync(stream.readable);
+      return Array.fromAsync(readable);
     })();
     expect(result).toEqual(output);
   });
