@@ -4,8 +4,8 @@
 > The JSON streaming utilities documented here are **re-exported from the root package**.
 > Users of the published package can import directly from `"simple-api-stream"`.
 
-These utilities provide **streaming JSON parsing** into a structured, event-based format (SAJ = “Streaming API JSON”), and then materialize it into JavaScript objects.
-Designed for **incremental processing of large or untrusted JSON payloads** using **Web Streams API** with proper backpressure handling.
+These utilities provide **streaming JSON parsing** into a structured, event-based format (SAJ = “Simple API for JSON”), and then materialize it into JavaScript objects.
+They are designed for **incremental processing of large or untrusted JSON payloads** using the **Web Streams API**, with proper backpressure handling.
 
 ---
 
@@ -16,7 +16,7 @@ Designed for **incremental processing of large or untrusted JSON payloads** usin
 | [`JSONTextToSAJEventWritableStream`](./JSONTextToSAJEventWritableStream.ts) | JSON text from a `ReadableStream<string>` | Executes events on a provided [`SAJHandler`](./interface/SAJHandler.ts) |
 | [`JSONTextToSAJTransformStream`](./JSONTextToSAJTransformStream.ts) | JSON text from a `ReadableStream<string>` | Emits [`SAJEventInterface`](./event-interface/SAJEventInterface.ts) objects |
 | [`ResolveToSAJReadableStream`](./ResolveToSAJReadableStream.ts) | Invokes [`SAJResolver`](./interface/SAJResolver.ts) methods manually | Emits resolved [`SAJEventInterface`](./event-interface/SAJEventInterface.ts) |
-| [`SAJToObjectTransformStream<T>`](./SAJToObjectTransformStream.ts) | [`SAJEventInterface`](./event-interface/SAJEventInterface.ts) stream | Outputs JavaScript objects of type `T` |
+| [`SAJToObjectTransformStream<T>`](./SAJToObjectTransformStream.ts) | `SAJEventInterface` stream | Outputs JavaScript objects of type `T` |
 
 ---
 
@@ -142,7 +142,7 @@ Shown here in **JSON Lines** style:
   Combine `JSONTextToSAJTransformStream` → `SAJToObjectTransformStream` to parse JSON into objects incrementally.
 
 - **Internal resolution**
-  `ResolveToSAJReadableStream` can drive a handler and produce an SAJ event stream.
+  `ResolveToSAJReadableStream` can drive a resolver and produce an SAJ event stream.
 
 ---
 
@@ -156,6 +156,7 @@ Shown here in **JSON Lines** style:
 ## API Links
 
 - [`SAJHandler`](./interface/SAJHandler.ts) — interface for event-driven consumption.
+- [`SAJResolver`](./interface/SAJResolver.ts) — interface for manually resolving events.
 - [`SAJEventInterface`](./event-interface/SAJEventInterface.ts) — typed SAJ event objects.
 - Transform/writable streams listed in [Features](#features).
 
