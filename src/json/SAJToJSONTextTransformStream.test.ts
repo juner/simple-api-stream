@@ -1,5 +1,5 @@
 import { describe, expect } from "vitest";
-import { KeySAJEventInterface, SAJEventInterface, ValueBooleanSAJEventInterface, ValueNullSAJEventInterface, ValueNumberSAJEventInterface, ValueStringSAJEventInterface } from "./event-interface";
+import { SAJEventInterface } from "./event-interface";
 import { SAJToJSONTextTransformStream, SAJToJSONTextTransformStreamError } from "./SAJToJSONTextTransformStream";
 
 describe("pattern", (it) => {
@@ -83,7 +83,7 @@ describe("pattern", (it) => {
       return Array.fromAsync(readable);
     })();
     expect(result).toEqual(output);
-  })
+  });
 });
 
 // ヘルパー：SAJ イベント列を流し込んで出力チャンクを集める
@@ -228,7 +228,7 @@ describe("SAJToJSONTextTransformStream - error handling", (it) => {
       // 正常なオブジェクトのあとに余計な endObject を送る
       await writer.write({ name: "startObject", type: "object" });
       await writer.write({ name: "endObject" });
-      await writer.write({ name: "endObject" } as any);
+      await writer.write({ name: "endObject" });
       await writer.close();
     })();
     const wait1 = (async () => {
@@ -248,7 +248,7 @@ describe("SAJToJSONTextTransformStream - error handling", (it) => {
     const reader = stream.readable.getReader();
 
     const wait1 = (async () => {
-      await writer.write({ name: "key", key: "bad" } as any);
+      await writer.write({ name: "key", key: "bad" });
       await writer.close();
     })();
     const wait2 = (async () => {

@@ -36,7 +36,7 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
       containerStack: structuredClone(this.#containerStack),
       firstItemStack: structuredClone(this.#firstItemStack),
       pendingValueForKey: this.#pendingValueForKey,
-    }
+    };
   }
 
   constructor() {
@@ -165,7 +165,7 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
         serialized = JSON.stringify(chunk.value);
         break;
       default:
-        throw this.#makeError(`Unknown value type: ${(chunk as any).type}`);
+        throw this.#makeError(`Unknown value type: ${(chunk as { type: unknown }).type}`);
     }
     out.push(serialized);
     // この値を出したので次はカンマが必要になる
