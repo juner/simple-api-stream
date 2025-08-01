@@ -13,11 +13,31 @@ type ValueSAJEventInterface =
   | ValueNullSAJEventInterface
   | ValueStringSAJEventInterface;
 
+export class SAJToJSONTextTransformStreamError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "SAJToJSONTextTransformStreamError";
+  }
+}
+
 export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterface, string> {
   #controller!: TransformStreamDefaultController<string>;
-  #stack: Array<"object" | "array"> = [];
-  #commaStack: boolean[] = []; // true if comma needed before next item
-  #keyExpected = false;
+
+  // 現在ネストしているコンテナの種類（"object" | "array"）
+  #containerStack: Array<"object" | "array"> = [];
+  // 各コンテナごとに最初の要素かどうか（true = まだ要素出してない）
+  #firstItemStack: boolean[] = [];
+  // key の直後に来る値／構造はカンマを抑制するためのフラグ
+  #pendingValueForKey = false;
+
+  #status() {
+    return {
+      instance: this,
+      containerStack: structuredClone(this.#containerStack),
+      firstItemStack: structuredClone(this.#firstItemStack),
+      pendingValueForKey: this.#pendingValueForKey,
+    }
+  }
 
   constructor() {
     let controller_!: TransformStreamDefaultController<string>;
@@ -28,27 +48,26 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
       transform: (chunk) => {
         this.#enqueue(chunk);
       },
-      flush: () => this.#flush(),
+      flush: () => {
+        // nothing special
+      },
     });
     this.#controller = controller_;
   }
 
   #enqueue(chunk: SAJEventInterface): void {
     try {
-      const str = this.#next(chunk);
-      if (str !== undefined) {
-        this.#controller.enqueue(str);
+      const parts = this.#next(chunk);
+      if (!parts) return;
+      for (const part of parts) {
+        this.#controller.enqueue(part);
       }
     } catch (e: unknown) {
       this.#controller.error(e);
     }
   }
 
-  #flush() {
-    // No special action needed for flush in this case
-  }
-
-  #next(chunk: SAJEventInterface): string | undefined {
+  #next(chunk: SAJEventInterface): string[] | undefined {
     switch (chunk.name) {
       case "startObject":
         return this.#startStructure("object");
@@ -65,55 +84,115 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
     }
     return undefined;
   }
+  #makeError(message: string, options?: ErrorOptions) {
+    const cause = {
+      instance: this,
+      status: this.#status(),
+      ...(options?.cause ?? {})
+    };
+    (options ??= {}).cause = cause;
+    return new SAJToJSONTextTransformStreamError(message, options);
 
-  #startStructure(type: "object" | "array"): string {
-    const opening = type === "object" ? "{" : "[";
-    this.#maybeComma();
-    this.#stack.push(type);
-    this.#commaStack.push(false);
-    if (type === "object") this.#keyExpected = true;
-    return opening;
   }
 
-  #endStructure(type: "object" | "array"): string {
-    const top = this.#stack.pop();
-    this.#commaStack.pop();
-    if (top !== type) throw new Error(`Mismatched end${type}`);
-    this.#keyExpected = top === "object" && this.#stack[this.#stack.length - 1] === "object";
-    return type === "object" ? "}" : "]";
+  #startStructure(type: "object" | "array"): string[] {
+    const out: string[] = [];
+    // オブジェクト内の key の直後ならカンマは抑制（#pendingValueForKey が true）
+    if (!this.#pendingValueForKey && !this.#isFirstItem()) {
+      out.push(",");
+    }
+    out.push(type === "object" ? "{" : "[");
+    // 新しいコンテナに入る
+    this.#containerStack.push(type);
+    this.#firstItemStack.push(true);
+    // 直後の要素（内部）は最初なので firstItem = true のまま
+    // この構造自体を出したので親側では項目を出した状態になる
+    this.#markParentNotFirstItem();
+    // key の直後の構造を消化したのでリセット
+    this.#pendingValueForKey = false;
+    return out;
   }
 
-  #key({ key }: KeySAJEventInterface): string {
-    if (!this.#keyExpected) throw new Error("Key not expected outside of object");
-    this.#maybeComma();
-    this.#commaStack[this.#commaStack.length - 1] = false; // key-value pair acts as one
-    return JSON.stringify(key) + ":";
+  #endStructure(type: "object" | "array"): string[] {
+    const out: string[] = [];
+    const top = this.#containerStack.pop();
+    this.#firstItemStack.pop();
+    if (top !== type) {
+      throw this.#makeError(`Mismatched end${type}, expected to close ${top}`);
+    }
+    out.push(type === "object" ? "}" : "]");
+    // この構造自体が親の中の項目なので、親ではカンマを入れるべき状態にする
+    this.#markParentNotFirstItem();
+    // 終了後は key の直後ではない
+    this.#pendingValueForKey = false;
+    return out;
   }
 
-  #value(chunk: ValueSAJEventInterface): string {
-    this.#maybeComma();
-    this.#commaStack[this.#commaStack.length - 1] = true;
+  #key({ key }: KeySAJEventInterface): string[] {
+    if (!this.#peekContainerIsObject()) {
+      throw this.#makeError("Key event outside of object");
+    }
+    const out: string[] = [];
+    if (!this.#isFirstItem()) {
+      out.push(",");
+    }
+    out.push(JSON.stringify(key) + ":");
+    // key の直後の値／構造ではカンマを抑制する
+    this.#pendingValueForKey = true;
+    // この key:value ペア全体で最初の部分（key）を出したので current container はもう first item ではない
+    this.#markNotFirstItem();
+    return out;
+  }
 
+  #value(chunk: ValueSAJEventInterface): string[] {
+    const out: string[] = [];
+
+    // 通常の値（配列内またはオブジェクトの value）についてカンマ処理
+    if (!this.#pendingValueForKey && !this.#isFirstItem()) {
+      out.push(",");
+    }
+
+    let serialized: string;
     switch (chunk.type) {
       case "boolean":
       case "number":
-        return String(chunk.value);
+        serialized = String(chunk.value);
+        break;
       case "null":
-        return "null";
+        serialized = "null";
+        break;
       case "string":
-        return JSON.stringify(chunk.value);
+        serialized = JSON.stringify(chunk.value);
+        break;
       default:
-        throw new Error(`Unknown value type: ${(chunk as any).type}`);
+        throw this.#makeError(`Unknown value type: ${(chunk as any).type}`);
     }
+    out.push(serialized);
+    // この値を出したので次はカンマが必要になる
+    this.#markNotFirstItem();
+    // key の直後の値を消化したのでリセット
+    this.#pendingValueForKey = false;
+    return out;
   }
 
-  #maybeComma() {
-    const depth = this.#commaStack.length;
-    if (depth > 0 && this.#commaStack[depth - 1]) {
-      this.#controller.enqueue(",");
-    }
-    if (depth > 0) {
-      this.#commaStack[depth - 1] = true;
-    }
+  #isFirstItem(): boolean {
+    if (this.#firstItemStack.length === 0) return true;
+    return this.#firstItemStack[this.#firstItemStack.length - 1];
+  }
+
+  #markNotFirstItem() {
+    if (this.#firstItemStack.length === 0) return;
+    this.#firstItemStack[this.#firstItemStack.length - 1] = false;
+  }
+
+  // 親コンテナがあるならそれを「最初の要素ではなくなった」とマーク（構造や値を出したときに呼ぶ）
+  #markParentNotFirstItem() {
+    if (this.#firstItemStack.length < 2) return;
+    this.#firstItemStack[this.#firstItemStack.length - 2] = false;
+  }
+
+  #peekContainerIsObject(): boolean {
+    if (this.#containerStack.length === 0) return false;
+    return this.#containerStack[this.#containerStack.length - 1] === "object";
   }
 }
