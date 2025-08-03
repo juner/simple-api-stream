@@ -18,7 +18,7 @@ describe("pattern", (it) => {
         ]}`,
         ],
         output: [
-          { name: "startObject", type: "object" },
+          { name: "startObject" },
           { name: "key", key: "num" },
           { name: "value", type: "number", value: 0 },
           { name: "key", key: "str" },
@@ -30,7 +30,7 @@ describe("pattern", (it) => {
           { name: "key", key: "nullable" },
           { name: "value", type: "null", value: null },
           { name: "key", key: "arry" },
-          { name: "startArray", type: "array" },
+          { name: "startArray" },
           { name: "value", type: "string", value: "test" },
           { name: "endArray" },
           { name: "endObject" },
@@ -42,7 +42,7 @@ describe("pattern", (it) => {
           `       [    true   ]         `
         ],
         output: [
-          { name: "startArray", type: "array" },
+          { name: "startArray" },
           { name: "value", type: "boolean", value: true },
           { name: "endArray" },
         ]
@@ -53,7 +53,7 @@ describe("pattern", (it) => {
           `       {    "value": 1,   }         `
         ],
         output: [
-          { name: "startObject", type: "object" },
+          { name: "startObject" },
           { name: "key", key: "value" },
           { name: "value", type: "number", value: 1 },
           { name: "endObject" },

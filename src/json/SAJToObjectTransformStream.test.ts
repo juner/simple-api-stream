@@ -28,7 +28,7 @@ describe("pattern", (it) => {
       {
         name: "all type",
         input: [
-          { name: "startObject", type: "object" },
+          { name: "startObject" },
           { name: "key", key: "num" },
           { name: "value", type: "number", value: 0 },
           { name: "key", key: "str" },
@@ -40,7 +40,7 @@ describe("pattern", (it) => {
           { name: "key", key: "nullable" },
           { name: "value", type: "null", value: null },
           { name: "key", key: "arry" },
-          { name: "startArray", type: "array" },
+          { name: "startArray" },
           { name: "value", type: "string", value: "test" },
           { name: "endArray" },
           { name: "endObject" },

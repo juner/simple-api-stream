@@ -46,7 +46,7 @@ async function parseFromEvents(events: SAJEventInterface[]): Promise<unknown> {
 describe("SAJToJSONTextTransformStream - valid inputs", () => {
   it("serializes an object with all primitive types", async () => {
     const events: SAJEventInterface[] = [
-      { name: "startObject", type: "object" },
+      { name: "startObject" },
       { name: "key", key: "num" },
       { name: "value", type: "number", value: 0 },
       { name: "key", key: "str" },
@@ -58,7 +58,7 @@ describe("SAJToJSONTextTransformStream - valid inputs", () => {
       { name: "key", key: "nullable" },
       { name: "value", type: "null", value: null },
       { name: "key", key: "arry" },
-      { name: "startArray", type: "array" },
+      { name: "startArray" },
       { name: "value", type: "string", value: "test" },
       { name: "endArray" },
       { name: "endObject" },
@@ -76,12 +76,12 @@ describe("SAJToJSONTextTransformStream - valid inputs", () => {
 
   it("handles nested object and array", async () => {
     const events: SAJEventInterface[] = [
-      { name: "startObject", type: "object" },
+      { name: "startObject" },
       { name: "key", key: "a" },
-      { name: "startArray", type: "array" },
+      { name: "startArray" },
       { name: "value", type: "number", value: 1 },
       { name: "value", type: "number", value: 2 },
-      { name: "startArray", type: "array" },
+      { name: "startArray" },
       { name: "value", type: "string", value: "x" },
       { name: "endArray" },
       { name: "endArray" },
@@ -92,8 +92,8 @@ describe("SAJToJSONTextTransformStream - valid inputs", () => {
   });
 
   it("serializes empty object and array", async () => {
-    const events1: SAJEventInterface[] = [{ name: "startObject", type: "object" }, { name: "endObject" }];
-    const events2: SAJEventInterface[] = [{ name: "startArray", type: "array" }, { name: "endArray" }];
+    const events1: SAJEventInterface[] = [{ name: "startObject" }, { name: "endObject" }];
+    const events2: SAJEventInterface[] = [{ name: "startArray" }, { name: "endArray" }];
     const o = await parseFromEvents(events1);
     const a = await parseFromEvents(events2);
     expect(o).toEqual({});
@@ -102,7 +102,7 @@ describe("SAJToJSONTextTransformStream - valid inputs", () => {
 
   it("handles array of consecutive values with proper commas", async () => {
     const events: SAJEventInterface[] = [
-      { name: "startArray", type: "array" },
+      { name: "startArray" },
       { name: "value", type: "number", value: 1 },
       { name: "value", type: "number", value: 2 },
       { name: "value", type: "number", value: 3 },
@@ -114,9 +114,9 @@ describe("SAJToJSONTextTransformStream - valid inputs", () => {
 
   it("handles key immediately followed by object (no extra comma)", async () => {
     const events: SAJEventInterface[] = [
-      { name: "startObject", type: "object" },
+      { name: "startObject" },
       { name: "key", key: "nested" },
-      { name: "startObject", type: "object" },
+      { name: "startObject" },
       { name: "key", key: "x" },
       { name: "value", type: "string", value: "y" },
       { name: "endObject" },
@@ -128,9 +128,9 @@ describe("SAJToJSONTextTransformStream - valid inputs", () => {
 
   it("handles key immediately followed by array (no extra comma)", async () => {
     const events: SAJEventInterface[] = [
-      { name: "startObject", type: "object" },
+      { name: "startObject" },
       { name: "key", key: "list" },
-      { name: "startArray", type: "array" },
+      { name: "startArray" },
       { name: "value", type: "boolean", value: false },
       { name: "endArray" },
       { name: "endObject" },
@@ -154,7 +154,7 @@ describe("SAJToJSONTextTransformStream - error handling", () => {
     })();
 
     const writePromise = (async () => {
-      await writer.write({ name: "startObject", type: "object" });
+      await writer.write({ name: "startObject" });
       await writer.write({ name: "endObject" });
       // ここで mismatched endObject を送る
       await writer.write({ name: "endObject" });

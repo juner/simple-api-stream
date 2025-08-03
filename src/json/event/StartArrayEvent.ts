@@ -1,9 +1,9 @@
 import type { StartArraySAJEventInterface } from "../event-interface";
-import { TypeEvent } from "./TypeEvent";
+import { SAJEvent } from "./SAJEvent";
 
 export const SAJ_START_ARRAY_EVENT_TYPE = "startArray";
-export class StartArrayEvent extends TypeEvent<typeof SAJ_START_ARRAY_EVENT_TYPE, "array"> implements StartArraySAJEventInterface {
+export class StartArrayEvent extends SAJEvent<typeof SAJ_START_ARRAY_EVENT_TYPE> implements StartArraySAJEventInterface {
   constructor() {
-    super(SAJ_START_ARRAY_EVENT_TYPE, "array");
+    super(SAJ_START_ARRAY_EVENT_TYPE);
   }
 }
