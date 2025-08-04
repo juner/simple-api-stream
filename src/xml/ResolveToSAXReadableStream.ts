@@ -1,3 +1,4 @@
+import { makeCauseOptions } from "../util/makeCauseOptions";
 import { CdataEvent, CommentEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, ProcessingInstructionEvent, XMLStylesheetDeclarationEvent, XMLDeclarationEvent } from "./event";
 import { SAXEventInterface } from "./event-interface";
 import { SAXResolver } from "./interface";
@@ -62,11 +63,11 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
     this.#controller = controller_;
   }
   #makeError(message: string, options: ErrorOptions) {
-    const cause = {
-      instance: this,
-      ...(options?.cause ?? {})
-    };
-    (options ??= {}).cause = cause;
+    (options ??= {}).cause = makeCauseOptions({
+        instance: this,
+      },
+      options.cause
+    );
     return new ResolveToSAXReadableStreamError(message, options);
   }
   processingInstruction(...args: ConstructorParameters<typeof ProcessingInstructionEvent | typeof XMLDeclarationEvent | typeof XMLStylesheetDeclarationEvent>): void {

@@ -1,3 +1,4 @@
+import { makeCauseOptions } from "../util/makeCauseOptions";
 import type { CdataSAXEventInterface, CommentSAXEventInterface, DoctypeSAXEventInterface, EndElementSAXEventInterface, SAXEventInterface, StartElementSAXEventInterface, TextSAXEventInterface, ProcessingInstructionEventInterface } from "./event-interface";
 import { escape } from "./utils";
 
@@ -79,15 +80,15 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     this.#prefix = this.#makeIndent();
   }
   #makeError(message: string, options?: ErrorOptions) {
-    const cause = {
-      instance: this,
-      starts: [...this.#starts],
-      options: this.#options,
-      suffix: this.#suffix,
-      prefix: this.#prefix,
-      ...(options?.cause ?? {})
-    };
-    (options ??= {}).cause = cause;
+    (options ??= {}).cause = makeCauseOptions({
+        instance: this,
+        starts: [...this.#starts],
+        options: this.#options,
+        suffix: this.#suffix,
+        prefix: this.#prefix,
+      },
+      options?.cause,
+    );
     return new SAXToXMLTextTransformStreamError(message, options);
   }
   /**

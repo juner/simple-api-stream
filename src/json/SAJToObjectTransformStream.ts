@@ -1,3 +1,4 @@
+import { makeCauseOptions } from "../util/makeCauseOptions";
 import type { SAJEventInterface } from "./event-interface";
 
 type SAJStateFn = (event: SAJEventInterface) => void;
@@ -37,12 +38,13 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
 
 
   #makeError(message: string, options?: ErrorOptions) {
-    const cause = {
-      instance: this,
-      status: this.#status(),
-      ...(options?.cause ?? {})
-    };
-    (options ??= {}).cause = cause;
+    (options ??= {}).cause = makeCauseOptions(
+      {
+        instance: this,
+        status: this.#status(),
+      },
+      options?.cause
+    );
     return new SAJToObjectTransformStreamError(message, options);
   }
 

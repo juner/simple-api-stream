@@ -10,6 +10,22 @@ test("empty chunks", async ({ expect }) => {
   expect(text).toHaveLength(0);
 });
 
+describe("error pattern", (it) => {
+  it.concurrent("not complete", async ({ expect }) => {
+    const {readable, writable} = new SAXToXMLTextTransform();
+    const write = (async () => {
+      const writer = writable.getWriter();
+      await writer.write({"name": "startElement", "tagName": "a"});
+      await writer.close();
+    })();
+    const read = (async () => {
+      return await Array.fromAsync(readable);
+    })();
+    await expect(write).rejects.toThrowError("not complete error.");
+    await expect(read).rejects.toThrowError("not complete error.");
+  });
+});
+
 describe("pattern test", (it) => {
   const entries: {
     name: string,

@@ -1,3 +1,4 @@
+import { makeCauseOptions } from "../util/makeCauseOptions";
 import type {
   KeySAJEventInterface,
   SAJEventInterface,
@@ -84,12 +85,13 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
     }
   }
   #makeError(message: string, options?: ErrorOptions) {
-    const cause = {
-      instance: this,
-      status: this.#status(),
-      ...(options?.cause ?? {})
-    };
-    (options ??= {}).cause = cause;
+    (options ??= {}).cause = makeCauseOptions([
+      {
+        instance: this,
+        status: this.#status(),
+      },
+      options?.cause
+    ]);
     return new SAJToJSONTextTransformStreamError(message, options);
 
   }
