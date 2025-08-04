@@ -73,7 +73,7 @@ SAJ represents JSON as a **sequence of discrete events**, allowing incremental h
   Marks the beginning of an object.
   Example:
   ```ts
-  { name: "startObject", type: "object" }
+  { name: "startObject" }
   ```
 
 - `endObject`
@@ -87,7 +87,7 @@ SAJ represents JSON as a **sequence of discrete events**, allowing incremental h
   Marks the beginning of an array.
   Example:
   ```ts
-  { name: "startArray", type: "array" }
+  { name: "startArray" }
   ```
 
 - `endArray`
@@ -122,9 +122,9 @@ SAJ represents JSON as a **sequence of discrete events**, allowing incremental h
 Shown here in **JSON Lines** style:
 
 ```jsonl
-{ "name": "startObject", "type": "object" }
+{ "name": "startObject" }
 { "name": "key", "key": "a" }
-{ "name": "startArray", "type": "array" }
+{ "name": "startArray" }
 { "name": "value", "type": "number", "value": 1 }
 { "name": "value", "type": "null", "value": null }
 { "name": "endArray" }
