@@ -128,10 +128,6 @@ describe("pattern", (it) => {
         await writer.close();
         resolve(result);
       })();
-      promise.catch((error) => {
-        console.dir(result, 5);
-        console.dir(error, 5);
-      });
       return promise;
     })();
     expect(result).toEqual(output);
