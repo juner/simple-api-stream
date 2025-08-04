@@ -12,6 +12,7 @@ describe("pattern", (it) => {
       {
         name: "all type",
         input: [
+          stream => stream.startDocument(),
           stream => stream.startObject(),
           stream => stream.key("num"),
           stream => stream.value("number", 0),
@@ -28,8 +29,10 @@ describe("pattern", (it) => {
           stream => stream.value("string", "test"),
           stream => stream.endArray(),
           stream => stream.endObject(),
+          stream => stream.endDocument(),
         ],
         output: [
+          { name: "startDocument" },
           { name: "startObject" },
           { name: "key", key: "num" },
           { name: "value", type: "number", value: 0 },
@@ -46,6 +49,7 @@ describe("pattern", (it) => {
           { name: "value", type: "string", value: "test" },
           { name: "endArray" },
           { name: "endObject" },
+          { name: "endDocument" },
         ]
       },
     ];

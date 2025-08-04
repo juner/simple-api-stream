@@ -12,6 +12,8 @@ import {
   DoctypePublicEvent,
   DoctypeSystemEvent,
   ProcessingInstructionEvent,
+  StartDocumentEvent,
+  EndDocumentEvent,
 } from "./event";
 import { SAXHandler } from "./interface";
 import { unescape } from "./utils";
@@ -35,11 +37,13 @@ export class XMLTextToSAXParserError extends Error {
   }
 }
 
-export class XMLTextToSAXParser implements SimpleApiParser<string>{
+export class XMLTextToSAXParser implements SimpleApiParser<string> {
   #buffer: string = "";
   #handler: Partial<SAXHandler>;
   #acc: string = "";
   #cursor: number = 0;
+  #openDocumented: boolean = false;
+  #skipDocument: boolean;
   #factor!: (flush: boolean) => { required?: true };
 
   get buffer() {
@@ -59,12 +63,14 @@ export class XMLTextToSAXParser implements SimpleApiParser<string>{
       buffer: this.#buffer,
       state: this.state,
       acc: this.#acc,
+      openDocumented: this.#openDocumented,
     };
   }
 
-  constructor({ handler }: { handler: Partial<SAXHandler> }) {
+  constructor({ handler, skipDocument }: { handler: Partial<SAXHandler>, skipDocument?: boolean }) {
     this.#handler = handler;
     this.#factor = this.#text;
+    this.#skipDocument = skipDocument ?? false;
   }
 
   enqueue(chunk: string) {
@@ -88,9 +94,9 @@ export class XMLTextToSAXParser implements SimpleApiParser<string>{
    */
   #makeError(message: string, options?: ConstructorParameters<typeof Error>[1]) {
     (options ??= {}).cause = makeCauseOptions({
-        instance: this,
-        status: this.#status(),
-      },
+      instance: this,
+      status: this.#status(),
+    },
       options.cause
     );
     return new XMLTextToSAXParserError(message, options);
@@ -102,6 +108,18 @@ export class XMLTextToSAXParser implements SimpleApiParser<string>{
    */
   #makeNotCompleteError() {
     return this.#makeError(`not complete syntax error. buffer:${this.#buffer}`);
+  }
+  #startDocument() {
+    if (this.#openDocumented) return;
+    if (!this.#skipDocument)
+      this.#handler.onStartDocument?.(new StartDocumentEvent());
+    this.#openDocumented = true;
+  }
+  #endDocument() {
+    if (!this.#openDocumented) return;
+    if (!this.#skipDocument)
+      this.#handler.onEndDocument?.(new EndDocumentEvent());
+    this.#openDocumented = false;
   }
 
   /**
@@ -131,6 +149,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string>{
         this.#handler.onText?.(new TextEvent(text));
         this.#acc = "";
       }
+      if (flush) this.#endDocument();
       this.#buffer = "";
       return;
     } catch (err: unknown) {
@@ -220,6 +239,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string>{
     if (mode === "simple" && 0 <= endBlock) {
       const next = endBlock + BLOCK_SUFFIX.length;
       const content = this.#buffer.slice(this.#cursor, next);
+      this.#startDocument();
       this.#handler.onDoctype?.(this.#parseDoctype(content));
       this.#cursor = next;
       this.#acc = "";
@@ -229,6 +249,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string>{
     if (mode === "block" && 0 <= endBracket) {
       const next = endBracket + DOCTYPE_BLOCK_SUFFIX.length;
       const content = this.#buffer.slice(this.#cursor, next);
+      this.#startDocument();
       this.#handler.onDoctype?.(this.#parseDoctype(content));
       this.#cursor = next;
       this.#acc = "";
@@ -285,6 +306,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string>{
       }
     })(target, data);
 
+    this.#startDocument();
     this.#handler.onProcessingInstruction?.(
       event
     );
@@ -301,7 +323,10 @@ export class XMLTextToSAXParser implements SimpleApiParser<string>{
     const acc = this.#buffer.slice(this.#cursor, end + BLOCK_SUFFIX.length);
     {
       const { start, end } = this.#parseTag(acc);
-      if (start) this.#handler.onStartElement?.(start);
+      if (start) {
+        this.#startDocument();
+        this.#handler.onStartElement?.(start);
+      }
       if (end) this.#handler.onEndElement?.(end);
     }
     this.#cursor = end + BLOCK_SUFFIX.length;

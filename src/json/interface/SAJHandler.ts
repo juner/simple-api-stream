@@ -1,4 +1,4 @@
-import { EndArraySAJEventInterface, EndObjectSAJEventInterface, KeySAJEventInterface, StartArraySAJEventInterface, StartObjectSAJEventInterface, ValueBooleanSAJEventInterface, ValueNullSAJEventInterface, ValueNumberSAJEventInterface, ValueStringSAJEventInterface } from "../event-interface";
+import { EndArraySAJEventInterface, EndDocumentSAJEventInterface, EndObjectSAJEventInterface, KeySAJEventInterface, StartArraySAJEventInterface, StartDocumentSAJEventInterface, StartObjectSAJEventInterface, ValueBooleanSAJEventInterface, ValueNullSAJEventInterface, ValueNumberSAJEventInterface, ValueStringSAJEventInterface } from "../event-interface";
 
 export interface SAJHandler {
   onStartObject: (arg: StartObjectSAJEventInterface) => void;
@@ -8,6 +8,8 @@ export interface SAJHandler {
   onKey: (arg: KeySAJEventInterface) => void;
   onValue: (arg: ValueBooleanSAJEventInterface | ValueNumberSAJEventInterface | ValueStringSAJEventInterface | ValueNullSAJEventInterface) => void,
   onError: (err: unknown) => void;
+  onStartDocument: (arg: StartDocumentSAJEventInterface) => void;
+  onEndDocument: (arg: EndDocumentSAJEventInterface) => void;
 }
 
 

@@ -46,6 +46,7 @@ async function parseFromEvents(events: SAJEventInterface[]): Promise<unknown> {
 describe("SAJToJSONTextTransformStream - valid inputs", () => {
   it("serializes an object with all primitive types", async () => {
     const events: SAJEventInterface[] = [
+      { name: "startDocument" },
       { name: "startObject" },
       { name: "key", key: "num" },
       { name: "value", type: "number", value: 0 },
@@ -62,6 +63,7 @@ describe("SAJToJSONTextTransformStream - valid inputs", () => {
       { name: "value", type: "string", value: "test" },
       { name: "endArray" },
       { name: "endObject" },
+      { name: "endDocument" },
     ];
     const obj = await parseFromEvents(events);
     expect(obj).toEqual({
@@ -161,8 +163,8 @@ describe("SAJToJSONTextTransformStream - error handling", () => {
       await writer.close();
     })();
 
-    expect(readPromise).rejects.toThrowError(expect.any(SAJToJSONTextTransformStreamError));
-    expect(writePromise).rejects.toThrowError(expect.any(TypeError));
+    await expect(readPromise).rejects.toThrowError(expect.any(SAJToJSONTextTransformStreamError));
+    await expect(writePromise).rejects.toThrowError(expect.any(TypeError));
   });
 
   it("throws if key appears outside object", async () => {
@@ -182,7 +184,7 @@ describe("SAJToJSONTextTransformStream - error handling", () => {
       await writer.close();
     })();
 
-    expect(readPromise).rejects.toThrowError(expect.any(SAJToJSONTextTransformStreamError));
-    expect(writePromise).rejects.toThrowError(expect.any(TypeError));
+    await expect(readPromise).rejects.toThrowError(expect.any(SAJToJSONTextTransformStreamError));
+    await expect(writePromise).rejects.toThrowError(expect.any(TypeError));
   });
 });

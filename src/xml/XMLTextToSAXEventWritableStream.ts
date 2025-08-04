@@ -36,8 +36,8 @@ import { SAXHandler } from "./interface/SAXHandler";
  */
 export class XMLTextToSAXEventWritableStream extends WritableStream<string> {
 
-  constructor(handler: Partial<SAXHandler>) {
-    const buffer = new XMLTextToSAXParser({ handler });
+  constructor(handler: Partial<SAXHandler>, options?: { skipDocument?: boolean }) {
+    const buffer = new XMLTextToSAXParser({ handler, ...(options ?? {}) });
     super({
 
       /**

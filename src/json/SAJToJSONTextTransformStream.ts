@@ -25,7 +25,7 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
   #controller!: TransformStreamDefaultController<string>;
 
   // 現在ネストしているコンテナの種類（"object" | "array"）
-  #containerStack: Array<"object" | "array"> = [];
+  #containerStack: Array<"object" | "array"|"document"> = [];
   // 各コンテナごとに最初の要素かどうか（true = まだ要素出してない）
   #firstItemStack: boolean[] = [];
   // key の直後に来る値／構造はカンマを抑制するためのフラグ
@@ -70,6 +70,10 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
 
   #next(chunk: SAJEventInterface): string[] | undefined {
     switch (chunk.name) {
+      case "startDocument":
+        return this.#startDocument();
+      case "endDocument":
+        return this.#endDocument();
       case "startObject":
         return this.#startStructure("object");
       case "startArray":
@@ -96,6 +100,10 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
 
   }
 
+  #startDocument(): undefined {
+    this.#containerStack.push("document");
+  }
+
   #startStructure(type: "object" | "array"): string[] {
     const out: string[] = [];
     // オブジェクト内の key の直後ならカンマは抑制（#pendingValueForKey が true）
@@ -112,6 +120,19 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
     // key の直後の構造を消化したのでリセット
     this.#pendingValueForKey = false;
     return out;
+  }
+
+  #endDocument() :undefined {
+    const type = "document";
+    const top = this.#containerStack.pop();
+    if (top !== type) {
+      throw this.#makeError(`Mismatched end${type}, expected to close ${top}`, {
+        cause: {
+          type,
+          top,
+        }
+      });
+    }
   }
 
   #endStructure(type: "object" | "array"): string[] {

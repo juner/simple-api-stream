@@ -16,3 +16,8 @@ export * from "./ProcessingInstructionEvent";
 export * from "./XMLDeclarationEvent";
 export * from "./XMLStylesheetDeclarationEvent";
 // #endregion
+
+// #region document
+export * from "./StartDocumentEvent";
+export * from "./EndDocumentEvent";
+// #endregion

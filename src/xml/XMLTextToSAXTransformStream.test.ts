@@ -95,137 +95,149 @@ test("parses xml declaration and stylesheet", async ({ expect }) => {
 });
 
 describe("pattern test", (it) => {
-  const entries: { name: string, input: string[], output: xml.eventInterface.SAXEventInterface[] }[] = [
-    {
-      name: "DOCTYPE HTML 4.01 Strict",
-      input: [
-        `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">`,
-      ]
-      , output: [
-        { name: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
-      ]
-    },
-    {
-      name: "DOCTYPE HTML 4.01 Transitional",
-      input: [
-        `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">`,
-      ],
-      output: [
-        { name: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01 Transitional//EN", uri: "http://www.w3.org/TR/html4/loose.dtd" }
-      ]
-    },
-    {
-      name: "DOCTYPE internal subset",
-      input: [
-        `<!DOCTYPE person [
+  const entries: {
+    name: string,
+    options?: ConstructorParameters<typeof XMLTextToSAXTransformStream>[0],
+    input: string[],
+    output: xml.eventInterface.SAXEventInterface[]
+  }[] = [
+      {
+        name: "DOCTYPE HTML 4.01 Strict",
+        options: { skipDocument: true },
+        input: [
+          `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">`,
+        ]
+        , output: [
+          { name: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
+        ]
+      },
+      {
+        name: "DOCTYPE HTML 4.01 Transitional",
+        options: { skipDocument: true },
+        input: [
+          `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">`,
+        ],
+        output: [
+          { name: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01 Transitional//EN", uri: "http://www.w3.org/TR/html4/loose.dtd" }
+        ]
+      },
+      {
+        name: "DOCTYPE internal subset",
+        options: { skipDocument: true },
+        input: [
+          `<!DOCTYPE person [
       <!ELEMENT person (name, age, city)>
       <!ELEMENT name (#PCDATA)>
       <!ELEMENT age (#PCDATA)>
       <!ELEMENT city (#PCDATA)>
     ]>
     <person><name>Alice</name><age>30</age><city>New York</city></person>`,
-      ],
-      output: [
-        {
-          name: "doctype", root: "person",
-          declarations: [
-            `<!ELEMENT person (name, age, city)>`,
-            `<!ELEMENT name (#PCDATA)>`,
-            `<!ELEMENT age (#PCDATA)>`,
-            `<!ELEMENT city (#PCDATA)>`,
-          ],
-        },
-        { name: "startElement", tagName: "person", attrs: {}, selfClosing: false },
-        { name: "startElement", tagName: "name", attrs: {}, selfClosing: false },
-        { name: "text", text: "Alice" },
-        { name: "endElement", tagName: "name" },
-        { name: "startElement", tagName: "age", attrs: {}, selfClosing: false },
-        { name: "text", text: "30" },
-        { name: "endElement", tagName: "age" },
-        { name: "startElement", tagName: "city", attrs: {}, selfClosing: false },
-        { name: "text", text: "New York" },
-        { name: "endElement", tagName: "city" },
-        { name: "endElement", tagName: "person" },
-      ]
-    },
-    {
-      name: "INTERNAL DOCTYPE HTML",
-      input: [
-        `<!doctype myown system "file:///HD/docs/dtd/myown.dtd">`,
-      ],
-      output: [
-        { name: "doctype", dtdType: "SYSTEM", root: "myown", uri: "file:///HD/docs/dtd/myown.dtd" },
-      ]
-    },
-    {
-      name: "outputs correct XML chunks",
-      input: [`
+        ],
+        output: [
+          {
+            name: "doctype", root: "person",
+            declarations: [
+              `<!ELEMENT person (name, age, city)>`,
+              `<!ELEMENT name (#PCDATA)>`,
+              `<!ELEMENT age (#PCDATA)>`,
+              `<!ELEMENT city (#PCDATA)>`,
+            ],
+          },
+          { name: "startElement", tagName: "person", attrs: {}, selfClosing: false },
+          { name: "startElement", tagName: "name", attrs: {}, selfClosing: false },
+          { name: "text", text: "Alice" },
+          { name: "endElement", tagName: "name" },
+          { name: "startElement", tagName: "age", attrs: {}, selfClosing: false },
+          { name: "text", text: "30" },
+          { name: "endElement", tagName: "age" },
+          { name: "startElement", tagName: "city", attrs: {}, selfClosing: false },
+          { name: "text", text: "New York" },
+          { name: "endElement", tagName: "city" },
+          { name: "endElement", tagName: "person" },
+        ]
+      },
+      {
+        name: "INTERNAL DOCTYPE HTML",
+        options: { skipDocument: true},
+        input: [
+          `<!doctype myown system "file:///HD/docs/dtd/myown.dtd">`,
+        ],
+        output: [
+          { name: "doctype", dtdType: "SYSTEM", root: "myown", uri: "file:///HD/docs/dtd/myown.dtd" },
+        ]
+      },
+      {
+        name: "outputs correct XML chunks",
+        options: { skipDocument: true},
+        input: [`
           <root id="123">Hello &lt;world&gt; &amp; othe&#x72;&#115;<empty/><!----></root>`,
-      ],
-      output: [
-        { name: "startElement", tagName: "root", attrs: { id: "123" }, selfClosing: false },
-        { name: "text", text: "Hello <world> & others" },
-        { name: "startElement", tagName: "empty", attrs: {}, selfClosing: true },
-        { name: "endElement", tagName: "empty" },
-        { name: "comment", comment: "" },
-        { name: "endElement", tagName: "root" },
-      ],
-    },
-    {
-      name: "all type",
-      input: [
-        `<?xml version="1.0 ?><?xml-stylesheet type="text/xls" href="./style.xls" ?><root><![CDATA[ hoge ]]><!-- fuga --><element>piyo</element></root>`,
-      ],
-      output: [
-        {
-          "data": `version="1.0" encoding="UTF-8"`,
-          "encoding": "UTF-8",
-          "standalone": "yes",
-          "target": "xml",
-          "name": "processingInstruction",
-          "version": "1.0",
-        },
-        {
-          "type": "text/xls",
-          "data": `type="text/xls" href="./style.xls"`,
-          "href": "./style.xls",
-          "target": "xml-stylesheet",
-          "name": "processingInstruction",
-        },
-        {
-          "attrs": {},
-          "selfClosing": false,
-          "tagName": "root",
-          "name": "startElement",
-        },
-        {
-          "cdata": " hoge ",
-          "name": "cdata",
-        }, {
-          "comment": " fuga ",
-          "name": "comment",
-        }, {
-          "attrs": {},
-          "selfClosing": false,
-          "tagName": "element",
-          "name": "startElement",
-        }, {
-          "text": "piyo",
-          "name": "text",
-        }, {
-          "tagName": "element",
-          "name": "endElement",
-        }, {
-          "tagName": "root",
-          "name": "endElement",
-        },
-      ],
-    }
-  ];
+        ],
+        output: [
+          { name: "startElement", tagName: "root", attrs: { id: "123" }, selfClosing: false },
+          { name: "text", text: "Hello <world> & others" },
+          { name: "startElement", tagName: "empty", attrs: {}, selfClosing: true },
+          { name: "endElement", tagName: "empty" },
+          { name: "comment", comment: "" },
+          { name: "endElement", tagName: "root" },
+        ],
+      },
+      {
+        name: "all type",
+        input: [
+          `<?xml version="1.0 ?><?xml-stylesheet type="text/xls" href="./style.xls" ?><root><![CDATA[ hoge ]]><!-- fuga --><element>piyo</element></root>`,
+        ],
+        output: [
+          { "name": "startDocument"},
+          {
+            "data": `version="1.0" encoding="UTF-8"`,
+            "encoding": "UTF-8",
+            "standalone": "yes",
+            "target": "xml",
+            "name": "processingInstruction",
+            "version": "1.0",
+          },
+          {
+            "type": "text/xls",
+            "data": `type="text/xls" href="./style.xls"`,
+            "href": "./style.xls",
+            "target": "xml-stylesheet",
+            "name": "processingInstruction",
+          },
+          {
+            "attrs": {},
+            "selfClosing": false,
+            "tagName": "root",
+            "name": "startElement",
+          },
+          {
+            "cdata": " hoge ",
+            "name": "cdata",
+          }, {
+            "comment": " fuga ",
+            "name": "comment",
+          }, {
+            "attrs": {},
+            "selfClosing": false,
+            "tagName": "element",
+            "name": "startElement",
+          }, {
+            "text": "piyo",
+            "name": "text",
+          }, {
+            "tagName": "element",
+            "name": "endElement",
+          }, {
+            "tagName": "root",
+            "name": "endElement",
+          },
+          { "name": "endDocument"},
+        ],
+      }
+    ];
   it.each(entries)(
     `$name`,
-    async ({ input, output }) => {
-      const { readable, writable } = new XMLTextToSAXTransformStream();
+    async ({ input, output, options }) => {
+      const { readable, writable } = new XMLTextToSAXTransformStream(options);
       (async (xml, writer) => {
         for (const x of xml)
           for (const chunk of x.match(/.{1,10}/g) ?? []) {

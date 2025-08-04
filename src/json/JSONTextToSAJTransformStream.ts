@@ -4,9 +4,9 @@ import { JSONTextToSAJParser } from "./JSONTextToSAJParser";
 
 
 export class JSONTextToSAJTransformStream extends TransformStream<string, SAJEventInterface> {
-  constructor() {
+  constructor(options?: { skipDocument?: boolean }) {
     let buffer!: JSONTextToSAJParser;
-   super({
+    super({
 
       /**
        * Initializes the SAJ parser with a handler that pushes parsed events
@@ -14,7 +14,7 @@ export class JSONTextToSAJTransformStream extends TransformStream<string, SAJEve
        */
       start(controller) {
         const handler = toHandler(controller);;
-        buffer = new JSONTextToSAJParser({handler});
+        buffer = new JSONTextToSAJParser({ handler, ...(options ?? {}) });
       },
 
       /**
@@ -62,6 +62,12 @@ function toHandler(controller: TransformStreamDefaultController<SAJEventInterfac
     },
     onError: function (err: unknown): void {
       controller.error(err);
+    },
+    onStartDocument: function (arg) {
+      controller.enqueue(arg);
+    },
+    onEndDocument: function (arg) {
+      controller.enqueue(arg);
     }
   };
 }

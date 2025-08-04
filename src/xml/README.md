@@ -39,6 +39,20 @@ import { XMLTextToSAXTransformStream } from "simple-api-stream";
 
 #### Structural Events
 
+- `startDocument`
+  Makrs the beginning of an document.
+  Example:
+  ```ts
+  { name: "startDocument" }
+  ```
+
+- `endDocument`
+  Marks the end of the current document.
+  Example:
+  ```ts
+  { name: "endDocument" }
+  ```
+
 - `startElement`
   Marks the beginning of an element.
   Example:

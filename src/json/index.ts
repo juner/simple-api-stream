@@ -8,11 +8,13 @@ import * as JSONTextToSAJEventWritableStreamModule from "./JSONTextToSAJEventWri
 import * as ResolveToSAJReadableStreamModule from "./ResolveToSAJReadableStream";
 import * as JSONTextToSAJTransformStreamModule from "./JSONTextToSAJTransformStream";
 import * as SAJToObjectTransformModule from "./SAJToObjectTransformStream";
+import * as JSONTextToSAJParserModule from "./JSONTextToSAJParser";
 
 export const streams = {
   ...JSONTextToSAJEventWritableStreamModule,
   ...ResolveToSAJReadableStreamModule,
   ...SAJToObjectTransformModule,
+  ...JSONTextToSAJParserModule,
 };
 export const JSONTextToSAJEventWritableStream = JSONTextToSAJEventWritableStreamModule.JSONTextToSAJEventWritableStream;
 export const ResolveToSAJReadableStream = ResolveToSAJReadableStreamModule.ResolveToSAJReadableStream;

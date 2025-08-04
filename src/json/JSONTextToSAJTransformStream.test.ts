@@ -1,11 +1,12 @@
 import { describe, expect } from "vitest";
-import type { json } from "..";
+import { json } from "..";
 import { JSONTextToSAJTransformStream } from "..";
 
 type SAJEventInterface = json.eventInterface.SAJEventInterface;
 describe("pattern", (it) => {
   const entries: {
     name: string;
+    options?: ConstructorParameters<typeof JSONTextToSAJTransformStream>[0],
     input: string[];
     output: SAJEventInterface[];
   }[] = [
@@ -18,7 +19,8 @@ describe("pattern", (it) => {
         ]}`,
         ],
         output: [
-          { name: "startObject"},
+          { name: "startDocument" },
+          { name: "startObject" },
           { name: "key", key: "num" },
           { name: "value", type: "number", value: 0 },
           { name: "key", key: "str" },
@@ -34,10 +36,12 @@ describe("pattern", (it) => {
           { name: "value", type: "string", value: "test" },
           { name: "endArray" },
           { name: "endObject" },
+          { name: "endDocument" },
         ]
       },
       {
         name: "space and array",
+        options: { skipDocument: true },
         input: [
           `       [    true   ]         `
         ],
@@ -49,11 +53,12 @@ describe("pattern", (it) => {
       },
       {
         name: "space and object",
+        options: { skipDocument: true },
         input: [
           `       {    "value": 1,   }         `
         ],
         output: [
-          { name: "startObject"},
+          { name: "startObject" },
           { name: "key", key: "value" },
           { name: "value", type: "number", value: 1 },
           { name: "endObject" },
@@ -61,6 +66,7 @@ describe("pattern", (it) => {
       },
       {
         name: "simple value number",
+        options: { skipDocument: true },
         input: [
           `1`,
         ],
@@ -70,6 +76,7 @@ describe("pattern", (it) => {
       },
       {
         name: "simple value string",
+        options: {skipDocument: true},
         input: [
           `"hoge"`,
         ],
@@ -79,6 +86,7 @@ describe("pattern", (it) => {
       },
       {
         name: "escaped value string",
+        options: { skipDocument: true },
         input: [
           `"hoge\\"fuga"`,
         ],
@@ -88,6 +96,7 @@ describe("pattern", (it) => {
       },
       {
         name: "simple value boolean",
+        options: { skipDocument: true },
         input: [
           `false`,
         ],
@@ -97,6 +106,7 @@ describe("pattern", (it) => {
       },
       {
         name: "simple value null",
+        options: { skipDocument: true },
         input: [
           `null`,
         ],
@@ -105,19 +115,27 @@ describe("pattern", (it) => {
         ]
       },
     ];
-  it.each(entries)("$name", async ({ input, output }) => {
-    const result = await (() => {
-      const {writable, readable} = new JSONTextToSAJTransformStream();
-      (async () => {
-        const writer = writable.getWriter();
-        for (const i of input) {
-          for (const chunk of i.match(/.{1,10}/g) ?? [])
-            await writer.write(chunk);
-        }
-        await writer.close();
+  it.each(entries)("$name", async ({ input, output, options }) => {
+    let result: json.eventInterface.SAJEventInterface[];
+    try {
+      result = await (() => {
+        const { writable, readable } = new JSONTextToSAJTransformStream(options);
+        (async () => {
+          const writer = writable.getWriter();
+          for (const i of input) {
+            for (const chunk of i.match(/.{1,10}/g) ?? [])
+              await writer.write(chunk);
+          }
+          await writer.close();
+        })();
+        return Array.fromAsync(readable);
       })();
-      return Array.fromAsync(readable);
-    })();
+    } catch (e: unknown) {
+      if (e instanceof json.streams.JSONTextToSAJParserError) {
+        console.dir(e.cause);
+      }
+      throw e;
+    }
     expect(result).toEqual(output);
   });
 });

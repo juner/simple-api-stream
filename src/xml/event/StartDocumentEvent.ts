@@ -1,0 +1,2 @@
+export { StartDocumentEvent } from "../../event";
+

@@ -69,6 +69,20 @@ SAJ represents JSON as a **sequence of discrete events**, allowing incremental h
 
 #### Structural Events
 
+- `startDocument`
+  Makrs the beginning of an document.
+  Example:
+  ```ts
+  { name: "startDocument" }
+  ```
+
+- `endDocument`
+  Marks the end of the current document.
+  Example:
+  ```ts
+  { name: "endDocument" }
+  ```
+
 - `startObject`
   Marks the beginning of an object.
   Example:

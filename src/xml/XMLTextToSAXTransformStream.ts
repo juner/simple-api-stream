@@ -41,7 +41,7 @@ import { SAXEventInterface } from "./event-interface";
  * @see SAXEventInterface
  */
 export class XMLTextToSAXTransformStream extends TransformStream<string, SAXEventInterface> {
-  constructor() {
+  constructor({skipDocument}: {skipDocument?: boolean} = {}) {
     let buffer!: XMLTextToSAXParser;
     super({
 
@@ -51,7 +51,7 @@ export class XMLTextToSAXTransformStream extends TransformStream<string, SAXEven
        */
       start(controller) {
         const handler = toHandler(controller);;
-        buffer = new XMLTextToSAXParser({handler});
+        buffer = new XMLTextToSAXParser({handler, skipDocument});
       },
 
       /**
@@ -101,6 +101,12 @@ function toHandler(controller: TransformStreamDefaultController<SAXEventInterfac
       controller.enqueue(arg);
     },
     onProcessingInstruction: (arg) => {
+      controller.enqueue(arg);
+    },
+    onStartDocument: (arg) => {
+      controller.enqueue(arg);
+    },
+    onEndDocument: (arg) => {
       controller.enqueue(arg);
     },
   };

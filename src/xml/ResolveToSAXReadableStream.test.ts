@@ -19,11 +19,13 @@ test("outputs correct XML chunks", async ({ expect }) => {
     .pipeThrough(new SAXToXMLTextTransform())
     .getReader();
 
+  stream.startDocument();
   stream.startElement("root", { id: "123" }, false);
   stream.text("Hello <world> & others");
   stream.startElement("empty", {}, true);
   stream.endElement("empty");
   stream.endElement("root");
+  stream.endDocument();
   stream.close();
 
   const chunks: string[] = [];

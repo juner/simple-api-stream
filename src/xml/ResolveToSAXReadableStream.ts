@@ -1,5 +1,5 @@
 import { makeCauseOptions } from "../util/makeCauseOptions";
-import { CdataEvent, CommentEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, ProcessingInstructionEvent, XMLStylesheetDeclarationEvent, XMLDeclarationEvent } from "./event";
+import { CdataEvent, CommentEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, ProcessingInstructionEvent, XMLStylesheetDeclarationEvent, XMLDeclarationEvent, StartDocumentEvent, EndDocumentEvent } from "./event";
 import { SAXEventInterface } from "./event-interface";
 import { SAXResolver } from "./interface";
 
@@ -117,6 +117,14 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
 
   text(...args: ConstructorParameters<typeof TextEvent>): void {
     this.#controller.enqueue(new TextEvent(...args));
+  }
+
+  startDocument(): void {
+    this.#controller.enqueue(new StartDocumentEvent());
+  }
+
+  endDocument(): void {
+    this.#controller.enqueue(new EndDocumentEvent());
   }
 
   close() {

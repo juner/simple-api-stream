@@ -1,5 +1,5 @@
 import { makeCauseOptions } from "../util/makeCauseOptions";
-import type { CdataSAXEventInterface, CommentSAXEventInterface, DoctypeSAXEventInterface, EndElementSAXEventInterface, SAXEventInterface, StartElementSAXEventInterface, TextSAXEventInterface, ProcessingInstructionEventInterface } from "./event-interface";
+import type { CdataSAXEventInterface, CommentSAXEventInterface, DoctypeSAXEventInterface, EndElementSAXEventInterface, SAXEventInterface, StartElementSAXEventInterface, TextSAXEventInterface, ProcessingInstructionSAXEventInterface, StartDocumentSAXEventInterface, EndDocumentSAXEventInterface } from "./event-interface";
 import { escape } from "./utils";
 
 const CDATA_PREFIX = "<![CDATA[";
@@ -60,7 +60,7 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
   #options?: Partial<SAXToXMLTextTransformOptions>;
   #prefix: string;
   #suffix: string;
-  #starts: StartElementSAXEventInterface[];
+  #starts: (StartElementSAXEventInterface|StartDocumentSAXEventInterface)[];
   constructor(options?: Partial<SAXToXMLTextTransformOptions>) {
     super({
       transform: (chunk, controller) => {
@@ -127,6 +127,10 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
         return this.#startElement(chunk);
       case "endElement":
         return this.#endElement(chunk);
+      case "startDocument":
+        return this.#startDocument(chunk);
+      case "endDocument":
+        return this.#endDocument(chunk);
     }
   }
   #cdata(chunk: CdataSAXEventInterface) {
@@ -158,7 +162,7 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
   #text(chunk: TextSAXEventInterface) {
     return `${this.#prefix}${escape(chunk.text)}${this.#suffix}`;
   }
-  #processingInstruction(chunk: ProcessingInstructionEventInterface) {
+  #processingInstruction(chunk: ProcessingInstructionSAXEventInterface) {
     const joins: string[] = [];
     joins.push(`${PROCESSING_INSTRUCTION_PREFIX}${chunk.target}`);
     joins.push(`${chunk.data}`);
@@ -183,7 +187,7 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     const endTagName = chunk.tagName;
     const start = this.#starts.pop();
     this.#prefix = this.#makeIndent();
-    if (!start)
+    if (!start || start.name === "startDocument")
       throw this.#makeError(`mismatch startElement not found. endTagName: ${endTagName}`, {
         cause: {
           endTagName,
@@ -202,6 +206,21 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
       });
     if (start.selfClosing) return undefined;
     return `${this.#prefix}${BLOCK_PREFIX}/${chunk.tagName}${BLOCK_SUFFIX}${this.#suffix}`;
+  }
+  #startDocument(chunk: StartDocumentSAXEventInterface) {
+    this.#starts.push(chunk);
+    return undefined;
+  }
+  #endDocument(chunk: EndDocumentSAXEventInterface) {
+    const start = this.#starts.pop();
+    if (!start || start.name === "startElement") {
+      throw this.#makeError(`mismatch startDocument not found.`, {
+        cause: {
+          chunk,
+        }
+      });
+    }
+    return undefined;
   }
 }
 

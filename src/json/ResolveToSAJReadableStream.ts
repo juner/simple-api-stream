@@ -1,4 +1,4 @@
-import { EndArrayEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
+import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
 import { SAJEventInterface } from "./event-interface";
 import { SAJResolver } from "./interface/SAJResolver";
 
@@ -42,6 +42,12 @@ export class ResolveToSAJReadableStream extends ReadableStream<SAJEventInterface
       return;
     }
     this.#controller.enqueue(new ValueNullEvent(type));
+  }
+  startDocument(): void {
+    this.#controller.enqueue(new StartDocumentEvent());
+  }
+  endDocument(): void {
+    this.#controller.enqueue(new EndDocumentEvent());
   }
   close() {
     this.#controller.close();

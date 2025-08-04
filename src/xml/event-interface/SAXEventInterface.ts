@@ -4,9 +4,11 @@ import type { TextSAXEventInterface } from "./TextSAXEventInterface";
 import type { DoctypeSAXEventInterface } from "./DoctypeSAXEventInterface";
 import type { CommentSAXEventInterface } from "./CommentSAXEventInterface";
 import type { CdataSAXEventInterface } from "./CdataSAXEventInterface";
-import { XMLdeclarationSAXEventInterface } from "./XMLdeclarationSAXEventInterface";
-import { XMLStylesheetDeclarationSAXEventInterface } from "./XMLStylesheetDeclarationSAXEventInterface";
-import { ProcessingInstructionEventInterface } from "./ProcessingInstructionEventInterface";
+import type { XMLdeclarationSAXEventInterface } from "./XMLdeclarationSAXEventInterface";
+import type { XMLStylesheetDeclarationSAXEventInterface } from "./XMLStylesheetDeclarationSAXEventInterface";
+import type { ProcessingInstructionSAXEventInterface } from "./ProcessingInstructionSAXEventInterface";
+import type { StartDocumentSAXEventInterface } from "./StartDocumentSAXEventInterface";
+import type { EndDocumentSAXEventInterface } from "./EndDocumentSAXEventInterface";
 
 export type SAXEventInterface =
   DoctypeSAXEventInterface
@@ -17,4 +19,6 @@ export type SAXEventInterface =
   | CdataSAXEventInterface
   | XMLdeclarationSAXEventInterface
   | XMLStylesheetDeclarationSAXEventInterface
-  | ProcessingInstructionEventInterface;
+  | ProcessingInstructionSAXEventInterface
+  | StartDocumentSAXEventInterface
+  | EndDocumentSAXEventInterface;

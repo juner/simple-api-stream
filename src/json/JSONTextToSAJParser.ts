@@ -1,6 +1,6 @@
 import type { SimpleApiParser } from "../interface";
 import { makeCauseOptions } from "../util/makeCauseOptions";
-import { EndArrayEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
+import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
 import type { SAJHandler } from "./interface/SAJHandler";
 
 export class JSONTextToSAJParserError extends Error {
@@ -34,11 +34,13 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #buffer = '';
   #pos = 0;
-  #state: StateFunction = this.#parseDefault;
+  #state: StateFunction = this.#startDocument;
   #acc = '';
   #key: string | null = null;
   #stack: ('object' | 'array')[] = [];
   #handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>;
+  #skipDocument: boolean;
+  #startDocumented: boolean = false;
 
   #status() {
     return {
@@ -80,8 +82,9 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     return new JSONTextToSAJParserError(message, options);
   }
 
-  constructor({ handler }: { handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler> }) {
+  constructor({ handler, skipDocument }: { handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>, skipDocument?: boolean }) {
     this.#handler = handler;
+    this.#skipDocument = skipDocument ?? false;
   }
 
   /**
@@ -126,8 +129,11 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       }
       if (isFlush && this.#pos === this.#buffer.length) {
         this.#state(EOL);
+        if (this.#state === this.#endDocument) {
+          this.#state(EOL);
+        }
       }
-      if (isFlush && this.#state !== this.#parseDefault) {
+      if (isFlush && this.#state !== this.#startDocument) {
         throw this.#makeError('Unexpected EOF');
       }
     } catch (e: unknown) {
@@ -137,10 +143,29 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     }
   }
 
-  #parseDefault(ch: Ch) {
+  #endDocument(ch?: Ch) {
+    if (ch !== EOL && ch !== undefined) {
+      this.#pos--;
+    }
+    if (!this.#startDocumented) {
+      this.#makeError("mismatch not start document");
+      return;
+    }
+    if (!this.#skipDocument)
+      this.#handler.onEndDocument?.(new EndDocumentEvent());
+    this.#startDocumented = false;
+    this.#state = this.#startDocument;
+  }
+
+  #startDocument(ch: Ch) {
     if (ch === EOL) return;
     if (/\s/.test(ch)) return;
 
+    if (!this.#startDocumented) {
+      if (!this.#skipDocument)
+        this.#handler.onStartDocument?.(new StartDocumentEvent());
+      this.#startDocumented = true;
+    }
     switch (ch) {
       case '{':
         this.#handler.onStartObject?.(new StartObjectEvent());
@@ -182,7 +207,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   };
 
   #handleStandaloneValue<T extends number | string | boolean | null>(val: T) {
-    this.#state = this.#parseDefault;
+    this.#state = this.#endDocument;
     this.#handler.onValue?.(this.#wrapValue(val));
   };
 
@@ -195,7 +220,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #parseKeyOrEndObject(ch: Ch) {
     if (ch === EOL) {
-      this.#state = this.#parseDefault;
+      this.#state = this.#endDocument;
       return;
     }
     if (/\s/.test(ch)) return;
@@ -272,7 +297,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #parseCommaOrEndObject(ch: Ch) {
     if (ch === EOL) {
-      this.#state = this.#parseDefault;
+      this.#state = this.#endDocument;
       return;
     }
     if (/\s/.test(ch)) return;
@@ -308,7 +333,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #parseCommaOrEndArray(ch: Ch) {
     if (ch === EOL) {
-      this.#state = this.#parseDefault;
+      this.#state = this.#endDocument;
       return;
     }
     if (/\s/.test(ch)) return;
@@ -325,7 +350,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #parseAfterValue(ch: Ch) {
     if (ch === EOL) {
-      this.#state = this.#parseDefault;
+      this.#state = this.#endDocument;
       return;
     }
     if (/\s/.test(ch)) return;
@@ -340,7 +365,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       return;
     } else {
       this.#pos--;
-      this.#state = this.#parseDefault;
+      this.#state = this.#endDocument;
       return;
     }
   };
@@ -372,7 +397,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       } else if (ch === '\\') {
         escape = true;
       } else if (ch === '"') {
-        this.#state = this.#parseDefault;
+        this.#state = this.#endDocument;
         onEnd.call(this, this.#acc);
       } else {
         this.#acc += ch;
@@ -388,7 +413,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       if (/^(true|false|null)$/.test(this.#acc)) {
         const val = this.#acc === 'true' ? true :
           this.#acc === 'false' ? false : null;
-        this.#state = this.#parseDefault;
+        this.#state = this.#endDocument;
         onEnd.call(this, val);
       } else if (!["true", "false", "null"].some(prefix => prefix.startsWith(this.#acc))) {
         throw this.#makeSyntaxError(`Invalid literal`, this.#acc);
@@ -408,7 +433,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
         if (Number.isNaN(num)) {
           throw this.#makeSyntaxError(`Invalid number`, this.#acc);
         }
-        this.#state = this.#parseDefault;
+        this.#state = this.#endDocument;
         onEnd.call(this, num);
       }
     };

@@ -15,3 +15,6 @@ export type * from "./ValueBooleanSAJEventInterface";
 export type * from "./ValueNullSAJEventInterface";
 export type * from "./ValueNumberSAJEventInterface";
 export type * from "./ValueStringSAJEventInterface";
+
+export type * from "./StartDocumentSAJEventInterface";
+export type * from "./EndDocumentSAJEventInterface";

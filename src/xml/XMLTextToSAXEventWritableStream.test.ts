@@ -33,6 +33,12 @@ function makeStringListHandlerAndArray() {
     onProcessingInstruction({ target, data }) {
       events.push(`processingInstruction:${target}:${data}`);
     },
+    onStartDocument() {
+      events.push(`startDocument`);
+    },
+    onEndDocument() {
+      events.push(`endDocument`);
+    }
   };
   return [handler, events] as const;
 }
@@ -40,11 +46,13 @@ function makeStringListHandlerAndArray() {
 describe("pattern test", (it) => {
   const entries: {
     name: string;
+    options?: ConstructorParameters<typeof XMLTextToSAXEventWritableStream>[1],
     input: string;
     output: string[];
   }[] = [
       {
         name: "parses start and end tags with attributes",
+        options: { skipDocument: true },
         input: '<!DOCTYPE hoge><root \nattr="value">text<!--comment\n--><![CDATA[ \ncdata ]]><child attr2="v2"/></root>',
         output: [
           'doctype:hoge:',
@@ -58,9 +66,9 @@ describe("pattern test", (it) => {
         ]
       }
     ];
-  it.each(entries)("$name", async ({ input: xml, output }) => {
+  it.each(entries)("$name", async ({ options, input: xml, output }) => {
     const [handler, events] = makeStringListHandlerAndArray();
-    const stream = new XMLTextToSAXEventWritableStream(handler);
+    const stream = new XMLTextToSAXEventWritableStream(handler, options);
     const writer = stream.getWriter();
     for (const chunk of xml.match(/.{1,10}/g) ?? [])
       await writer.write(chunk);

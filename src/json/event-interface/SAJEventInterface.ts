@@ -1,12 +1,14 @@
-import { EndArraySAJEventInterface } from "./EndArraySAJEventInterface";
-import { EndObjectSAJEventInterface } from "./EndObjectSAJEventInterface";
-import { KeySAJEventInterface } from "./KeySAJEventInterface";
-import { StartArraySAJEventInterface } from "./StartArraySAJEventInterface";
-import { StartObjectSAJEventInterface } from "./StartObjectSAJEventInterface";
-import { ValueBooleanSAJEventInterface } from "./ValueBooleanSAJEventInterface";
-import { ValueNullSAJEventInterface } from "./ValueNullSAJEventInterface";
-import { ValueNumberSAJEventInterface } from "./ValueNumberSAJEventInterface";
-import { ValueStringSAJEventInterface } from "./ValueStringSAJEventInterface";
+import type { EndArraySAJEventInterface } from "./EndArraySAJEventInterface";
+import type { EndObjectSAJEventInterface } from "./EndObjectSAJEventInterface";
+import type { KeySAJEventInterface } from "./KeySAJEventInterface";
+import type { StartArraySAJEventInterface } from "./StartArraySAJEventInterface";
+import type { StartObjectSAJEventInterface } from "./StartObjectSAJEventInterface";
+import type { ValueBooleanSAJEventInterface } from "./ValueBooleanSAJEventInterface";
+import type { ValueNullSAJEventInterface } from "./ValueNullSAJEventInterface";
+import type { ValueNumberSAJEventInterface } from "./ValueNumberSAJEventInterface";
+import type { ValueStringSAJEventInterface } from "./ValueStringSAJEventInterface";
+import type { StartDocumentSAJEventInterface } from "./StartDocumentSAJEventInterface";
+import type { EndDocumentSAJEventInterface } from "./EndDocumentSAJEventInterface";
 
 export type SAJEventInterface =
   StartArraySAJEventInterface
@@ -17,4 +19,6 @@ export type SAJEventInterface =
   | ValueBooleanSAJEventInterface
   | ValueNullSAJEventInterface
   | ValueNumberSAJEventInterface
-  | ValueStringSAJEventInterface;
+  | ValueStringSAJEventInterface
+  | StartDocumentSAJEventInterface
+  | EndDocumentSAJEventInterface;

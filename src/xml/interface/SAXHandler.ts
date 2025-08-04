@@ -5,7 +5,9 @@ import type {
   DoctypeSAXEventInterface,
   CdataSAXEventInterface,
   CommentSAXEventInterface,
-  ProcessingInstructionEventInterface,
+  ProcessingInstructionSAXEventInterface,
+  StartDocumentSAXEventInterface,
+  EndDocumentSAXEventInterface,
 } from "../event-interface";
 
 export interface SAXHandler {
@@ -16,5 +18,7 @@ export interface SAXHandler {
   onCdata: (arg: CdataSAXEventInterface) => void;
   onComment: (arg: CommentSAXEventInterface) => void;
   onError: (err: unknown) => void;
-  onProcessingInstruction: (arg: ProcessingInstructionEventInterface<string>) => void;
+  onProcessingInstruction: (arg: ProcessingInstructionSAXEventInterface<string>) => void;
+  onStartDocument: (arg: StartDocumentSAXEventInterface) => void;
+  onEndDocument: (arg: EndDocumentSAXEventInterface) => void;
 }
