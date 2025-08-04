@@ -1,139 +1,96 @@
 # simple-api-stream
 
-**A lightweight, composable, SAX-based XML stream utility.**  
-Built for modern JavaScript with full support for the Web Streams API and TypeScript.
-
-> ✅ Version: `v1.0.0` (Stable Release)
+Streaming utilities for **incremental JSON and XML processing** using the [Web Streams API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Streams_API).  
+Provides **event-based parsing** (SAJ for JSON, SAX for XML) and transformation into JavaScript objects with proper backpressure handling.
 
 ---
 
-## Features
+## ✨ Features
 
-- ✅ SAX-style XML parsing and emitting
-- ✅ Stream-based input/output using the Web Streams API
-- ✅ Supports:
-  - Element start/end
-  - Text content
-  - CDATA sections
-  - Comments
-  - Processing instructions (`<?xml?>`, `<?xml-stylesheet?>`, etc.)
-  - DOCTYPE declarations with internal subsets
-- ✅ Converts between XML strings and SAX event objects
-- ✅ Fully type-safe (TypeScript support)
+| Module | Class | Input | Output |
+|--------|-------|-------|--------|
+| **JSON** | [`JSONTextToSAJEventWritableStream`](./src/json/JSONTextToSAJEventWritableStream.ts) | JSON text (`ReadableStream<string>`) | Executes events on a [`SAJHandler`](./src/json/interface/SAJHandler.ts) |
+| | [`JSONTextToSAJTransformStream`](./src/json/JSONTextToSAJTransformStream.ts) | JSON text | Emits [`SAJEventInterface`](./src/json/event-interface/SAJEventInterface.ts) objects |
+| | [`ResolveToSAJReadableStream`](./src/json/ResolveToSAJReadableStream.ts) | Invokes a [`SAJResolver`](./src/json/interface/SAJResolver.ts) | Emits resolved SAJ events |
+| | [`SAJToObjectTransformStream<T>`](./src/json/SAJToObjectTransformStream.ts) | SAJ event stream | JavaScript objects of type `T` |
+| **XML** | [`XMLTextToSAXEventWritableStream`](./src/xml/XMLTextToSAXEventWritableStream.ts) | XML text (`ReadableStream<string>`) | Executes events on a [`SAXHandler`](./src/xml/interface/SAXHandler.ts) |
+| | [`XMLTextToSAXTransformStream`](./src/xml/XMLTextToSAXTransformStream.ts) | XML text | Emits [`SAXEventInterface`](./src/xml/event-interface/SAXEventInterface.ts) objects |
+| | [`ResolveToSAXReadableStream`](./src/xml/ResolveToSAXReadableStream.ts) | Invokes a [`SAXResolver`](./src/xml/interface/SAXResolver.ts) | Emits resolved SAX events |
+| | [`SAXToXMLTextTransformStream`](./src/xml/SAXToXMLTextTransformStream.ts) | SAX event stream | XML text |
 
 ---
 
-## Installation
+## 🚀 Installation
 
 ```bash
 npm install simple-api-stream
 ```
 
-## Usage
-### 📥 Parse XML text into SAX events
-```ts
-import { SimpleSAXTransformStream } from "simple-api-stream";
+## 📦 Basic Usage
 
-const parser = new SimpleSAXTransformStream();
-
-const xml = `<note><to>Tove</to><from>Jani</from></note>`;
-const readable = new ReadableStream({
-  start(controller) {
-    controller.enqueue(xml);
-    controller.close();
-  },
-});
-
-for await (const event of readable.pipeThrough(parser)) {
-  console.log(event);
-}
-```
-### 📤 Generate XML from SAX events
+### JSON Example
 ```ts
 import {
-  ResolveToSAXReadableStream,
-  SAXToXMLTextTransformStream,
+  JSONTextToSAJTransformStream,
+  SAJToObjectTransformStream,
 } from "simple-api-stream";
 
-const emitter = new ResolveToSAXReadableStream();
-const serializer = new SAXToXMLTextTransformStream({
-  indent: 2,
-  lineBreak: "\n",
-});
+const jsonTextStream = getReadableStreamOfJSONString();
 
-queueMicrotask(() => {
-  emitter.startElement({ tagName: "message" });
-  emitter.text({ text: "Hello, XML!" });
-  emitter.endElement({ tagName: "message" });
-  emitter.close();
-});
+const objectStream = jsonTextStream
+  .pipeThrough(new JSONTextToSAJTransformStream())
+  .pipeThrough(new SAJToObjectTransformStream<MyType>());
 
-for await (const chunk of emitter.pipeThrough(serializer)) {
-  console.log(chunk);
+for await (const obj of objectStream) {
+  console.log("Parsed object:", obj);
 }
 ```
 
-## Components
-
-### `XMLTextToSAXTransformStream`
-Parses an XML string stream into SAX event objects.
-
+### XML Example
 ```ts
-new XMLTextToSAXTransformStream()
-```
-### `SAXToXMLTextTransformStream`
-Converts SAX events back to a formatted XML string stream.
+import {
+  XMLTextToSAXTransformStream,
+} from "simple-api-stream";
 
-```ts
-new SAXToXMLTextTransformStream({
-  indent: 2,
-  lineBreak: "\n",
-})
-```
-### `ResolveToSAXReadableStream`
-Imperatively emits SAX events into a readable stream.
+const xmlTextStream = getReadableStreamOfXMLString();
 
-```ts
-const stream = new ResolveToSAXReadableStream();
-stream.startElement({ tagName: "foo" });
-stream.text({ text: "bar" });
-stream.endElement({ tagName: "foo" });
-stream.close();
+const saxEventStream = xmlTextStream.pipeThrough(
+  new XMLTextToSAXTransformStream()
+);
+
+for await (const event of saxEventStream) {
+  console.log("SAX event:", event);
+}
 ```
 
-## Event Types
+## 📜 Event Formats
 
-Each event is structured as a plain object extending `xml.interfaces.SAXEventInterface`.
+### SAJ (Simple API for JSON)
+Example for `{ "a": [1, null] }` (JSON Lines format):
 
-| Type | Description 
-| - | -
-| startElement | Opening tag and attributes
-|endElement | Closing tag
-| text | Text content
-| cdata | CDATA section
-|comment | Comment node
-|processingInstruction | Processing instruction (e.g. `<?xml?>`)
-| doctype | DOCTYPE with optional subset
-
-## Example: Stream Pipeline
-
-```ts
-await readableXMLStream
-  .pipeThrough(new XMLTextToSAXTransformStream())
-  .pipeThrough(new SAXToXMLTextTransformStream({ indent: 2 }))
-  .pipeTo(writableStreamToTextFile);
+```js
+{ "name": "startObject" }
+{ "name": "key", "key": "a" }
+{ "name": "startArray" }
+{ "name": "value", "type": "number", "value": 1 }
+{ "name": "value", "type": "null", "value": null }
+{ "name": "endArray" }
+{ "name": "endObject" }
 ```
 
-## Diagram (Optional Overview)
+### SAX (Simple API for XML)
+Example for `<a href="https://example.com">Hello</a>`:
 
-```mermaid
-flowchart LR
-  XMLText[XML Text Stream]
-    -->|parse| SAXEvents[SAX Events]
-    -->|serialize| XMLText2[XML Text Stream]
-
-  subgraph simple-api-stream
-    XMLText --> XMLTextToSAXTransformStream
-    SAXEvents --> SAXToXMLTextTransformStream
-  end
+```js
+{ "name": "startElement", "tagName": "a", "attrs": { "href": "https://example.com" }, "selfClosing": false }
+{ "name": "text", "text": "Hello" }
+{ "name": "endElement" }
 ```
+
+## ⚠️ Error Handling
+- Malformed JSON/XML errors the stream.
+- In a transform pipeline, catch via try/catch with for await, or via the stream’s reader.closed promise.
+
+### 🛠 Development Notes
+- Internal utilities live in src/json and src/xml.
+- End-users should import from the root package (simple-api-stream), not from internal paths.
