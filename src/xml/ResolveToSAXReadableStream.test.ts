@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { ResolveToSAXReadableStream, SAXToXMLTextTransform } from "..";
 import type { xml } from "..";
+import { ResolveToSAXReadableStreamError } from "./ResolveToSAXReadableStream";
 
 test("empty chunks", async ({ expect }) => {
   const stream = new ResolveToSAXReadableStream();
@@ -59,6 +60,12 @@ test("handles empty text and attributes", async ({ expect }) => {
   }
 
   expect(out).toEqual(["<x>", "", "</x>"]);
+});
+
+test("error pattern", async ({ expect }) => {
+  const stream = new ResolveToSAXReadableStream();
+  const fnc = () => stream.processingInstruction({ target: "hoge" as "xml" });
+  expect(fnc).toThrowError(ResolveToSAXReadableStreamError);
 });
 
 describe("pattern", (it) => {
