@@ -115,7 +115,7 @@ describe("pattern", (it) => {
         ]
       },
       {
-        name: "crlf",
+        name: "crlf array",
         input: [
           `\t
           [\r\n
@@ -154,6 +154,66 @@ describe("pattern", (it) => {
           },
           {
             name: "endArray"
+          },
+          {
+            name: "endDocument",
+          },
+        ]
+      },
+      {
+        name: "crlf object",
+        input: [
+          `\t
+          {\r\n
+            "value1":null
+            ,
+
+            "value2"
+            :
+            null,
+
+            "value3"
+
+            :null
+          }`
+        ],
+        output: [
+          {
+            kind: "json",
+            name: "startDocument",
+          },
+          {
+            name: "startObject",
+          },
+          {
+            key: "value1",
+            name: "key",
+          },
+          {
+            name: "value",
+            type: "null",
+            value: null,
+          },
+          {
+            key: "value2",
+            name: "key",
+          },
+          {
+            name: "value",
+            type: "null",
+            value: null,
+          },
+          {
+            key: "value3",
+            name: "key",
+          },
+          {
+            name: "value",
+            type: "null",
+            value: null,
+          },
+          {
+            name: "endObject"
           },
           {
             name: "endDocument",
