@@ -316,4 +316,20 @@ describe("error", (it) => {
     await expect(read).rejects.toThrowError(json.streams.JSONTextToSAJParserError);
     await expect(read).rejects.toThrowError(`is closed document`);
   });
+   it.concurrent("invalid eol", async({expect}) => {
+        const text = `
+      [
+      "fuga"
+    `;
+    const { readable, writable } = new JSONTextToSAJTransformStream({ multiple: false });
+    const write = (async () => {
+      const writer = writable.getWriter();
+      await writer.write(text);
+      await writer.close();
+    })();
+    const read = Array.fromAsync(readable);
+    await expect(write).resolves.toBeUndefined();
+    await expect(read).rejects.toThrowError(json.streams.JSONTextToSAJParserError);
+    await expect(read).rejects.toThrowError(`is closed document`);
+  });
 });

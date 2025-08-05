@@ -394,7 +394,6 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       } else if (ch === '\\') {
         escape = true;
       } else if (ch === '"') {
-        this.#state = this.#endDocument;
         onEnd.call(this, this.#acc);
       } else {
         this.#acc += ch;
