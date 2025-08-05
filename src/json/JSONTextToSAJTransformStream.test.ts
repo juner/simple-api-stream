@@ -299,4 +299,21 @@ describe("error", (it) => {
     await expect(read).rejects.toThrowError(json.streams.JSONTextToSAJParserError);
     await expect(read).rejects.toThrowError(`Expected colon after key but got: }`);
   });
+  it.concurrent("not support multiple in single", async ({ expect }) => {
+
+    const text = `
+      "hoge"
+      "fuga"
+    `;
+    const { readable, writable } = new JSONTextToSAJTransformStream({ multiple: false });
+    const write = (async () => {
+      const writer = writable.getWriter();
+      await writer.write(text);
+      await writer.close();
+    })();
+    const read = Array.fromAsync(readable);
+    await expect(write).rejects.toThrowError(TypeError);
+    await expect(read).rejects.toThrowError(json.streams.JSONTextToSAJParserError);
+    await expect(read).rejects.toThrowError(`is closed document`);
+  });
 });
