@@ -281,55 +281,110 @@ describe("pattern", (it) => {
 });
 
 describe("error", (it) => {
-  it.concurrent("parse error", async ({ expect }) => {
-    const text = `
-    {
-    "hoge":
-      "hoge"
-      ,"fuga"
-    }`;
-    const { readable, writable } = new JSONTextToSAJTransformStream();
-    const write = (async () => {
+  const entries: {
+    name: string;
+    options?: ConstructorParameters<typeof JSONTextToSAJTransformStream>[0];
+    input: string[];
+    output:
+    Record<"read" | "write", {
+      error: (string | RegExp | (new () => unknown) | Error | undefined)[];
+    } | {
+      result: unknown[] | undefined;
+    }>;
+  }[] = [
+      {
+        name: "parse error",
+        input: [
+          `
+          {
+          "hoge":
+            "hoge"
+            ,"fuga"
+          }`
+        ],
+        output: {
+          write: {
+            error: [
+              TypeError
+            ],
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `Expected colon after key but got: }`
+            ]
+          }
+        }
+      }, {
+        name: "not support multiple in single",
+        options: { multiple: false },
+        input: [
+          `
+          "hoge"
+          "fuga"
+          `
+        ],
+        output: {
+          write: {
+            error: [
+              TypeError
+            ],
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `is closed document`
+            ]
+          }
+        }
+      }, {
+        name: "invalid eol",
+        input: [`
+          [
+          "fuga"
+            `
+        ],
+        output: {
+          write: {
+            result: undefined,
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              'is closed document',
+            ]
+          }
+        }
+      }
+    ];
+  it.each(entries)("$name", async ({ input, output: { read, write }, options }) => {
+    const { readable, writable } = new JSONTextToSAJTransformStream(options);
+    const writed = (async () => {
       const writer = writable.getWriter();
-      await writer.write(text);
+      for (const text of input)
+        await writer.write(text);
       await writer.close();
     })();
-    const read = Array.fromAsync(readable);
-    await expect(write).rejects.toThrowError(TypeError);
-    await expect(read).rejects.toThrowError(json.streams.JSONTextToSAJParserError);
-    await expect(read).rejects.toThrowError(`Expected colon after key but got: }`);
-  });
-  it.concurrent("not support multiple in single", async ({ expect }) => {
+    const readed = Array.fromAsync(readable);
 
-    const text = `
-      "hoge"
-      "fuga"
-    `;
-    const { readable, writable } = new JSONTextToSAJTransformStream({ multiple: false });
-    const write = (async () => {
-      const writer = writable.getWriter();
-      await writer.write(text);
-      await writer.close();
-    })();
-    const read = Array.fromAsync(readable);
-    await expect(write).rejects.toThrowError(TypeError);
-    await expect(read).rejects.toThrowError(json.streams.JSONTextToSAJParserError);
-    await expect(read).rejects.toThrowError(`is closed document`);
-  });
-   it.concurrent("invalid eol", async({expect}) => {
-        const text = `
-      [
-      "fuga"
-    `;
-    const { readable, writable } = new JSONTextToSAJTransformStream({ multiple: false });
-    const write = (async () => {
-      const writer = writable.getWriter();
-      await writer.write(text);
-      await writer.close();
-    })();
-    const read = Array.fromAsync(readable);
-    await expect(write).resolves.toBeUndefined();
-    await expect(read).rejects.toThrowError(json.streams.JSONTextToSAJParserError);
-    await expect(read).rejects.toThrowError(`is closed document`);
+    for (const [resultType, result] of [
+      [read, readed],
+      [write, writed],
+    ] as const) {
+      if ("error" in resultType) {
+        for (const error of resultType.error)
+          try {
+            await expect(result).rejects.toThrowError(error);
+          } finally {
+            const error = await result.catch(v => v);
+            console.dir(error);
+          }
+      } else {
+        if (resultType.result === undefined)
+          await expect(result).resolves.toBeUndefined();
+        else
+          await expect(result).resolves.toEqual(resultType.result);
+      }
+    }
   });
 });
