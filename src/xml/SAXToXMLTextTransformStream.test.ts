@@ -15,7 +15,7 @@ describe("error pattern", (it) => {
     const {readable, writable} = new SAXToXMLTextTransform();
     const write = (async () => {
       const writer = writable.getWriter();
-      await writer.write({"name": "startElement", "tagName": "a"});
+      await writer.write({name: "startElement", tagName: "a"});
       await writer.close();
     })();
     const read = (async () => {
@@ -144,46 +144,46 @@ describe("pattern test", (it) => {
         name: "all type",
         input: [
           {
-            "data": `version="1.0" encoding="UTF-8"`,
-            "encoding": "UTF-8",
-            "standalone": "yes",
-            "target": "xml",
-            "name": "processingInstruction",
-            "version": "1.0",
+            data: `version="1.0" encoding="UTF-8"`,
+            encoding: "UTF-8",
+            standalone: "yes",
+            target: "xml",
+            name: "processingInstruction",
+            version: "1.0",
           },
           {
-            "type": "text/xls",
-            "data": `type="text/xls" href="./style.xls"`,
-            "href": "./style.xls",
-            "target": "xml-stylesheet",
-            "name": "processingInstruction",
+            type: "text/xls",
+            data: `type="text/xls" href="./style.xls"`,
+            href: "./style.xls",
+            target: "xml-stylesheet",
+            name: "processingInstruction",
           },
           {
-            "attrs": {},
-            "selfClosing": false,
-            "tagName": "root",
-            "name": "startElement",
+            attrs: {},
+            selfClosing: false,
+            tagName: "root",
+            name: "startElement",
           },
           {
-            "cdata": " hoge ",
-            "name": "cdata",
+            cdata: " hoge ",
+            name: "cdata",
           }, {
-            "comment": " fuga ",
-            "name": "comment",
+            comment: " fuga ",
+            name: "comment",
           }, {
-            "attrs": {},
-            "selfClosing": false,
-            "tagName": "element",
-            "name": "startElement",
+            attrs: {},
+            selfClosing: false,
+            tagName: "element",
+            name: "startElement",
           }, {
-            "text": "piyo",
-            "name": "text",
+            text: "piyo",
+            name: "text",
           }, {
-            "tagName": "element",
-            "name": "endElement",
+            tagName: "element",
+            name: "endElement",
           }, {
-            "tagName": "root",
-            "name": "endElement",
+            tagName: "root",
+            name: "endElement",
           },
         ],
         output: [

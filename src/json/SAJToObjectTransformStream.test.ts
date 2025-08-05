@@ -47,7 +47,7 @@ describe("pattern", (it) => {
         ],
         output: [
           {
-            "num": 0, "str": "value", "bool1": true, "bool2": false, "nullable": null, "arry": [
+            num: 0, str: "value", bool1: true, bool2: false, nullable: null, arry: [
               "test"
             ]
           }

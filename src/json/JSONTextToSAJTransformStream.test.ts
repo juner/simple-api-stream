@@ -131,32 +131,32 @@ describe("pattern", (it) => {
         ],
         output: [
           {
-            "kind": "json",
-            "name": "startDocument",
+            kind: "json",
+            name: "startDocument",
           },
           {
-            "name": "startArray",
+            name: "startArray",
           },
           {
-            "name": "value",
-            "type": "null",
-            "value": null,
+            name: "value",
+            type: "null",
+            value: null,
           },
           {
-            "name": "value",
-            "type": "null",
-            "value": null,
+            name: "value",
+            type: "null",
+            value: null,
           },
           {
-            "name": "value",
-            "type": "null",
-            "value": null,
+            name: "value",
+            type: "null",
+            value: null,
           },
           {
             name: "endArray"
           },
           {
-            "name": "endDocument",
+            name: "endDocument",
           },
         ]
       },
@@ -169,28 +169,28 @@ describe("pattern", (it) => {
         ],
         output: [
           {
-            "kind": "json",
-            "name": "startDocument",
+            kind: "json",
+            name: "startDocument",
           },
           {
-            "name": "value",
-            "type": "number",
-            "value": 1,
+            name: "value",
+            type: "number",
+            value: 1,
           },
           {
-            "name": "endDocument",
+            name: "endDocument",
           },
           {
-            "kind": "json",
-            "name": "startDocument",
+            kind: "json",
+            name: "startDocument",
           },
           {
-            "name": "value",
-            "type": "number",
-            "value": 2,
+            name: "value",
+            type: "number",
+            value: 2,
           },
           {
-            "name": "endDocument",
+            name: "endDocument",
           },
         ]
       }

@@ -4,7 +4,7 @@ import tseslint from "typescript-eslint";
 import json from "@eslint/json";
 import markdown from "@eslint/markdown";
 import { defineConfig } from "eslint/config";
-
+import stylistic from "@stylistic/eslint-plugin";
 
 export default defineConfig([
   {
@@ -16,8 +16,11 @@ export default defineConfig([
   { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], languageOptions: { globals: { ...globals.browser, ...globals.node } } },
   tseslint.configs.recommended as unknown as Parameters<typeof defineConfig>,
   {
+    plugins: {
+      '@stylistic': stylistic
+    },
     rules: {
-      "semi": "error",
+      semi: "error",
       "@typescript-eslint/no-unused-vars": ["error", {
         argsIgnorePattern: "^_",
         // catch も同様のルール
@@ -25,6 +28,7 @@ export default defineConfig([
         destructuredArrayIgnorePattern: "^_",
         varsIgnorePattern: "^_",
       }],
+      "@stylistic/quote-props": ["error", "as-needed"]
     }
   },
   { files: ["**/*.json"], ignores: ["**/tsconfig.json", "package-lock.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
