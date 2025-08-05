@@ -138,11 +138,9 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   }
 
   #endDocument(ch?: Ch) {
+    console.assert(this.#startDocumented, "mismatch not start document");
     if (ch !== EOL && ch !== undefined) {
       this.#pos--;
-    }
-    if (!this.#startDocumented) {
-      throw this.#makeError("mismatch not start document");
     }
     if (!this.#skipDocument)
       this.#handler.onEndDocument?.(new EndDocumentEvent());
