@@ -4,7 +4,7 @@ import { JSONTextToSAJParser } from "./JSONTextToSAJParser";
 
 
 export class JSONTextToSAJTransformStream extends TransformStream<string, SAJEventInterface> {
-  constructor(options?: { skipDocument?: boolean }) {
+  constructor(options?: { skipDocument?: boolean, multiple?:boolean }) {
     let buffer!: JSONTextToSAJParser;
     super({
 

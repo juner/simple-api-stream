@@ -1,7 +1,7 @@
 import type { SimpleApiParser } from "../interface";
 import { makeCauseOptions } from "../util/makeCauseOptions";
 import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
-import type { SAJHandler } from "./interface/SAJHandler";
+import type { SAJHandler } from "./interface";
 
 export class JSONTextToSAJParserError extends Error {
   constructor(...args: ConstructorParameters<typeof Error>) {
@@ -41,8 +41,9 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   #handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>;
   #skipDocument: boolean;
   #startDocumented: boolean = false;
+  #multiple: boolean = false;
 
-  #status() {
+  #status(): Status {
     return {
       buffer: this.#buffer,
       pos: this.#pos,
@@ -52,16 +53,8 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       stack: this.#stack.slice(),
     };
     function toState(state: StateFunction) {
-      if (state.name.startsWith("#parse")) {
-        return state.name.slice("#parse".length);
-      }
-      if (state.name.startsWith("#")) {
-        return state.name.slice('#'.length);
-      }
-      if (state.name.startsWith("parse")) {
-        return state.name.slice("parse".length);
-      }
-      return state.name;
+      console.assert(state.name.startsWith("#parse"), "status function rule");
+      return state.name.slice("#parse".length);
     }
   }
 
@@ -82,9 +75,10 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     return new JSONTextToSAJParserError(message, options);
   }
 
-  constructor({ handler, skipDocument }: { handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>, skipDocument?: boolean }) {
+  constructor({ handler, skipDocument, multiple }: { handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>, skipDocument?: boolean, multiple?: boolean }) {
     this.#handler = handler;
     this.#skipDocument = skipDocument ?? false;
+    this.#multiple = multiple ?? false;
   }
 
   /**
@@ -148,13 +142,19 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       this.#pos--;
     }
     if (!this.#startDocumented) {
-      this.#makeError("mismatch not start document");
-      return;
+      throw this.#makeError("mismatch not start document");
     }
     if (!this.#skipDocument)
       this.#handler.onEndDocument?.(new EndDocumentEvent());
     this.#startDocumented = false;
+    if (!this.#multiple && ch !== EOL) {
+      this.#state = this.#closedDocument;
+      return;
+    }
     this.#state = this.#startDocument;
+  }
+  #closedDocument() {
+    throw this.#makeError("is closed document");
   }
 
   #startDocument(ch: Ch) {
@@ -327,7 +327,6 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #parseValueInArray(ch: Ch) {
     if (ch === EOL) throw this.#makeNotCompleteError();
-    this.#state = this.#parseCommaOrEndArray;
     this.#parseValue(ch);
   };
 

@@ -187,7 +187,7 @@ describe("pattern test", (it) => {
           `<?xml version="1.0 ?><?xml-stylesheet type="text/xls" href="./style.xls" ?><root><![CDATA[ hoge ]]><!-- fuga --><element>piyo</element></root>`,
         ],
         output: [
-          { "name": "startDocument"},
+          { "name": "startDocument", kind: "xml" },
           {
             "data": `version="1.0" encoding="UTF-8"`,
             "encoding": "UTF-8",

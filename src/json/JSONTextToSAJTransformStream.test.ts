@@ -19,7 +19,7 @@ describe("pattern", (it) => {
         ]}`,
         ],
         output: [
-          { name: "startDocument" },
+          { name: "startDocument", kind: "json" },
           { name: "startObject" },
           { name: "key", key: "num" },
           { name: "value", type: "number", value: 0 },
@@ -76,7 +76,7 @@ describe("pattern", (it) => {
       },
       {
         name: "simple value string",
-        options: {skipDocument: true},
+        options: { skipDocument: true },
         input: [
           `"hoge"`,
         ],
@@ -114,6 +114,86 @@ describe("pattern", (it) => {
           { name: "value", type: "null", value: null },
         ]
       },
+      {
+        name: "crlf",
+        input: [
+          `\t
+          [\r\n
+            null
+            ,
+
+
+
+            null,
+
+            null
+          ]`
+        ],
+        output: [
+          {
+            "kind": "json",
+            "name": "startDocument",
+          },
+          {
+            "name": "startArray",
+          },
+          {
+            "name": "value",
+            "type": "null",
+            "value": null,
+          },
+          {
+            "name": "value",
+            "type": "null",
+            "value": null,
+          },
+          {
+            "name": "value",
+            "type": "null",
+            "value": null,
+          },
+          {
+            name: "endArray"
+          },
+          {
+            "name": "endDocument",
+          },
+        ]
+      },
+      {
+        name: "multipledocument",
+        options: { multiple: true },
+        input: [
+          `1
+          2`,
+        ],
+        output: [
+          {
+            "kind": "json",
+            "name": "startDocument",
+          },
+          {
+            "name": "value",
+            "type": "number",
+            "value": 1,
+          },
+          {
+            "name": "endDocument",
+          },
+          {
+            "kind": "json",
+            "name": "startDocument",
+          },
+          {
+            "name": "value",
+            "type": "number",
+            "value": 2,
+          },
+          {
+            "name": "endDocument",
+          },
+        ]
+      }
     ];
   it.each(entries)("$name", async ({ input, output, options }) => {
     let result: json.eventInterface.SAJEventInterface[];
@@ -137,5 +217,26 @@ describe("pattern", (it) => {
       throw e;
     }
     expect(result).toEqual(output);
+  });
+});
+
+describe("error", (it) => {
+  it.concurrent("parse error", async ({ expect }) => {
+    const text = `
+    {
+    "hoge":
+      "hoge"
+      ,"fuga"
+    }`;
+    const { readable, writable } = new JSONTextToSAJTransformStream();
+    const write = (async () => {
+      const writer = writable.getWriter();
+      await writer.write(text);
+      await writer.close();
+    })();
+    const read = Array.fromAsync(readable);
+    await expect(write).rejects.toThrowError(TypeError);
+    await expect(read).rejects.toThrowError(json.streams.JSONTextToSAJParserError);
+    await expect(read).rejects.toThrowError(`Expected colon after key but got: }`);
   });
 });

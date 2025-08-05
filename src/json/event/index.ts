@@ -22,4 +22,7 @@ export * from "./ValueBooleanEvent";
 export * from "./ValueNullEvent";
 // #endregion
 
-export { StartDocumentEvent, EndDocumentEvent } from "../../event";
+// #region document
+export * from "./StartDocumentEvent";
+export * from "./EndDocumentEvent";
+// #endregion

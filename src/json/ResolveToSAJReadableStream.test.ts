@@ -32,7 +32,7 @@ describe("pattern", (it) => {
           stream => stream.endDocument(),
         ],
         output: [
-          { name: "startDocument" },
+          { name: "startDocument", kind: "json" },
           { name: "startObject" },
           { name: "key", key: "num" },
           { name: "value", type: "number", value: 0 },
