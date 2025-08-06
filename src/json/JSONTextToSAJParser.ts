@@ -130,8 +130,8 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
           this.#state(EOL);
         }
       }
-      if (isFlush && this.#state !== this.#startDocument) {
-        throw this.#makeError('Unexpected EOF');
+      if (isFlush) {
+        console.assert(this.#state === this.#startDocument, `finish state is startDocument`);
       }
     } catch (e: unknown) {
       this.#handler.onError?.(e);
