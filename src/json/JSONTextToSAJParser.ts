@@ -287,6 +287,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     this.#handler.onValue?.(this.#wrapValue(val));
     this.#key = null;
     const parent = this.#stack.at(-1);
+    console.assert(!!parent, "not have parent");
     if (parent === "object")
       this.#state = this.#parseCommaOrEndObject;
     else if (parent === "array")
@@ -329,10 +330,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   };
 
   #parseCommaOrEndArray(ch: Ch) {
-    if (ch === EOL) {
-      this.#state = this.#endDocument;
-      return;
-    }
+    if (ch === EOL) throw this.#makeNotCompleteError();
     if (/\s/.test(ch)) return;
     if (ch === ',') {
       this.#state = this.#parseValueInArray;

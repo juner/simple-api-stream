@@ -256,27 +256,26 @@ describe("pattern", (it) => {
       }
     ];
   it.each(entries)("$name", async ({ input, output, options }) => {
-    let result: json.eventInterface.SAJEventInterface[];
+    const { writable, readable } = new JSONTextToSAJTransformStream(options);
+    const writed = (async () => {
+      const writer = writable.getWriter();
+      for (const i of input) {
+        for (const chunk of i.match(/.{1,10}/g) ?? [])
+          await writer.write(chunk);
+      }
+      await writer.close();
+    })();
+    const readed = Array.fromAsync(readable);
     try {
-      result = await (() => {
-        const { writable, readable } = new JSONTextToSAJTransformStream(options);
-        (async () => {
-          const writer = writable.getWriter();
-          for (const i of input) {
-            for (const chunk of i.match(/.{1,10}/g) ?? [])
-              await writer.write(chunk);
-          }
-          await writer.close();
-        })();
-        return Array.fromAsync(readable);
-      })();
-    } catch (e: unknown) {
-      if (e instanceof json.streams.JSONTextToSAJParserError) {
-        console.dir(e.cause);
+      await expect(writed).resolves.toBeUndefined();
+      await expect(readed).resolves.toEqual(output);
+    } catch (e) {
+      const e2 = readed.catch(v => v);
+      if (e2 instanceof json.streams.JSONTextToSAJParserError) {
+        console.dir(e2.cause);
       }
       throw e;
     }
-    expect(result).toEqual(output);
   });
 });
 
@@ -337,7 +336,8 @@ describe("error", (it) => {
             ]
           }
         }
-      }, {
+      },
+      {
         name: "invalid eol",
         input: [`
           [
@@ -346,12 +346,21 @@ describe("error", (it) => {
         ],
         output: {
           write: {
-            result: undefined,
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:
+          [
+          "fuga"
+            `,
+            ],
           },
           read: {
             error: [
               json.streams.JSONTextToSAJParserError,
-              'is closed document',
+              `not complete syntax error. buffer:
+          [
+          "fuga"
+            `,
             ]
           }
         }
