@@ -53,8 +53,11 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       stack: this.#stack.slice(),
     };
     function toState(state: StateFunction) {
-      console.assert(state.name.startsWith("#parse"), "status function rule");
-      return state.name.slice("#parse".length);
+      if (state.name.startsWith("#parse")) {
+        return state.name.slice("#parse".length);
+      } else {
+        return state.name;
+      }
     }
   }
 
@@ -339,6 +342,9 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #parseAfterValue(ch: Ch) {
     if (ch === EOL) {
+      if (this.#stack.length > 0)
+        // まだ未閉じの構造がある → 不完全エラー
+        throw this.#makeNotCompleteError();
       this.#state = this.#endDocument;
       return;
     }
