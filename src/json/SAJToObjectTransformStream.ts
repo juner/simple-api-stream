@@ -1,4 +1,4 @@
-import { assertIsTrue, makeCauseOptions } from "../utils";
+import { assertIsDefined, assertIsTrue, makeCauseOptions } from "../utils";
 import type { SAJEventInterface } from "./event-interface";
 
 type SAJStateFn = (event: SAJEventInterface) => void;
@@ -159,7 +159,9 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   }
 
   #inArray(event: SAJEventInterface): void {
-    const arr = this.#stack[this.#stack.length - 1].container as unknown[];
+    const top = this.#stack.at(-1);
+    assertIsDefined(top, "required top");
+    const arr = top.container as unknown[];
 
     switch (event.name) {
       case "value":
@@ -208,7 +210,8 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   }
 
   #attachValue(value: unknown) {
-    const top = this.#stack[this.#stack.length - 1];
+    const top = this.#stack.at(-1);
+    assertIsDefined(top, "required top");
     if (Array.isArray(top.container)) {
       top.container.push(value);
       this.#state = this.#inArray;
