@@ -412,9 +412,10 @@ describe("error", (it) => {
         for (const error of resultType.error)
           try {
             await expect(result).rejects.toThrowError(error);
-          } finally {
+          } catch(e) {
             const error = await result.catch(v => v);
             console.dir(error);
+            throw e;
           }
       } else {
         if (resultType.result === undefined)
