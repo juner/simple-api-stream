@@ -1,5 +1,5 @@
 import type { SimpleApiParser } from "../interface";
-import { makeCauseOptions } from "../util/makeCauseOptions";
+import { assertIsTrue, makeCauseOptions } from "../utils";
 import {
   CdataEvent,
   CommentEvent,
@@ -428,7 +428,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
 
 /** iterate Regexp.exec */
 function* next(regexp: RegExp, source: string) {
-  console.assert(regexp.global);
+  assertIsTrue(regexp.global);
   let result: RegExpExecArray | null = null;
   while ((result = regexp.exec(source)) !== null) {
     yield result;

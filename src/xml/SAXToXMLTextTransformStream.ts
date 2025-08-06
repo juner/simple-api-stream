@@ -1,4 +1,4 @@
-import { makeCauseOptions } from "../util/makeCauseOptions";
+import { assertIsTrue, makeCauseOptions } from "../utils";
 import type { CdataSAXEventInterface, CommentSAXEventInterface, DoctypeSAXEventInterface, EndElementSAXEventInterface, SAXEventInterface, StartElementSAXEventInterface, TextSAXEventInterface, ProcessingInstructionSAXEventInterface, StartDocumentSAXEventInterface, EndDocumentSAXEventInterface } from "./event-interface";
 import { escape } from "./utils";
 
@@ -99,7 +99,7 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     return this.#makeError(`not complete error.`);
   }
   #makeIndent(num: number = 0) {
-    console.assert(num >= 0);
+    assertIsTrue(num >= 0, "num is required 0 or later");
     const indent = this.#options?.indent;
     if (indent === undefined) return "";
     return (typeof indent === "string"

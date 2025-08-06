@@ -1,4 +1,4 @@
-import { makeCauseOptions } from "../util/makeCauseOptions";
+import { assertIsTrue, makeCauseOptions } from "../utils";
 import type { SAJEventInterface } from "./event-interface";
 
 type SAJStateFn = (event: SAJEventInterface) => void;
@@ -100,7 +100,8 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   }
 
   #inObject(event: SAJEventInterface): void {
-    const top = this.#stack[this.#stack.length - 1];
+    const top = this.#stack.at(-1)!;
+    assertIsTrue(!!top, "required top");
 
     switch (event.name) {
       case "key":
@@ -127,7 +128,8 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   }
 
   #inObjectExpectingValue(event: SAJEventInterface): void {
-    const top = this.#stack[this.#stack.length - 1];
+    const top = this.#stack.at(-1)!;
+    assertIsTrue(!!top, "required top");
     const key = top.key!;
     const obj = top.container as Record<string, unknown>;
 

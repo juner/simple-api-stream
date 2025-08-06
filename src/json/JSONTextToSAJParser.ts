@@ -1,5 +1,5 @@
 import type { SimpleApiParser } from "../interface";
-import { makeCauseOptions } from "../util/makeCauseOptions";
+import { assertIsTrue, makeCauseOptions } from "../utils";
 import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
 import type { SAJHandler } from "./interface";
 
@@ -131,7 +131,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
         }
       }
       if (isFlush) {
-        console.assert(this.#state === this.#startDocument, `finish state is startDocument`);
+        assertIsTrue(this.#state === this.#startDocument, `finish state is startDocument`);
       }
     } catch (e: unknown) {
       this.#handler.onError?.(e);
@@ -141,7 +141,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   }
 
   #endDocument(ch?: Ch) {
-    console.assert(this.#startDocumented, "mismatch not start document");
+    assertIsTrue(this.#startDocumented, "mismatch not start document");
     if (ch !== EOL && ch !== undefined) {
       this.#pos--;
     }
@@ -287,7 +287,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     this.#handler.onValue?.(this.#wrapValue(val));
     this.#key = null;
     const parent = this.#stack.at(-1);
-    console.assert(!!parent, "not have parent");
+    assertIsTrue(!!parent, "not have parent");
     if (parent === "object")
       this.#state = this.#parseCommaOrEndObject;
     else if (parent === "array")

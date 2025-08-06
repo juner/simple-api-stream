@@ -1,4 +1,4 @@
-import { makeCauseOptions } from "../util/makeCauseOptions";
+import { makeCauseOptions } from "../utils";
 import type {
   KeySAJEventInterface,
   SAJEventInterface,

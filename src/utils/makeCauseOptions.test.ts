@@ -1,6 +1,6 @@
 import {describe} from "vitest";
 // このメソッドは公開しないので直接参照する
-import { makeCauseOptions } from "./makeCauseOptions";
+import { makeCauseOptions } from ".";
 
 describe("pattern", (it) => {
   it.concurrent("empty", ({expect}) => {
