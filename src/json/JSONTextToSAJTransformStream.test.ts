@@ -422,7 +422,7 @@ describe("error", (it) => {
         }
       },
       {
-        name: "invalid eol from object with conma",
+        name: "invalid eol from object block after",
         input: [`
           {
           "fuga":{"fuga":"fuge"}
