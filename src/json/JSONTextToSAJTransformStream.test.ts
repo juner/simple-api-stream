@@ -338,7 +338,7 @@ describe("error", (it) => {
         }
       },
       {
-        name: "invalid eol",
+        name: "invalid eol from array",
         input: [`
           [
           "fuga"
@@ -360,6 +360,34 @@ describe("error", (it) => {
               `not complete syntax error. buffer:
           [
           "fuga"
+            `,
+            ]
+          }
+        }
+      },
+      {
+        name: "invalid eol from object",
+        input: [`
+          {
+          "fuga":"fuga"
+            `
+        ],
+        output: {
+          write: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:
+          {
+          "fuga":"fuga"
+            `,
+            ],
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:
+          {
+          "fuga":"fuga"
             `,
             ]
           }
