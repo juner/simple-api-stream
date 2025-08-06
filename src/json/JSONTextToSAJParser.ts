@@ -218,8 +218,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #parseKeyOrEndObject(ch: Ch) {
     if (ch === EOL) {
-      this.#state = this.#endDocument;
-      return;
+      throw this.#makeNotCompleteError();
     }
     if (/\s/.test(ch)) return;
     if (ch === '}') {

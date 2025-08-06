@@ -392,6 +392,34 @@ describe("error", (it) => {
             ]
           }
         }
+      },
+      {
+        name: "invalid eol from object with conma",
+        input: [`
+          {
+          "fuga":"fuga",
+            `
+        ],
+        output: {
+          write: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:
+          {
+          "fuga":"fuga",
+            `,
+            ],
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:
+          {
+          "fuga":"fuga",
+            `,
+            ]
+          }
+        }
       }
     ];
   it.each(entries)("$name", async ({ input, output: { read, write }, options }) => {
