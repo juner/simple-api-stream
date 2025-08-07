@@ -21,15 +21,39 @@ export class SAJToJSONTextTransformStreamError extends Error {
   }
 }
 
+export type SAJToJSONTextTransformStreamOptions = {
+  /** json text is document summarize */
+  summarize: boolean | Summarize;
+}
+const stacks = Object.freeze({
+  object: "object",
+  array: "array",
+  document: "document",
+} as const);
+type Stacks = typeof stacks[keyof typeof stacks];
+const summarize = Object.freeze({
+  /** default type: minimal */
+  default: "default",
+  /** For each empty containerStack */
+  normal: "normal",
+  /** For each document start/end unit */
+  document: "document",
+} as const);
+/** JSON Text summarize unit types */
+type Summarize = typeof summarize[keyof typeof summarize];
+
 export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterface, string> {
   #controller!: TransformStreamDefaultController<string>;
 
-  // 現在ネストしているコンテナの種類（"object" | "array"）
-  #containerStack: Array<"object" | "array"|"document"> = [];
-  // 各コンテナごとに最初の要素かどうか（true = まだ要素出してない）
+  /** The type of container currently nested（"object" | "array" | "document"） */
+  #containerStack: Stacks[] = [];
+  /** Whether it is the first element for each container (true = no element has appeared yet)*/
   #firstItemStack: boolean[] = [];
-  // key の直後に来る値／構造はカンマを抑制するためのフラグ
+  /** Flag to suppress commas in the value/structure immediately following the key */
   #pendingValueForKey = false;
+  /** JSON Text summarize unit */
+  #summarize: Summarize;
+  #parts: string[] = [];
 
   #status() {
     return {
@@ -37,10 +61,12 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
       containerStack: structuredClone(this.#containerStack),
       firstItemStack: structuredClone(this.#firstItemStack),
       pendingValueForKey: this.#pendingValueForKey,
+      summarize: this.#summarize,
+      parts: structuredClone(this.#parts),
     };
   }
 
-  constructor() {
+  constructor({ summarize }: Partial<SAJToJSONTextTransformStreamOptions> = {}) {
     let controller_!: TransformStreamDefaultController<string>;
     super({
       start: (controller) => {
@@ -54,14 +80,38 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
       },
     });
     this.#controller = controller_;
+    this.#summarize = this.#toSummarize(summarize);
+  }
+  #toSummarize(value?: SAJToJSONTextTransformStreamOptions["summarize"]): Summarize {
+    if (typeof value === "boolean")
+      return value ? summarize.normal : summarize.default;
+    if (!value) return summarize.default;
+    return value;
   }
 
   #enqueue(chunk: SAJEventInterface): void {
     try {
       const parts = this.#next(chunk);
       if (!parts) return;
-      for (const part of parts) {
-        this.#controller.enqueue(part);
+      if (this.#summarize === summarize.default) {
+        for (const part of parts) {
+          this.#controller.enqueue(part);
+        }
+      } else {
+        this.#parts.push(...parts);
+      }
+      if (this.#summarize === summarize.normal) {
+        if (
+          (
+            this.#containerStack.length === 0
+            || (
+              this.#containerStack.at(0) === stacks.document
+              && this.#containerStack.length === 1
+            )
+          ) && this.#parts.length > 0) {
+          const json = this.#parts.splice(0, this.#parts.length).join("");
+          this.#controller.enqueue(json);
+        }
       }
     } catch (e: unknown) {
       this.#controller.error(e);
@@ -101,16 +151,17 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
   }
 
   #startDocument(): undefined {
-    this.#containerStack.push("document");
+    if (this.#containerStack.length > 0) throw this.#makeError("invalid startDocument");
+    this.#containerStack.push(stacks.document);
   }
 
-  #startStructure(type: "object" | "array"): string[] {
+  #startStructure(type: typeof stacks.array | typeof stacks.object): string[] {
     const out: string[] = [];
     // オブジェクト内の key の直後ならカンマは抑制（#pendingValueForKey が true）
     if (!this.#pendingValueForKey && !this.#isFirstItem()) {
       out.push(",");
     }
-    out.push(type === "object" ? "{" : "[");
+    out.push(type === stacks.object ? "{" : "[");
     // 新しいコンテナに入る
     this.#containerStack.push(type);
     this.#firstItemStack.push(true);
@@ -122,8 +173,8 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
     return out;
   }
 
-  #endDocument() :undefined {
-    const type = "document";
+  #endDocument(): undefined {
+    const type = stacks.document;
     const top = this.#containerStack.pop();
     if (top !== type) {
       throw this.#makeError(`Mismatched end${type}, expected to close ${top}`, {
@@ -133,9 +184,14 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
         }
       });
     }
+    if (this.#containerStack.length > 0) throw this.#makeError("invalid endDocument");
+    if (this.#summarize === summarize.document && this.#parts.length > 0) {
+      const parts = this.#parts.splice(0, this.#parts.length).join("");
+      this.#controller.enqueue(parts);
+    }
   }
 
-  #endStructure(type: "object" | "array"): string[] {
+  #endStructure(type:  typeof stacks.array | typeof stacks.object): string[] {
     const out: string[] = [];
     const top = this.#containerStack.pop();
     this.#firstItemStack.pop();
@@ -147,7 +203,7 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
         }
       });
     }
-    out.push(type === "object" ? "}" : "]");
+    out.push(type === stacks.object ? "}" : "]");
     // この構造自体が親の中の項目なので、親ではカンマを入れるべき状態にする
     this.#markParentNotFirstItem();
     // 終了後は key の直後ではない
@@ -212,7 +268,7 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
 
   #isFirstItem(): boolean {
     if (this.#firstItemStack.length === 0) return true;
-    return this.#firstItemStack[this.#firstItemStack.length - 1];
+    return this.#firstItemStack.at(-1)!;
   }
 
   #markNotFirstItem() {
@@ -228,6 +284,6 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
 
   #peekContainerIsObject(): boolean {
     if (this.#containerStack.length === 0) return false;
-    return this.#containerStack[this.#containerStack.length - 1] === "object";
+    return this.#containerStack.at(-1) === stacks.object;
   }
 }

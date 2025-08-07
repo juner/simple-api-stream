@@ -46,7 +46,7 @@ async function parseFromEvents(events: SAJEventInterface[]): Promise<unknown> {
 describe("SAJToJSONTextTransformStream - valid inputs", () => {
   it("serializes an object with all primitive types", async () => {
     const events: SAJEventInterface[] = [
-      { name: "startDocument", kind:"json" },
+      { name: "startDocument", kind: "json" },
       { name: "startObject" },
       { name: "key", key: "num" },
       { name: "value", type: "number", value: 0 },
@@ -187,4 +187,77 @@ describe("SAJToJSONTextTransformStream - error handling", () => {
     await expect(readPromise).rejects.toThrowError(expect.any(SAJToJSONTextTransformStreamError));
     await expect(writePromise).rejects.toThrowError(expect.any(TypeError));
   });
+});
+describe.concurrent("pattern", (test) => {
+  const entries: {
+    name: string;
+    options?: ConstructorParameters<typeof SAJToJSONTextTransformStream>[0];
+    input: SAJEventInterface[];
+    output: string[];
+  }[] = [
+      {
+        name: "summarize: default",
+        options: { summarize: "default" },
+        input: [
+          { name: "startArray" },
+          { name: "value", type: "string", value: "🐈" },
+          { name: "endArray" },
+        ],
+        output: [
+          "[",
+          `"🐈"`,
+          "]",
+        ],
+      },
+      {
+        name: "summarize: normal",
+        options: { summarize: "normal" },
+        input: [
+          { name: "startDocument", kind: "json" },
+          { name: "startArray" },
+          { name: "value", type: "string", value: "🐈" },
+          { name: "endArray" },
+          { name: "startObject" },
+          { name: "key", key: "animal" },
+          { name: "value", type: "string", value: "🐤" },
+          { name: "endObject" },
+          { name: "endDocument" },
+        ],
+        output: [
+          `["🐈"]`,
+          `{"animal":"🐤"}`,
+        ]
+      },
+      {
+        name: "summarize: doument",
+        options: { summarize: "document" },
+        input: [
+          { name: "startDocument", kind: "json" },
+          { name: "startArray" },
+          { name: "value", type: "string", value: "🐈" },
+          { name: "endArray" },
+          { name: "startObject" },
+          { name: "key", key: "animal" },
+          { name: "value", type: "string", value: "🐤" },
+          { name: "endObject" },
+          { name: "endDocument" },
+        ],
+        output: [
+          `["🐈"]{"animal":"🐤"}`,
+        ]
+      }
+    ];
+  test.each(entries)("$name", async ({ options, input, output }) => {
+    const { readable, writable } = new SAJToJSONTextTransformStream(options);
+    const readed = Array.fromAsync(readable);
+    const writed = (async () => {
+      const writer = writable.getWriter();
+      for (const i of input)
+        await writer.write(i);
+      await writer.close();
+    })();
+    await expect(writed).resolves.toBeUndefined();
+    await expect(readed).resolves.toEqual(output);
+  });
+
 });
