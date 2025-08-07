@@ -43,7 +43,7 @@ import { XMLTextToSAXTransformStream } from "simple-api-stream";
   Makrs the beginning of an document.
   Example:
   ```ts
-  { name: "startDocument" }
+  { name: "startDocument", kind:"xml" }
   ```
 
 - `endDocument`
