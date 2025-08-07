@@ -107,6 +107,24 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
       throw e;
     }
   }
+  async *#emitUnsupported(value: unknown): AsyncGenerator<SAJEventInterface, void, void> {
+    if (this.#unSupported === skip)
+      return;
+
+    let newValue: unknown;
+    try {
+      newValue = this.#unSupported({ value, skip });
+    } catch (e: unknown) {
+      throw this.#makeError(e as Error, {
+        cause: {
+          error: e,
+        }
+      });
+    }
+    if (newValue === skip) return;
+    yield* this.#emitValue(newValue);
+
+  }
   async *#emitValue(value: unknown): AsyncGenerator<SAJEventInterface, void, void> {
     // #region primitive
     if (value === null || typeof value !== "object") {
@@ -124,21 +142,7 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
           yield new ValueNullEvent("null");
           return;
       }
-      if (this.#unSupported === skip)
-        return;
-
-      let newValue: unknown;
-      try {
-        newValue = this.#unSupported({ value, skip });
-      } catch (e: unknown) {
-        throw this.#makeError((e as Error) ?? `${e}`, {
-          cause: {
-            error: e,
-          }
-        });
-      }
-      if (newValue === skip) return;
-      yield* this.#emitValue(newValue);
+      yield * this.#emitUnsupported(value);
       return;
     }
     // #endregion

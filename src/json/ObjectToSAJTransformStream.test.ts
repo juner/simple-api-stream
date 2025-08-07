@@ -181,7 +181,7 @@ test("notsupport to custom error", async ({ expect }) => {
   await expect(writed).rejects.toThrowError("custom error");
 });
 
-test("notsupport to custom error", async ({ expect }) => {
+test("notsupport to error", async ({ expect }) => {
   const { readable, writable } = new ObjectToSAJTransformStream({
     unSupported: "error",
   });
