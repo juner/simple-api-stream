@@ -20,4 +20,5 @@ export const JSONTextToSAJEventWritableStream = json.JSONTextToSAJEventWritableS
 export const ResolveToSAJReadableStream = json.ResolveToSAJReadableStream;
 export const JSONTextToSAJTransformStream = json.JSONTextToSAJTransformStream;
 export const SAJToObjectTransformStream = json.SAJToObjectTransformStream;
+export const ObjectToSAJTransformStream = json.ObjectToSAJTransformStream;
 // #endregion
