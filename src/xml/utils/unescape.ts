@@ -1,31 +1,18 @@
 
-const escapeRegexp = [
-  [/&/g, "&amp;"],
-  [/</g, "&lt;"],
-  [/>/g, "&gt;"],
-  [/"/g, "&quot;"],
-  [/'/g, "&#39;"],
-] as const;
 const unescapeRegexp = /&(?:#x([A-z0-9]+)|#([A-z0-9]+)|([A-z0-9]+));/gmu;
 
-// エスケープ処理
-export function escape(s: string): string {
-  if ((s?.length ?? 0) <= 0) return s ?? "";
-  for (const [searchValue, replaceValue] of escapeRegexp) {
-    s = s.replace(searchValue, replaceValue);
-  }
-  return s;
-}
-export function unescape(s: string): string {
-  if ((s?.length ?? 0) <= 0) return s ?? "";
+export function unescape(s?: string|null): string {
+  if (!s || s.length <= 0) return s ?? "";
   return s.replaceAll(unescapeRegexp, replacer);
 }
+
 function replacer(...[full, x16, x10, alpha]: string[]): string {
   if (x16 !== undefined) return String.fromCodePoint(parseInt(x16, 16));
   if (x10 !== undefined) return String.fromCodePoint(parseInt(x10));
   if (alpha !== undefined && alpha in s2c) return (s2c as Record<string,string>)[alpha];
   return full;
 }
+
 const s2c = {
   AElig: "\xc6",
   AMP: "\x26",
