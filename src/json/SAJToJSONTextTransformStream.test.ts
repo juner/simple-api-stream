@@ -46,7 +46,7 @@ async function parseFromEvents(events: SAJEventInterface[]): Promise<unknown> {
 describe("SAJToJSONTextTransformStream - valid inputs", () => {
   it("serializes an object with all primitive types", async () => {
     const events: SAJEventInterface[] = [
-      { name: "startDocument" },
+      { name: "startDocument", kind:"json" },
       { name: "startObject" },
       { name: "key", key: "num" },
       { name: "value", type: "number", value: 0 },
