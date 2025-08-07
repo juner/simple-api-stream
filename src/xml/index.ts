@@ -1,6 +1,6 @@
 export * as events from "./event";
 
-export type * as eventInterface from "./event-interface";
+export type * as eventInterfaces from "./event-interface";
 export type * as interfaces from "./interface";
 
 import * as XMLTextToSAXEventWritableStreamModule from "./XMLTextToSAXEventWritableStream";

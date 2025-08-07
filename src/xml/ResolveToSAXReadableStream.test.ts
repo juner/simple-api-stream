@@ -74,7 +74,7 @@ describe("pattern", (it) => {
   const entries: {
     name: string;
     input: ((stream: InstanceType<typeof ResolveToSAXReadableStream>) => void)[];
-    output: xml.eventInterface.SAXEventInterface[];
+    output: xml.eventInterfaces.SAXEventInterface[];
   }[] = [
       {
         name: "all type",

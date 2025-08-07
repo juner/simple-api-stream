@@ -2,7 +2,7 @@ import { describe, expect, vi } from "vitest";
 import type { json } from "..";
 import { JSONTextToSAJEventWritableStream } from "..";
 
-type SAJEventInterface = json.eventInterface.SAJEventInterface;
+type SAJEventInterface = json.eventInterfaces.SAJEventInterface;
 describe("pattern", (it) => {
   const entries: {
     name: string;

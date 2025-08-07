@@ -3,7 +3,7 @@ import type { json } from "..";
 import { SAJToObjectTransformStream } from "..";
 import { SAJToObjectTransformStreamError, SAJToObjectTransformStreamOptions } from "./SAJToObjectTransformStream";
 
-type SAJEventInterface = json.eventInterface.SAJEventInterface;
+type SAJEventInterface = json.eventInterfaces.SAJEventInterface;
 
 test("single error", async ({expect}) => {
   const {readable, writable} = new SAJToObjectTransformStream();

@@ -30,7 +30,7 @@ describe("pattern test", (it) => {
   const entries: {
     name: string,
     options?: ConstructorParameters<typeof SAXToXMLTextTransform>[0];
-    input: xml.eventInterface.SAXEventInterface[],
+    input: xml.eventInterfaces.SAXEventInterface[],
     output: string[]
   }[] = [
       {

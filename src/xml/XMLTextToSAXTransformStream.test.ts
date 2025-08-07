@@ -1,7 +1,7 @@
 import { test, describe, expect } from "vitest";
 import { XMLTextToSAXTransformStream } from "..";
 import type { xml } from "..";
-function collectEvents(stream: TransformStream<string, xml.eventInterface.SAXEventInterface>, xml: string) {
+function collectEvents(stream: TransformStream<string, xml.eventInterfaces.SAXEventInterface>, xml: string) {
   const reader = stream.readable.getReader();
   const writer = stream.writable.getWriter();
   const output: string[] = [];
@@ -99,7 +99,7 @@ describe("pattern test", (it) => {
     name: string,
     options?: ConstructorParameters<typeof XMLTextToSAXTransformStream>[0],
     input: string[],
-    output: xml.eventInterface.SAXEventInterface[]
+    output: xml.eventInterfaces.SAXEventInterface[]
   }[] = [
       {
         name: "DOCTYPE HTML 4.01 Strict",

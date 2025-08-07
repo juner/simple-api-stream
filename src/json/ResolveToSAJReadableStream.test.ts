@@ -2,7 +2,7 @@ import { describe, expect } from "vitest";
 import type { json } from "..";
 import { ResolveToSAJReadableStream } from "..";
 
-type SAJEventInterface = json.eventInterface.SAJEventInterface;
+type SAJEventInterface = json.eventInterfaces.SAJEventInterface;
 describe("pattern", (it) => {
   const entries: {
     name: string;
