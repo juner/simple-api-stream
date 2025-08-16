@@ -3,10 +3,25 @@ import { assertIsTrue, makeCauseOptions } from "../utils";
 import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
 import type { SAJHandler } from "./interface";
 
-export class JSONTextToSAJParserError extends Error {
-  constructor(...args: ConstructorParameters<typeof Error>) {
-    super(...args);
+export class JSONTextToSAJParserError extends Error implements Status{
+  buffer: string;
+  pos: number;
+  state: string;
+  acc: string;
+  key: string | null;
+  typeStack: ("object" | "array")[];
+  constructor(message: string, status: Status, options?: ErrorOptions) {
+    super(message, options);
     this.name = "XMLTextToSAXParserError";
+    ({
+      buffer: this.buffer,
+      pos: this.pos,
+      state: this.state,
+      acc: this.acc,
+      key: this.key,
+      typeStack: this.typeStack,
+    } = status);
+
   }
 }
 
@@ -17,7 +32,7 @@ type Status = {
   state: string;
   acc: string;
   key: string | null;
-  stack: ("object" | "array")[];
+  typeStack: ("object" | "array")[];
 };
 
 export type JSONTextToSAJParserAdditionalHandler = {
@@ -31,10 +46,13 @@ const EOL = Symbol.for("JSONTextToSAJParser.EOL");
 type Ch = string | typeof EOL;
 
 export class JSONTextToSAJParser implements SimpleApiParser<string> {
-
+  /** text buffer */
   #buffer = '';
+  /** read position */
   #pos = 0;
+  /** read state */
   #state: StateFunction = this.#startDocument;
+
   #acc = '';
   #key: string | null = null;
   #stack: ('object' | 'array')[] = [];
@@ -50,7 +68,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       state: toState(this.#state),
       acc: this.#acc,
       key: this.#key,
-      stack: this.#stack.slice(),
+      typeStack: this.#stack.slice(),
     };
     function toState(state: StateFunction) {
       if (state.name.startsWith("#parse")) {
@@ -67,15 +85,15 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
    * @param options error option
    * @returns
    */
-  #makeError(message: string, options?: ConstructorParameters<typeof Error>[1]) {
+  #makeError(message: string, options?: ErrorOptions) {
     (options ??= {}).cause = makeCauseOptions(
       {
         instance: this,
-        status: this.#status(),
       },
       options.cause
     );
-    return new JSONTextToSAJParserError(message, options);
+    const status = this.#status();
+    return new JSONTextToSAJParserError(message, status, options);
   }
 
   constructor({ handler, skipDocument, multiple }: { handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>, skipDocument?: boolean, multiple?: boolean }) {
@@ -91,11 +109,9 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
    * @returns
    */
   #makeSyntaxError(message: string, source: string) {
-    return this.#makeError(`${message}: ${source}`, {
-      cause: {
-        syntax: source,
-      }
-    });
+    const error = this.#makeError(`${message}: ${source}`);
+    (error as unknown as Record<string, string>).syntax = source;
+    return error;
   }
 
   /**
@@ -385,7 +401,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
             '"': '"', '\\': '\\', '/': '/',
             b: '\b', f: '\f', n: '\n', r: '\r', t: '\t'
           }[ch];
-          if (esc === undefined) throw this.#makeError(`Invalid escape: \\${ch}`, { cause: { syntax: ch } });
+          if (esc === undefined) throw this.#makeSyntaxError(`Invalid escape: \\${ch}`, ch);
           this.#acc += esc;
           escape = false;
         }

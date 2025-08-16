@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import { json } from "..";
 import { JSONTextToSAJTransformStream } from "..";
-
+const JSONTextToSAJParserError = json.streams.JSONTextToSAJParserError;
 type SAJEventInterface = json.eventInterfaces.SAJEventInterface;
 describe("pattern", (it) => {
   const entries: {
@@ -256,7 +256,7 @@ describe("pattern", (it) => {
       },
       {
         name: "empty",
-        input: [ "" ],
+        input: [""],
         output: [],
       }
     ];
@@ -291,7 +291,7 @@ describe("error", (it) => {
     input: string[];
     output:
     Record<"read" | "write", {
-      error: (string | RegExp | (new () => unknown) | Error | undefined)[];
+      error: (string | RegExp | (new (...args: (ConstructorParameters<typeof JSONTextToSAJParserError>)) => unknown) | Error | undefined)[];
     } | {
       result: unknown[] | undefined;
     }>;
@@ -473,7 +473,7 @@ describe("error", (it) => {
         for (const error of resultType.error)
           try {
             await expect(result).rejects.toThrowError(error);
-          } catch(e) {
+          } catch (e) {
             const error = await result.catch(v => v);
             console.dir(error);
             throw e;
@@ -487,39 +487,39 @@ describe("error", (it) => {
     }
   });
 });
-test("debug",async  ({expect}) => {
-    type Handler = Required<Omit<NonNullable<ConstructorParameters<typeof JSONTextToSAJTransformStream>[0]>, "multiple"|"skipDocument">>;
-    const handler: Handler  = {
-      onParseAfter: vi.fn(),
-      onParseBefore: vi.fn(),
-      onParseRoopAfter: vi.fn(),
-      onParseRoopBefore: vi.fn(),
-    };
-    const { readable, writable } = new JSONTextToSAJTransformStream(handler);
-    const readed = Array.fromAsync(readable);
-    const writed = (async () => {
-      const writer = writable.getWriter();
-      await writer.write(`"hello"`);
-      await writer.close();
-    })();
-    await expect(readed).resolves.toEqual([
-      {
-        kind: "json",
-        name: "startDocument",
-      },
-      {
-        name: "value",
-        type: "string",
-        value: "hello",
-      },
-      {
-        name: "endDocument",
-      },
-    ]);
-    await expect(writed).resolves.toBeUndefined();
-    expect(handler.onParseAfter).toHaveBeenCalledTimes(2);
-    expect(handler.onParseBefore).toHaveBeenCalledTimes(2);
-    expect(handler.onParseRoopAfter).toHaveBeenCalledTimes(7);
-    expect(handler.onParseRoopBefore).toHaveBeenCalledTimes(7);
+test("debug", async ({ expect }) => {
+  type Handler = Required<Omit<NonNullable<ConstructorParameters<typeof JSONTextToSAJTransformStream>[0]>, "multiple" | "skipDocument">>;
+  const handler: Handler = {
+    onParseAfter: vi.fn(),
+    onParseBefore: vi.fn(),
+    onParseRoopAfter: vi.fn(),
+    onParseRoopBefore: vi.fn(),
+  };
+  const { readable, writable } = new JSONTextToSAJTransformStream(handler);
+  const readed = Array.fromAsync(readable);
+  const writed = (async () => {
+    const writer = writable.getWriter();
+    await writer.write(`"hello"`);
+    await writer.close();
+  })();
+  await expect(readed).resolves.toEqual([
+    {
+      kind: "json",
+      name: "startDocument",
+    },
+    {
+      name: "value",
+      type: "string",
+      value: "hello",
+    },
+    {
+      name: "endDocument",
+    },
+  ]);
+  await expect(writed).resolves.toBeUndefined();
+  expect(handler.onParseAfter).toHaveBeenCalledTimes(2);
+  expect(handler.onParseBefore).toHaveBeenCalledTimes(2);
+  expect(handler.onParseRoopAfter).toHaveBeenCalledTimes(7);
+  expect(handler.onParseRoopBefore).toHaveBeenCalledTimes(7);
 
 });

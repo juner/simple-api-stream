@@ -80,14 +80,14 @@ test("SimpleSAXTransformStream handles malformed XML", async ({ expect }) => {
 });
 
 test("parses xml declaration and stylesheet", async ({ expect }) => {
-  const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  const xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <?xml-stylesheet type="text/xsl" href="style.xsl"?>
 <root/>`;
   const stream = new XMLTextToSAXTransformStream();
   const events = await collectEvents(stream, xml);
 
   expect(events).toEqual([
-    `processingInstruction:xml:version="1.0" encoding="UTF-8"`,
+    `processingInstruction:xml:version="1.0" encoding="UTF-8" standalone="no"`,
     `processingInstruction:xml-stylesheet:type="text/xsl" href="style.xsl"`,
     "start:root:{}:true",
     "end:root"
@@ -158,7 +158,7 @@ describe("pattern test", (it) => {
       },
       {
         name: "INTERNAL DOCTYPE HTML",
-        options: { skipDocument: true},
+        options: { skipDocument: true },
         input: [
           `<!doctype myown system "file:///HD/docs/dtd/myown.dtd">`,
         ],
@@ -168,7 +168,7 @@ describe("pattern test", (it) => {
       },
       {
         name: "outputs correct XML chunks",
-        options: { skipDocument: true},
+        options: { skipDocument: true },
         input: [`
           <root id="123">Hello &lt;world&gt; &amp; othe&#x72;&#115;<empty/><!----></root>`,
         ],
@@ -230,9 +230,20 @@ describe("pattern test", (it) => {
             tagName: "root",
             name: "endElement",
           },
-          { name: "endDocument"},
+          { name: "endDocument" },
         ],
-      }
+      },
+      {
+        name: "<?test ?>",
+        input: [
+          "<?test ?>",
+        ],
+        output: [
+          { name: "startDocument", kind: "xml" },
+          { name: "processingInstruction", target: "test", data: "" },
+          { name: "endDocument" },
+        ]
+      },
     ];
   it.each(entries)(
     `$name`,
