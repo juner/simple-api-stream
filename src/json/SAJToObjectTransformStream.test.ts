@@ -1,16 +1,16 @@
-import { describe, expect,test } from "vitest";
+import { describe, expect, test } from "vitest";
 import type { json } from "..";
 import { SAJToObjectTransformStream } from "..";
 import { SAJToObjectTransformStreamError, SAJToObjectTransformStreamOptions } from "./SAJToObjectTransformStream";
 
 type SAJEventInterface = json.eventInterfaces.SAJEventInterface;
 
-test("single error", async ({expect}) => {
-  const {readable, writable} = new SAJToObjectTransformStream();
+test("single error", async ({ expect }) => {
+  const { readable, writable } = new SAJToObjectTransformStream();
   const wait2 = (async () => {
     const writer = writable.getWriter();
-    await writer.write({name: "value", type:"null", value: null});
-    await writer.write({name: "value", type: "string", value: "hoge"});
+    await writer.write({ name: "value", type: "null", value: null });
+    await writer.write({ name: "value", type: "string", value: "hoge" });
     await writer.close();
   })();
   const wait = Array.fromAsync(readable);
@@ -94,10 +94,34 @@ describe("pattern", (it) => {
           false,
         ]
       },
+      {
+        name: "prototype",
+        input: [
+          { name: "startObject" },
+          { name: "key", key: "prototype" },
+          { name: "value", type: "string", value: "hoge" },
+          { name: "endObject" },
+        ],
+        output: [
+          { prototype: "hoge" }
+        ]
+      },
+      {
+        name: "__proto__",
+        input: [
+          { name: "startObject" },
+          { name: "key", key: "__proto__" },
+          { name: "value", type: "string", value: "hoge" },
+          { name: "endObject" },
+        ],
+        output: [
+          { ["__proto__"]: "hoge" }
+        ]
+      },
     ];
   it.each(entries)("$name", async ({ input, output, options }) => {
     const result = await (() => {
-      const {readable, writable} = new SAJToObjectTransformStream(options);
+      const { readable, writable } = new SAJToObjectTransformStream(options);
       (async () => {
         const writer = writable.getWriter();
         for (const entry of input) {

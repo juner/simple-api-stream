@@ -1,13 +1,28 @@
-import { assertIsDefined, assertIsTrue, makeCauseOptions } from "../utils";
+import { assertIsDefined, assertIsTrue } from "../utils";
 import type { SAJEventInterface } from "./event-interface";
 
 type SAJStateFn = (event: SAJEventInterface) => void;
 
-export class SAJToObjectTransformStreamError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+type Status = {
+  state: string;
+  stackedList: {
+    container: unknown;
+    key?: string | undefined;
+  }[];
+  current: unknown;
+}
+
+export class SAJToObjectTransformStreamError extends Error implements Status {
+  constructor(message: string, status: Status, options?: ErrorOptions) {
     super(message, options);
     this.name = "SAJToObjectTransformStreamError";
+    this.state = status.state;
+    this.stackedList = status.stackedList;
+    this.current = status.current;
   }
+  state: string;
+  stackedList: { container: unknown; key?: string | undefined; }[];
+  current: unknown;
 }
 
 export type SAJToObjectTransformStreamOptions = {
@@ -38,20 +53,14 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
 
 
   #makeError(message: string, options?: ErrorOptions) {
-    (options ??= {}).cause = makeCauseOptions(
-      {
-        instance: this,
-        status: this.#status(),
-      },
-      options?.cause
-    );
-    return new SAJToObjectTransformStreamError(message, options);
+    const status = this.#status();
+    return new SAJToObjectTransformStreamError(message, status, options);
   }
 
-  #status() {
+  #status(): Status {
     return {
       state: stateToName(this.#state),
-      stack: structuredClone(this.#stack),
+      stackedList: structuredClone(this.#stack),
       current: structuredClone(this.#current),
     };
     function stateToName(state: SAJStateFn) {
@@ -63,7 +72,7 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   #next(chunk: SAJEventInterface) {
     try {
       this.#state(chunk);
-    }catch(e:unknown) {
+    } catch (e: unknown) {
       this.#controller.error(e);
     }
   }
@@ -120,10 +129,18 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         return;
       }
     }
-    throw this.#makeError(`Unexpected ${event.name} in object`, {
-      cause: {
-        name: event.name,
-      }
+
+    const error = this.#makeError(`Unexpected ${event.name} in object`);
+    (error as unknown as Record<string, unknown>).eventName = event.name;
+    throw error;
+  }
+
+  #setPropertyValue(obj: Record<string, unknown>, key: string, value: unknown): void {
+    Reflect.defineProperty(obj, key, {
+      value,
+      writable: true,
+      enumerable: true,
+      configurable: true,
     });
   }
 
@@ -135,21 +152,21 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
 
     switch (event.name) {
       case "value":
-        obj[key] = event.value;
+        this.#setPropertyValue(obj, key, event.value);
         top.key = undefined;
         this.#state = this.#inObject;
         return;
 
       case "startObject": {
         const newObj: Record<string, unknown> = {};
-        obj[key] = newObj;
+        this.#setPropertyValue(obj, key, newObj);
         this.#stack.push({ container: newObj });
         this.#state = this.#inObject;
         return;
       }
       case "startArray": {
         const newArr: unknown[] = [];
-        obj[key] = newArr;
+        this.#setPropertyValue(obj, key, newArr);
         this.#stack.push({ container: newArr });
         this.#state = this.#inArray;
         return;
@@ -195,7 +212,10 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         return;
       }
     }
-    throw this.#makeError(`Unexpected ${event.name} in array`);
+
+    const error = this.#makeError(`Unexpected ${event.name} in array`);
+    (error as unknown as Record<string, unknown>).eventName = event.name;
+    throw error;
   }
 
   #done(_: SAJEventInterface): void {
@@ -219,7 +239,7 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
     }
     if (top.container && typeof top.container === "object") {
       const key = top.key!;
-      (top.container as Record<string, unknown>)[key] = value;
+      this.#setPropertyValue(top.container as Record<string, unknown>, key, value);
       top.key = undefined;
       this.#state = this.#inObject;
       return;
