@@ -453,6 +453,23 @@ describe("error", (it) => {
             ]
           }
         }
+      }, {
+        name:"invalid initial character",
+        input: [
+          `}`,
+        ],
+        output: {
+          write: {
+            error: [
+              TypeError,
+            ],
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+            ]
+          }
+        }
       }
     ];
   it.each(entries)("$name", async ({ input, output: { read, write }, options }) => {

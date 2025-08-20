@@ -3,7 +3,7 @@ import { assertIsTrue } from "../utils";
 import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
 import type { SAJHandler } from "./interface";
 
-export class JSONTextToSAJParserError extends Error implements Status{
+export class JSONTextToSAJParserError extends Error implements Status {
   buffer: string;
   pos: number;
   state: string;
@@ -235,6 +235,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       this.#handler.onEndObject?.(new EndObjectEvent());
       this.#stack.pop();
       this.#state = this.#parseAfterValue;
+      return;
     } else if (ch === '"') {
       this.#acc = '';
       this.#state = this.#parseString((key) => {
@@ -242,9 +243,9 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
         this.#handler.onKey?.(new KeyEvent(key));
         this.#state = this.#parseColon;
       });
-    } else {
-      throw this.#makeSyntaxError(`Unexpected token in object`, ch);
+      return;
     }
+    throw this.#makeSyntaxError(`Unexpected token in object`, ch);
   };
 
   #parseColon(ch: Ch) {

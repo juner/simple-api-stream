@@ -60,12 +60,30 @@ describe("pattern", (it) => {
         ]
       },
       {
-        name: "simple value number",
+        name: "simple value number (1)",
         input: [
           `1`,
         ],
         output: [
           { name: "value", type: "number", value: 1 },
+        ]
+      },
+      {
+        name: "simple value number (0)",
+        input: [
+          `0`,
+        ],
+        output: [
+          { name: "value", type: "number", value: 0 },
+        ]
+      },
+      {
+        name: "simple value number (-1)",
+        input: [
+          `-1`,
+        ],
+        output: [
+          { name: "value", type: "number", value: -1 },
         ]
       },
       {
@@ -87,12 +105,21 @@ describe("pattern", (it) => {
         ]
       },
       {
-        name: "simple value boolean",
+        name: "simple value false",
         input: [
           `false`,
         ],
         output: [
           { name: "value", type: "boolean", value: false },
+        ]
+      },
+      {
+        name: "simple value true",
+        input: [
+          `true`,
+        ],
+        output: [
+          { name: "value", type: "boolean", value: true },
         ]
       },
       {
