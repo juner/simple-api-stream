@@ -14,12 +14,23 @@ const PROCESSING_INSTRUCTION_SUFFIX = "?>";
 const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
 
+const summarize = Object.freeze({
+  /** default type: minimal (イベント単位で出力) */
+  default: "default",
+  /** element 単位（startElement～endElementまで）で出力 */
+  element: "element",
+  /** document 単位（startDocument～endDocumentまで）で出力 */
+  document: "document",
+} as const);
+type Summarize = typeof summarize[keyof typeof summarize];
+
 export type SAXToXMLTextTransformOptions = {
   /**
    * indent size or indent character
    */
   indent: number | string;
   lineBreak: string;
+  summarize: boolean | Summarize;
 }
 
 type Status = {
@@ -27,6 +38,8 @@ type Status = {
   get starts(): (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[];
   get prefix(): string;
   get suffix(): string;
+  get summarize(): Summarize;
+  get parts(): string[];
 }
 
 export class SAXToXMLTextTransformStreamError extends Error implements Status {
@@ -37,11 +50,15 @@ export class SAXToXMLTextTransformStreamError extends Error implements Status {
     this.starts = status.starts;
     this.prefix = status.prefix;
     this.suffix = status.suffix;
+    this.summarize = status.summarize;
+    this.parts = status.parts;
   }
   options: Partial<SAXToXMLTextTransformOptions> | undefined;
   starts: (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[];
   prefix: string;
   suffix: string;
+  summarize: Summarize;
+  parts: string[];
 }
 
 /**
@@ -76,16 +93,17 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
   #prefix: string;
   #suffix: string;
   #starts: (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[];
+  #summarize: Summarize;
+  #controller: TransformStreamDefaultController<string>;
+  #parts: string[] = [];
   constructor(options?: Partial<SAXToXMLTextTransformOptions>) {
+    let controller_!: TransformStreamDefaultController<string>;
     super({
-      transform: (chunk, controller) => {
-        try {
-          const str = this.#enqueue(chunk);
-          if (str === undefined) return;
-          controller.enqueue(str);
-        } catch (e: unknown) {
-          controller.error(e);
-        }
+      start: (controller) => {
+        controller_ = controller;
+      },
+      transform: (chunk) => {
+        this.#enqueue(chunk);
       },
       flush: () => this.#flush(),
     });
@@ -93,13 +111,22 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     this.#starts = [];
     this.#suffix = options?.lineBreak ?? "";
     this.#prefix = this.#makeIndent();
+    this.#summarize = this.#toSummarize(options?.summarize);
+    this.#controller = controller_;
   }
-  #status() : Status {
+  #toSummarize(value?: SAXToXMLTextTransformOptions["summarize"]): Summarize {
+    if (typeof value === "boolean") return value ? summarize.document : summarize.default;
+    if (!value) return summarize.default;
+    return value;
+  }
+  #status(): Status {
     return {
       options: structuredClone(this.#options),
       starts: structuredClone(this.#starts),
       prefix: this.#prefix,
       suffix: this.#suffix,
+      summarize: this.#summarize,
+      parts: structuredClone(this.#parts),
     };
   }
   #makeError(message: string, options?: ErrorOptions) {
@@ -122,10 +149,44 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     ).join("");
   }
   #flush() {
-    if (this.#starts.length === 0) return;
+    if (this.#starts.length === 0 && this.#parts.length === 0) return;
     throw this.#makeNotCompleteError();
   }
-  #enqueue(chunk: SAXEventInterface): string | undefined {
+  #enqueue(chunk: SAXEventInterface): void {
+    try {
+      const str = this.#next(chunk);
+      if (typeof str === "string") this.#parts.push(str);
+
+      if (this.#summarize === summarize.default) {
+        // イベントごとに即出力
+        while (this.#parts.length > 0) {
+          this.#controller.enqueue(this.#parts.shift()!);
+        }
+      } else if (this.#summarize === summarize.element) {
+        if (chunk.name === "endElement"
+          && this.#starts.filter(v => v.name === "startElement").length === 0
+        )
+          this.#flushParts();
+      } else if (this.#summarize === summarize.document) {
+        if (chunk.name === "endDocument"
+          && this.#starts.filter(v => v.name === "startDocument").length === 0
+        )
+          this.#flushParts();
+      }
+    } catch (e) {
+      this.#controller.error(e);
+    }
+  }
+
+  #flushParts() {
+    if (this.#parts.length > 0) {
+      const xml = this.#parts.join("");
+      this.#parts = [];
+      this.#controller.enqueue(xml);
+    }
+  }
+
+  #next(chunk: SAXEventInterface): string | undefined {
     switch (chunk.name) {
       case "cdata":
         return this.#cdata(chunk);

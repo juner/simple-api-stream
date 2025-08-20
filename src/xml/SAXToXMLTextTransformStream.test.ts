@@ -12,10 +12,10 @@ test("empty chunks", async ({ expect }) => {
 
 describe("error pattern", (it) => {
   it.concurrent("not complete", async ({ expect }) => {
-    const {readable, writable} = new SAXToXMLTextTransform();
+    const { readable, writable } = new SAXToXMLTextTransform();
     const write = (async () => {
       const writer = writable.getWriter();
-      await writer.write({name: "startElement", tagName: "a"});
+      await writer.write({ name: "startElement", tagName: "a" });
       await writer.close();
     })();
     const read = (async () => {
@@ -196,6 +196,182 @@ describe("pattern test", (it) => {
           `piyo`,
           `</element>`,
           `</root>`
+        ],
+      }, {
+        name: "all type (summarize element)",
+        options: { summarize: "element" },
+        input: [
+          {
+            data: `version="1.0" encoding="UTF-8"`,
+            encoding: "UTF-8",
+            standalone: "yes",
+            target: "xml",
+            name: "processingInstruction",
+            version: "1.0",
+          },
+          {
+            type: "text/xls",
+            data: `type="text/xls" href="./style.xls"`,
+            href: "./style.xls",
+            target: "xml-stylesheet",
+            name: "processingInstruction",
+          },
+          {
+            attrs: {},
+            selfClosing: false,
+            tagName: "root",
+            name: "startElement",
+          },
+          {
+            cdata: " hoge ",
+            name: "cdata",
+          }, {
+            comment: " fuga ",
+            name: "comment",
+          }, {
+            attrs: {},
+            selfClosing: false,
+            tagName: "element",
+            name: "startElement",
+          }, {
+            text: "piyo",
+            name: "text",
+          }, {
+            tagName: "element",
+            name: "endElement",
+          }, {
+            tagName: "root",
+            name: "endElement",
+          },
+        ],
+        output: [
+          `<?xml version="1.0" encoding="UTF-8" ?><?xml-stylesheet type="text/xls" href="./style.xls" ?><root><![CDATA[ hoge ]]><!-- fuga --><element>piyo</element></root>`
+        ],
+      }, {
+        name: "multi root element (summarize element)",
+        options: { summarize: "element" },
+        input: [
+          {
+            name: "startDocument",
+            kind: "xml",
+          },
+          {
+            attrs: {},
+            selfClosing: false,
+            tagName: "root",
+            name: "startElement",
+          }, {
+            text: "piyo",
+            name: "text",
+          }, {
+            tagName: "root",
+            name: "endElement",
+          },
+          {
+            attrs: {},
+            selfClosing: false,
+            tagName: "root",
+            name: "startElement",
+          }, {
+            text: "hoge",
+            name: "text",
+          }, {
+            tagName: "root",
+            name: "endElement",
+          },
+          {
+            name: "endDocument",
+          },
+        ],
+        output: [
+          `<root>piyo</root>`,
+          `<root>hoge</root>`,
+        ],
+      }, {
+        name: "multi root element (summarize document)",
+        options: { summarize: "document" },
+        input: [
+          {
+            name: "startDocument",
+            kind: "xml",
+          },
+          {
+            attrs: {},
+            selfClosing: false,
+            tagName: "root",
+            name: "startElement",
+          }, {
+            text: "piyo",
+            name: "text",
+          }, {
+            tagName: "root",
+            name: "endElement",
+          },
+          {
+            attrs: {},
+            selfClosing: false,
+            tagName: "root",
+            name: "startElement",
+          }, {
+            text: "hoge",
+            name: "text",
+          }, {
+            tagName: "root",
+            name: "endElement",
+          },
+          {
+            name: "endDocument",
+          },
+        ],
+        output: [
+          `<root>piyo</root><root>hoge</root>`,
+        ],
+      }, {
+        name: "multi document (summarize document)",
+        options: { summarize: "document" },
+        input: [
+          {
+            name: "startDocument",
+            kind: "xml",
+          },
+          {
+            attrs: {},
+            selfClosing: false,
+            tagName: "root",
+            name: "startElement",
+          }, {
+            text: "piyo",
+            name: "text",
+          }, {
+            tagName: "root",
+            name: "endElement",
+          },
+          {
+            name: "endDocument",
+          },
+          {
+            name: "startDocument",
+            kind: "xml",
+          },
+          {
+            attrs: {},
+            selfClosing: false,
+            tagName: "root",
+            name: "startElement",
+          }, {
+            text: "hoge",
+            name: "text",
+          }, {
+            tagName: "root",
+            name: "endElement",
+          },
+          {
+            name: "endDocument",
+          },
+        ],
+        output: [
+          `<root>piyo</root>`,
+          `<root>hoge</root>`,
         ],
       }
     ];
