@@ -27,12 +27,12 @@ export class JSONTextToSAJParserError extends Error implements Status{
 
 type StateFunction = (ch: Ch) => void;
 type Status = {
-  buffer: string;
-  pos: number;
-  state: string;
-  acc: string;
-  key: string | null;
-  typeStack: ("object" | "array")[];
+  get buffer(): string;
+  get pos(): number;
+  get state(): string;
+  get acc(): string;
+  get key(): string | null;
+  get typeStack(): ("object" | "array")[];
 };
 
 export type JSONTextToSAJParserAdditionalHandler = {

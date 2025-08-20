@@ -4,12 +4,12 @@ import type { SAJEventInterface } from "./event-interface";
 type SAJStateFn = (event: SAJEventInterface) => void;
 
 type Status = {
-  state: string;
-  stackedList: {
-    container: unknown;
+  get state(): string;
+  get stackedList(): {
+    get container(): unknown;
     key?: string | undefined;
   }[];
-  current: unknown;
+  get current(): unknown;
 }
 
 export class SAJToObjectTransformStreamError extends Error implements Status {

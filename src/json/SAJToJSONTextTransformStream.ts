@@ -14,11 +14,11 @@ type ValueSAJEventInterface =
   | ValueStringSAJEventInterface;
 
 type Status = {
-  containerStack: Stacks[];
-  firstItemStack: boolean[];
-  pendingValueForKey: boolean;
-  summarize: Summarize;
-  parts: string[];
+  get containerStack(): Stacks[];
+  get firstItemStack(): boolean[];
+  get pendingValueForKey(): boolean;
+  get summarize(): Summarize;
+  get parts(): string[];
 }
 
 export class SAJToJSONTextTransformStreamError extends Error implements Status {

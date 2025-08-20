@@ -31,10 +31,10 @@ const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
 
 type Status = {
-  buffer: string;
-  state: string;
-  acc: string;
-  openDocumented: boolean;
+  get buffer(): string;
+  get state(): string;
+  get acc(): string;
+  get openDocumented(): boolean;
 };
 
 export class XMLTextToSAXParserError extends Error implements Status {

@@ -23,10 +23,10 @@ export type SAXToXMLTextTransformOptions = {
 }
 
 type Status = {
-  options: Partial<SAXToXMLTextTransformOptions> | undefined;
-  starts: (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[];
-  prefix: string;
-  suffix: string;
+  get options(): Partial<SAXToXMLTextTransformOptions> | undefined;
+  get starts(): (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[];
+  get prefix(): string;
+  get suffix(): string;
 }
 
 export class SAXToXMLTextTransformStreamError extends Error implements Status {

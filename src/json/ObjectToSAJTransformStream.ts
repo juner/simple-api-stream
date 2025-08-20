@@ -12,8 +12,8 @@ const skip = Symbol.for("ObjectToSAJTransformStream.skip");
 type UnSupportedFunction = (arg: { value: unknown, skip: typeof skip }) => unknown;
 
 type Status = {
-  makeDocument: boolean;
-  unSupported: ReturnType<typeof toUnsupported>;
+  get makeDocument(): boolean;
+  get unSupported(): ReturnType<typeof toUnsupported>;
 }
 
 export type ObjectToSAJTransformStreamOptions = {
