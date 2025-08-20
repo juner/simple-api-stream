@@ -467,6 +467,25 @@ describe("error", (it) => {
           read: {
             error: [
               json.streams.JSONTextToSAJParserError,
+              "Unexpected token: }",
+            ]
+          }
+        }
+      }, {
+        name:"invalid keyOrEndObject",
+        input: [
+          `{{`,
+        ],
+        output: {
+          write: {
+            error: [
+              TypeError,
+            ],
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              "Unexpected token in object: {",
             ]
           }
         }
