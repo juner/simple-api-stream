@@ -1,5 +1,5 @@
 import type { SimpleApiParser } from "../interface";
-import { assertIsTrue, makeCauseOptions } from "../utils";
+import { assertIsTrue } from "../utils";
 import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
 import type { SAJHandler } from "./interface";
 
@@ -86,14 +86,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
    * @returns
    */
   #makeError(message: string, options?: ErrorOptions) {
-    (options ??= {}).cause = makeCauseOptions(
-      {
-        instance: this,
-      },
-      options.cause
-    );
-    const status = this.#status();
-    return new JSONTextToSAJParserError(message, status, options);
+    return new JSONTextToSAJParserError(message, this.#status(), options);
   }
 
   constructor({ handler, skipDocument, multiple }: { handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>, skipDocument?: boolean, multiple?: boolean }) {
