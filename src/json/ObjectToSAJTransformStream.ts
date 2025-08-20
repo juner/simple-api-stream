@@ -1,4 +1,3 @@
-import { makeCauseOptions } from "../utils";
 import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
 import type { SAJEventInterface } from "./event-interface";
 
@@ -12,17 +11,33 @@ const skip = Symbol.for("ObjectToSAJTransformStream.skip");
 
 type UnSupportedFunction = (arg: { value: unknown, skip: typeof skip }) => unknown;
 
+type Status = {
+  makeDocument: boolean;
+  unSupported: ReturnType<typeof toUnsupported>;
+}
+
 export type ObjectToSAJTransformStreamOptions = {
   makeDocument?: boolean
   unSupported?: UnSupporteds | UnSupportedFunction;
 };
 
-export class ObjectToSAJTransformStreamError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+export class ObjectToSAJTransformStreamError extends Error implements Status {
+  constructor(message: string, status: Status, options?: ErrorOptions) {
     super(message, options);
     this.name = "ObjectToSAJTransformStreamError";
+    this.makeDocument = status.makeDocument;
+    this.unSupported = status.unSupported;
   }
+  makeDocument: boolean;
+  unSupported: ReturnType<typeof toUnsupported>;
 }
+
+function toUnsupported(unSupported: UnSupportedFunction | typeof skip) {
+  if (unSupported === skip) return [unSupporteds.ignore, unSupported] as const;
+  if (unSupported === ObjectToSAJTransformStream.unSupportedToError) return [unSupporteds.error, unSupported] as const;
+  if (unSupported === ObjectToSAJTransformStream.unSupoortedToNull) return [unSupporteds.null, unSupported] as const;
+  return ["custom", unSupported] as const;
+};
 
 export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, SAJEventInterface> {
   #controller: TransformStreamDefaultController<SAJEventInterface>;
@@ -52,40 +67,27 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
       return ObjectToSAJTransformStream.unSupoortedToNull;
     return unSupported;
   }
-  #status() {
-    const unSupported_ = this.#unSupported;
+  #status(): Status {
     return {
       makeDocument: this.#makeDocument,
-      unSupported: toUnsupported(unSupported_)
-    };
-    function toUnsupported(unSupported: typeof unSupported_) {
-      if (unSupported === skip) return [unSupporteds.ignore, unSupported] as const;
-      if (unSupported === ObjectToSAJTransformStream.unSupportedToError) return [unSupporteds.error, unSupported] as const;
-      if (unSupported === ObjectToSAJTransformStream.unSupoortedToNull) return [unSupporteds.null, unSupported] as const;
-      return ["custom", unSupported] as const;
+      unSupported: toUnsupported(this.#unSupported)
     };
   }
   static unSupoortedToNull() {
     return null;
   }
   static unSupportedToError({ value }: Parameters<UnSupportedFunction>[0]) {
-    throw new Error(`not support value ${value}`, {
-      cause: {
-        value,
-      }
-    });
+    const error =  new Error(`not support value ${value}`);
+    error.name = "UnSupportedValueError";
+    (error as unknown as Record<string,unknown>).value = value;
+    throw error;
   }
   #makeError(message: string | Error, options?: ConstructorParameters<typeof Error>[1]) {
-    (options ??= {}).cause = makeCauseOptions(
-      {
-        instance: this,
-        status: this.#status(),
-      },
-      options.cause,
-      ...(message instanceof Error ? [message.cause] : [])
-    );
-    message = message instanceof Error ? message.message : `${message}`;
-    return new ObjectToSAJTransformStreamError(message, options);
+    if (typeof message !== "string") {
+      (options ??= {}).cause ??= message;
+      message = `${message?.message ?? message}`;
+    }
+    return new ObjectToSAJTransformStreamError(message, this.#status(), options);
   }
   async #addChunk(chunk: unknown) {
     try {
@@ -115,11 +117,7 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
     try {
       newValue = this.#unSupported({ value, skip });
     } catch (e: unknown) {
-      throw this.#makeError(e as Error, {
-        cause: {
-          error: e,
-        }
-      });
+      throw this.#makeError(e as Error);
     }
     if (newValue === skip) return;
     yield* this.#emitValue(newValue);
@@ -142,7 +140,7 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
           yield new ValueNullEvent("null");
           return;
       }
-      yield * this.#emitUnsupported(value);
+      yield* this.#emitUnsupported(value);
       return;
     }
     // #endregion

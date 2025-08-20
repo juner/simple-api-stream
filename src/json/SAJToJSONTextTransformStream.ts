@@ -1,4 +1,3 @@
-import { makeCauseOptions } from "../utils";
 import type {
   KeySAJEventInterface,
   SAJEventInterface,
@@ -14,11 +13,29 @@ type ValueSAJEventInterface =
   | ValueNullSAJEventInterface
   | ValueStringSAJEventInterface;
 
-export class SAJToJSONTextTransformStreamError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+type Status = {
+  containerStack: Stacks[];
+  firstItemStack: boolean[];
+  pendingValueForKey: boolean;
+  summarize: Summarize;
+  parts: string[];
+}
+
+export class SAJToJSONTextTransformStreamError extends Error implements Status {
+  constructor(message: string, status: Status, options?: ErrorOptions) {
     super(message, options);
     this.name = "SAJToJSONTextTransformStreamError";
+    this.containerStack = status.containerStack;
+    this.firstItemStack = status.firstItemStack;
+    this.pendingValueForKey = status.pendingValueForKey;
+    this.summarize = status.summarize;
+    this.parts = status.parts;
   }
+  containerStack: Stacks[];
+  firstItemStack: boolean[];
+  pendingValueForKey: boolean;
+  summarize: Summarize;
+  parts: string[];
 }
 
 export type SAJToJSONTextTransformStreamOptions = {
@@ -57,7 +74,6 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
 
   #status() {
     return {
-      instance: this,
       containerStack: structuredClone(this.#containerStack),
       firstItemStack: structuredClone(this.#firstItemStack),
       pendingValueForKey: this.#pendingValueForKey,
@@ -139,15 +155,7 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
     }
   }
   #makeError(message: string, options?: ErrorOptions) {
-    (options ??= {}).cause = makeCauseOptions([
-      {
-        instance: this,
-        status: this.#status(),
-      },
-      options?.cause
-    ]);
-    return new SAJToJSONTextTransformStreamError(message, options);
-
+    return new SAJToJSONTextTransformStreamError(message, this.#status(), options);
   }
 
   #startDocument(): undefined {
@@ -177,12 +185,9 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
     const type = stacks.document;
     const top = this.#containerStack.pop();
     if (top !== type) {
-      throw this.#makeError(`Mismatched end${type}, expected to close ${top}`, {
-        cause: {
-          type,
-          top,
-        }
-      });
+      const error = this.#makeError(`Mismatched end${type}, expected to close ${top}`);
+      Object.assign(error as unknown as Record<string, unknown>, { type, top });
+      throw error;
     }
     if (this.#containerStack.length > 0) throw this.#makeError("invalid endDocument");
     if (this.#summarize === summarize.document && this.#parts.length > 0) {
@@ -191,17 +196,14 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
     }
   }
 
-  #endStructure(type:  typeof stacks.array | typeof stacks.object): string[] {
+  #endStructure(type: typeof stacks.array | typeof stacks.object): string[] {
     const out: string[] = [];
     const top = this.#containerStack.pop();
     this.#firstItemStack.pop();
     if (top !== type) {
-      throw this.#makeError(`Mismatched end${type}, expected to close ${top}`, {
-        cause: {
-          type,
-          top,
-        }
-      });
+      const error = this.#makeError(`Mismatched end${type}, expected to close ${top}`);
+      Object.assign(error as unknown as Record<string, unknown>, { type, top });
+      throw error;
     }
     out.push(type === stacks.object ? "}" : "]");
     // この構造自体が親の中の項目なので、親ではカンマを入れるべき状態にする
@@ -213,11 +215,9 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
 
   #key({ key }: KeySAJEventInterface): string[] {
     if (!this.#peekContainerIsObject()) {
-      throw this.#makeError("Key event outside of object", {
-        cause: {
-          key,
-        }
-      });
+      const error = this.#makeError("Key event outside of object");
+      Object.assign(error as unknown as Record<string, unknown>, { key });
+      throw error;
     }
     const out: string[] = [];
     if (!this.#isFirstItem()) {
@@ -251,12 +251,11 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
       case "string":
         serialized = JSON.stringify(chunk.value);
         break;
-      default:
-        throw this.#makeError(`Unknown value type: ${(chunk as { type: unknown }).type}`, {
-          cause: {
-            chunk
-          },
-        });
+      default: {
+        const error = this.#makeError(`Unknown value type: ${(chunk as { type: unknown }).type}`);
+        Object.assign(error as unknown as Record<string, unknown>, { chunk });
+        throw error;
+      }
     }
     out.push(serialized);
     // この値を出したので次はカンマが必要になる

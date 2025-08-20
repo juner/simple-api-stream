@@ -1,4 +1,4 @@
-import { assertIsTrue, makeCauseOptions } from "../utils";
+import { assertIsTrue } from "../utils";
 import type { CdataSAXEventInterface, CommentSAXEventInterface, DoctypeSAXEventInterface, EndElementSAXEventInterface, SAXEventInterface, StartElementSAXEventInterface, TextSAXEventInterface, ProcessingInstructionSAXEventInterface, StartDocumentSAXEventInterface, EndDocumentSAXEventInterface } from "./event-interface";
 import { escape } from "./utils";
 
@@ -22,11 +22,26 @@ export type SAXToXMLTextTransformOptions = {
   lineBreak: string;
 }
 
-export class SAXToXMLTextTransformStreamError extends Error {
-  constructor(...args: ConstructorParameters<typeof Error>) {
-    super(...args);
+type Status = {
+  options: Partial<SAXToXMLTextTransformOptions> | undefined;
+  starts: (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[];
+  prefix: string;
+  suffix: string;
+}
+
+export class SAXToXMLTextTransformStreamError extends Error implements Status {
+  constructor(message: string, status: Status, options?: ErrorOptions) {
+    super(message, options);
     this.name = "SAXToXMLTextTransformError";
+    this.options = status.options;
+    this.starts = status.starts;
+    this.prefix = status.prefix;
+    this.suffix = status.suffix;
   }
+  options: Partial<SAXToXMLTextTransformOptions> | undefined;
+  starts: (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[];
+  prefix: string;
+  suffix: string;
 }
 
 /**
@@ -60,7 +75,7 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
   #options?: Partial<SAXToXMLTextTransformOptions>;
   #prefix: string;
   #suffix: string;
-  #starts: (StartElementSAXEventInterface|StartDocumentSAXEventInterface)[];
+  #starts: (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[];
   constructor(options?: Partial<SAXToXMLTextTransformOptions>) {
     super({
       transform: (chunk, controller) => {
@@ -79,17 +94,16 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     this.#suffix = options?.lineBreak ?? "";
     this.#prefix = this.#makeIndent();
   }
+  #status() : Status {
+    return {
+      options: structuredClone(this.#options),
+      starts: structuredClone(this.#starts),
+      prefix: this.#prefix,
+      suffix: this.#suffix,
+    };
+  }
   #makeError(message: string, options?: ErrorOptions) {
-    (options ??= {}).cause = makeCauseOptions({
-        instance: this,
-        starts: [...this.#starts],
-        options: this.#options,
-        suffix: this.#suffix,
-        prefix: this.#prefix,
-      },
-      options?.cause,
-    );
-    return new SAXToXMLTextTransformStreamError(message, options);
+    return new SAXToXMLTextTransformStreamError(message, this.#status(), options);
   }
   /**
    * make not complete error
@@ -187,23 +201,25 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     const endTagName = chunk.tagName;
     const start = this.#starts.pop();
     this.#prefix = this.#makeIndent();
-    if (!start || start.name === "startDocument")
-      throw this.#makeError(`mismatch startElement not found. endTagName: ${endTagName}`, {
-        cause: {
-          endTagName,
-          chunk,
-        }
+    if (!start || start.name === "startDocument") {
+      const error = this.#makeError(`mismatch startElement not found. endTagName: ${endTagName}`);
+      Object.assign(error as unknown as Record<string, unknown>, {
+        endTagName,
+        chunk,
       });
+      throw error;
+    }
     const startTagName = start.tagName;
-    if (startTagName !== endTagName)
-      throw this.#makeError(`mismatch startElement tagName ${startTagName} / endTagName ${endTagName}`, {
-        cause: {
-          startTagName,
-          endTagName,
-          chunk,
-          start,
-        }
+    if (startTagName !== endTagName) {
+      const error = this.#makeError(`mismatch startElement tagName ${startTagName} / endTagName ${endTagName}`);
+      Object.assign(error as unknown as Record<string, unknown>, {
+        startTagName,
+        endTagName,
+        chunk,
+        start,
       });
+      throw error;
+    }
     if (start.selfClosing) return undefined;
     return `${this.#prefix}${BLOCK_PREFIX}/${chunk.tagName}${BLOCK_SUFFIX}${this.#suffix}`;
   }
@@ -214,11 +230,11 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
   #endDocument(chunk: EndDocumentSAXEventInterface) {
     const start = this.#starts.pop();
     if (!start || start.name === "startElement") {
-      throw this.#makeError(`mismatch startDocument not found.`, {
-        cause: {
-          chunk,
-        }
+      const error = this.#makeError(`mismatch startDocument not found.`);
+      Object.assign(error as unknown as Record<string, unknown>, {
+        chunk,
       });
+      throw error;
     }
     return undefined;
   }

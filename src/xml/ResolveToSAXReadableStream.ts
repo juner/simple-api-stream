@@ -1,12 +1,12 @@
-import { makeCauseOptions } from "../utils";
 import { CdataEvent, CommentEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, ProcessingInstructionEvent, XMLStylesheetDeclarationEvent, XMLDeclarationEvent, StartDocumentEvent, EndDocumentEvent } from "./event";
 import { SAXEventInterface } from "./event-interface";
 import { SAXResolver } from "./interface";
 
+type Status = object;
 
-export class ResolveToSAXReadableStreamError extends Error {
-  constructor(...args: ConstructorParameters<typeof Error>) {
-    super(...args);
+export class ResolveToSAXReadableStreamError extends Error implements Status {
+  constructor(message: string, _status: Status, options?: ErrorOptions) {
+    super(message, options);
     this.name = "ResolveToSAXReadableStreamError";
   }
 }
@@ -62,13 +62,12 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
     });
     this.#controller = controller_;
   }
-  #makeError(message: string, options: ErrorOptions) {
-    (options ??= {}).cause = makeCauseOptions({
-        instance: this,
-      },
-      options.cause
-    );
-    return new ResolveToSAXReadableStreamError(message, options);
+  #status(): Status {
+    return {};
+  }
+
+  #makeError(message: string, options?: ErrorOptions) {
+    return new ResolveToSAXReadableStreamError(message, this.#status(), options);
   }
   processingInstruction(...args: ConstructorParameters<typeof ProcessingInstructionEvent | typeof XMLDeclarationEvent | typeof XMLStylesheetDeclarationEvent>): void {
     if (typeof args[0] === "string") {
@@ -83,7 +82,9 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
       this.#controller.enqueue(new XMLStylesheetDeclarationEvent(options));
       return;
     }
-    throw this.#makeError(`not support parameter.`, { cause: { args } });
+    const error = this.#makeError(`not support parameter.`);
+    Object.assign(error as unknown as Record<string, unknown>, { args });
+    throw error;
   }
 
   cdata(...args: ConstructorParameters<typeof CdataEvent>): void {

@@ -1,5 +1,5 @@
 import type { SimpleApiParser } from "../interface";
-import { assertIsTrue, makeCauseOptions } from "../utils";
+import { assertIsTrue } from "../utils";
 import {
   CdataEvent,
   CommentEvent,
@@ -30,11 +30,26 @@ const PROCESSING_INSTRUCTION_SUFFIX = "?>";
 const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
 
-export class XMLTextToSAXParserError extends Error {
-  constructor(...args: ConstructorParameters<typeof Error>) {
-    super(...args);
+type Status = {
+  buffer: string;
+  state: string;
+  acc: string;
+  openDocumented: boolean;
+};
+
+export class XMLTextToSAXParserError extends Error implements Status {
+  constructor(message: string, status: Status, options?: ErrorOptions) {
+    super(message, options);
     this.name = "XMLTextToSAXParserError";
+    this.buffer = status.buffer;
+    this.state = status.state;
+    this.acc = status.acc;
+    this.openDocumented = status.openDocumented;
   }
+  buffer: string;
+  state: string;
+  acc: string;
+  openDocumented: boolean;
 }
 
 export class XMLTextToSAXParser implements SimpleApiParser<string> {
@@ -58,7 +73,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
     return this.#acc;
   }
 
-  #status() {
+  #status(): Status {
     return {
       buffer: this.#buffer,
       state: this.state,
@@ -93,13 +108,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
    * @returns
    */
   #makeError(message: string, options?: ConstructorParameters<typeof Error>[1]) {
-    (options ??= {}).cause = makeCauseOptions({
-      instance: this,
-      status: this.#status(),
-    },
-      options.cause
-    );
-    return new XMLTextToSAXParserError(message, options);
+    return new XMLTextToSAXParserError(message, this.#status(), options);
   }
 
   /**
@@ -129,11 +138,9 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
    * @returns
    */
   #makeSyntaxError(message: string, source: string) {
-    return this.#makeError(`${message}: ${source}`, {
-      cause: {
-        syntax: source,
-      }
-    });
+    const error = this.#makeError(`${message}: ${source}`);
+    (error as unknown as Record<string, unknown>).syntax = source;
+    return error;
   }
   #parseBuffer(flush: boolean = false): void {
     try {
@@ -155,12 +162,8 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
     } catch (err: unknown) {
       this.#handler.onError?.(err instanceof Error
         ? err
-        : this.#makeError(String(err),
-          {
-            cause: {
-              origin: err,
-            }
-          }));
+        : this.#makeError(String(err), { cause: err })
+      );
       return;
     }
   }
@@ -409,12 +412,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
 
     const remaining = attrStr.slice(prevIndex).trim();
     if (remaining.length > 0) {
-      throw this.#makeError(`Invalid or unquoted attribute syntax near: ${remaining}`,
-        {
-          cause: {
-            syntax: remaining,
-          }
-        });
+      throw this.#makeSyntaxError("Invalid or unquoted attribute syntax near",remaining);
     }
 
     const start = new StartElementEvent(tagName, attrs, isSelfClosing);
