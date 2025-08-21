@@ -1,5 +1,5 @@
 import type { SimpleApiParser } from "../interface";
-import { assertIsTrue } from "../utils";
+import { assertIsDefined, assertIsTrue } from "../utils";
 import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
 import type { SAJHandler } from "./interface";
 
@@ -12,7 +12,7 @@ export class JSONTextToSAJParserError extends Error implements Status {
   typeStack: ("object" | "array")[];
   constructor(message: string, status: Status, options?: ErrorOptions) {
     super(message, options);
-    this.name = "XMLTextToSAXParserError";
+    this.name = "JSONTextToSAJParserError";
     ({
       buffer: this.buffer,
       pos: this.pos,
@@ -181,22 +181,22 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
         this.#handler.onStartObject?.(new StartObjectEvent());
         this.#stack.push('object');
         this.#state = this.#parseKeyOrEndObject;
-        break;
+        return;
       case '[':
         this.#handler.onStartArray?.(new StartArrayEvent());
         this.#stack.push('array');
         this.#state = this.#parseValueOrEndArray;
-        break;
+        return;
       case '"':
         this.#acc = '';
         this.#state = this.#parseString(this.#handleStandaloneValue);
-        break;
+        return;
       case 't':
       case 'f':
       case 'n':
         this.#acc = ch;
         this.#state = this.#parseLiteral(this.#handleStandaloneValue);
-        break;
+        return;
       case '-':
       case '0':
       case '1':
@@ -210,10 +210,9 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       case '9':
         this.#acc = ch;
         this.#state = this.#parseNumber(this.#handleStandaloneValue);
-        break;
-      default:
-        throw this.#makeSyntaxError(`Unexpected token`, ch);
+        return;
     }
+    throw this.#makeSyntaxError(`Unexpected token`, ch);
   };
 
   #handleStandaloneValue<T extends number | string | boolean | null>(val: T) {
@@ -249,7 +248,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   };
 
   #parseColon(ch: Ch) {
-    if (ch === EOL) throw this.#makeError("invalid state parseColon");
+    if (ch === EOL) throw this.#makeNotCompleteError();
     if (/\s/.test(ch)) return;
     if (ch === ':') {
       this.#state = this.#parseValue;
@@ -326,10 +325,11 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       this.#handler.onEndArray?.(new EndArrayEvent());
       this.#stack.pop();
       this.#state = this.#parseAfterValue;
-    } else {
-      this.#pos--; // unread
-      this.#state = this.#parseValueInArray;
+      return;
     }
+
+    this.#pos--; // unread
+    this.#state = this.#parseValueInArray;
   };
 
   #parseValueInArray(ch: Ch) {
@@ -362,6 +362,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     }
     if (/\s/.test(ch)) return;
     const parent = this.#stack.at(-1);
+    assertIsDefined(parent, "not have parent");
     if (parent === 'object') {
       this.#pos--;
       this.#state = this.#parseCommaOrEndObject;
@@ -372,8 +373,6 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       this.#state = this.#parseCommaOrEndArray;
       return;
     }
-    this.#pos--;
-    this.#state = this.#endDocument;
   };
 
   #parseString(onEnd: (this: typeof this, s: string) => void): StateFunction {

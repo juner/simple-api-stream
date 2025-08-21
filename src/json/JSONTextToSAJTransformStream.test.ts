@@ -258,6 +258,119 @@ describe("pattern", (it) => {
         name: "empty",
         input: [""],
         output: [],
+      },
+      {
+        name: "parseValueOrEndArray",
+        input: [
+          `[
+          "hoge",
+          "fuga",
+          []
+          ]`
+        ],
+        output: [
+          {
+            kind: "json",
+            name: "startDocument",
+          },
+          {
+            name: "startArray",
+          },
+          {
+            name: "value",
+            type: "string",
+            value: "hoge",
+          },
+          {
+            name: "value",
+            type: "string",
+            value: "fuga",
+          },
+          {
+            name: "startArray",
+          },
+          {
+            name: "endArray",
+          },
+          {
+            name: "endArray"
+          },
+          {
+            name: "endDocument",
+          },
+        ]
+      },{
+        name: "multiple document",
+        options: { multiple: true },
+        input: [
+          `1
+          2
+          3
+          4
+          5`,
+        ],
+        output: [
+          {
+            kind: "json",
+            name: "startDocument",
+          },
+          {
+            name: "value",
+            type: "number",
+            value: 1,
+          },
+          {
+            name: "endDocument",
+          },
+          {
+            kind: "json",
+            name: "startDocument",
+          },
+          {
+            name: "value",
+            type: "number",
+            value: 2,
+          },
+          {
+            name: "endDocument",
+          },
+          {
+            kind: "json",
+            name: "startDocument",
+          },
+          {
+            name: "value",
+            type: "number",
+            value: 3,
+          },
+          {
+            name: "endDocument",
+          },
+          {
+            kind: "json",
+            name: "startDocument",
+          },
+          {
+            name: "value",
+            type: "number",
+            value: 4,
+          },
+          {
+            name: "endDocument",
+          },
+          {
+            kind: "json",
+            name: "startDocument",
+          },
+          {
+            name: "value",
+            type: "number",
+            value: 5,
+          },
+          {
+            name: "endDocument",
+          }
+        ]
       }
     ];
   it.each(entries)("$name", async ({ input, output, options }) => {
@@ -486,6 +599,117 @@ describe("error", (it) => {
             error: [
               json.streams.JSONTextToSAJParserError,
               "Unexpected token in object: {",
+            ]
+          }
+        }
+      }, {
+        name: "parseColon to eol",
+        input: [
+          `{ "hoge"`,
+        ],
+        output: {
+          write: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:{ "hoge"`,
+            ]
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:{ "hoge"`,
+            ]
+          }
+        }
+      }, {
+        name: "parseValue to eol",
+        input: [
+          `{ "hoge":`,
+        ],
+        output: {
+          write: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:{ "hoge":`,
+            ]
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:{ "hoge":`,
+            ]
+          }
+        }
+      }, {
+        name: "invalid parseValue ",
+        input: [
+          '{ "hoge":`',
+        ],
+        output: {
+          write: {
+            error: [
+              TypeError,
+            ]
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `Unexpected value: \``,
+            ]
+          }
+        }
+      }, {
+        name: "invalid parseCommaOrEndObject ",
+        input: [
+          '{ "hoge":"fuge"{',
+        ],
+        output: {
+          write: {
+            error: [
+              TypeError,
+            ]
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `Expected , or } but got: {`,
+            ]
+          }
+        }
+      }, {
+        name: "parseValueOrEndArray to eol",
+        input: [
+          `[`,
+        ],
+        output: {
+          write: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:[`,
+            ]
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:[`,
+            ]
+          }
+        }
+      }, {
+        name: "invalid parseCommaOrEndArray",
+        input: [
+          `[1 {`,
+        ],
+        output: {
+          write: {
+            error: [
+              TypeError,
+            ]
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `Expected , or ] but got: {`,
             ]
           }
         }
