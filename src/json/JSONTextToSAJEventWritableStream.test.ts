@@ -130,7 +130,7 @@ describe("pattern", (it) => {
         output: [
           { name: "value", type: "null", value: null },
         ]
-      },
+      }
     ];
   it.each(entries)("$name", async ({ input, output }) => {
     const result = await (() => {

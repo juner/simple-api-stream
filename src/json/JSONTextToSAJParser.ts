@@ -377,18 +377,23 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
 
   #parseString(onEnd: (this: typeof this, s: string) => void): StateFunction {
     let escape = false;
-    let unicode = '';
+    let unicode: string | null = null;
     const parseStringHandler: StateFunction = (ch) => {
       if (ch === EOL) throw this.#makeNotCompleteError();
       if (escape) {
-        if (unicode !== '') {
+        if (unicode !== null) {
+          // unicode モード中
+          if (!/[0-9a-fA-F]/.test(ch)) {
+            throw this.#makeSyntaxError(`Invalid unicode escape`, ch);
+          }
           unicode += ch;
           if (unicode.length === 4) {
             this.#acc += String.fromCharCode(parseInt(unicode, 16));
-            unicode = '';
+            unicode = null;
             escape = false;
           }
         } else if (ch === 'u') {
+          // unicode エスケープ開始
           unicode = '';
         } else {
           const esc = {

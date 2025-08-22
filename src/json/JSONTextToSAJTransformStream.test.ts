@@ -299,7 +299,7 @@ describe("pattern", (it) => {
             name: "endDocument",
           },
         ]
-      },{
+      }, {
         name: "multiple document",
         options: { multiple: true },
         input: [
@@ -371,6 +371,28 @@ describe("pattern", (it) => {
             name: "endDocument",
           }
         ]
+      },
+      {
+        name: "escaped unicode string",
+        input: [
+          `"テスト\\u3000メッセージ"`,
+        ],
+        output: [
+          { name: "startDocument", kind: "json" },
+          { name: "value", type: "string", value: "テスト　メッセージ" },
+          { name: "endDocument" }
+        ],
+      },
+      {
+        name: "escaped unicode string (surrogate pair)",
+        input: [
+          `"\\uD83D\\uDE00"`,
+        ],
+        output: [
+          { name: "startDocument", kind: "json" },
+          { name: "value", type: "string", value: "😀" },
+          { name: "endDocument" }
+        ],
       }
     ];
   it.each(entries)("$name", async ({ input, output, options }) => {
@@ -567,7 +589,7 @@ describe("error", (it) => {
           }
         }
       }, {
-        name:"invalid initial character",
+        name: "invalid initial character",
         input: [
           `}`,
         ],
@@ -585,7 +607,7 @@ describe("error", (it) => {
           }
         }
       }, {
-        name:"invalid keyOrEndObject",
+        name: "invalid keyOrEndObject",
         input: [
           `{{`,
         ],
@@ -712,6 +734,136 @@ describe("error", (it) => {
               `Expected , or ] but got: {`,
             ]
           }
+        }
+      }, {
+        name: "parseValueInArray to eol",
+        input: [
+          `[1,`
+        ],
+        output: {
+          write: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:[1,`
+            ]
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:[1,`
+            ]
+          }
+        }
+      }, {
+        name: "parseString to eol",
+        input: [
+          `"hoge`,
+        ],
+        output: {
+          write: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:"hoge`,
+            ]
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:"hoge`,
+            ]
+          }
+        }
+      }, {
+        name: "escaped string invalid escape",
+        input: [
+          `"\\z"`,
+        ],
+        output: {
+          write: {
+            error: [
+              TypeError
+            ]
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `Invalid escape: \\z: z`,
+            ]
+          }
+        }
+      }, {
+        name: "invalid escaped unicode string to eol",
+        input: [
+          `"テスト\\u300メッセージ"`,
+        ],
+        output: {
+          write: {
+            error: [
+              TypeError,
+            ],
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `Invalid unicode escape: メ`,
+            ],
+          },
+        }
+      }, {
+        name: "invalid parseLiteral",
+        input: [
+          `treu`,
+        ],
+        output: {
+          write: {
+            error: [
+              TypeError,
+            ],
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `Invalid literal: tre`,
+            ],
+          },
+        }
+      }, {
+        name: "parseLiteral to eol",
+        input: [
+          `tru`,
+        ],
+        output: {
+          write: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:tru`,
+            ],
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `not complete syntax error. buffer:tru`,
+            ],
+          },
+        }
+      }, {
+        name: "invalid parseNumber",
+        input: [
+          `-123e-10e`,
+        ],
+        output: {
+          write: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `Invalid number: -123e-10e`,
+            ],
+          },
+          read: {
+            error: [
+              json.streams.JSONTextToSAJParserError,
+              `Invalid number: -123e-10e`,
+            ],
+          },
         }
       }
     ];
