@@ -34,10 +34,21 @@ export class ObjectToSAJTransformStreamError extends Error implements Status {
 
 function toUnsupported(unSupported: UnSupportedFunction | typeof skip) {
   if (unSupported === skip) return [unSupporteds.ignore, unSupported] as const;
-  if (unSupported === ObjectToSAJTransformStream.unSupportedToError) return [unSupporteds.error, unSupported] as const;
-  if (unSupported === ObjectToSAJTransformStream.unSupoortedToNull) return [unSupporteds.null, unSupported] as const;
+  if (unSupported === unSupportedToError) return [unSupporteds.error, unSupported] as const;
+  if (unSupported === unSupoortedToNull) return [unSupporteds.null, unSupported] as const;
   return ["custom", unSupported] as const;
 };
+
+function unSupoortedToNull() {
+  return null;
+}
+
+function unSupportedToError({ value }: Parameters<UnSupportedFunction>[0]) {
+  const error = new Error(`not support value ${value}`);
+  error.name = "UnSupportedValueError";
+  (error as unknown as Record<string, unknown>).value = value;
+  throw error;
+}
 
 export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, SAJEventInterface> {
   #controller: TransformStreamDefaultController<SAJEventInterface>;
@@ -62,9 +73,9 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
     if (unSupported === unSupporteds.ignore)
       return skip;
     if (unSupported === unSupporteds.error)
-      return ObjectToSAJTransformStream.unSupportedToError;
+      return unSupportedToError;
     if (unSupported === unSupporteds.null)
-      return ObjectToSAJTransformStream.unSupoortedToNull;
+      return unSupoortedToNull;
     return unSupported;
   }
   #status(): Status {
@@ -73,16 +84,9 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
       unSupported: toUnsupported(this.#unSupported)
     };
   }
-  static unSupoortedToNull() {
-    return null;
-  }
-  static unSupportedToError({ value }: Parameters<UnSupportedFunction>[0]) {
-    const error =  new Error(`not support value ${value}`);
-    error.name = "UnSupportedValueError";
-    (error as unknown as Record<string,unknown>).value = value;
-    throw error;
-  }
-  #makeError(message: string | Error, options?: ConstructorParameters<typeof Error>[1]) {
+  static readonly unSupoortedToNull = unSupoortedToNull;
+  static readonly unSupportedToError = unSupportedToError;
+  #makeError(message: string | Error, options?: ErrorOptions) {
     if (typeof message !== "string") {
       (options ??= {}).cause ??= message;
       message = `${message?.message ?? message}`;
