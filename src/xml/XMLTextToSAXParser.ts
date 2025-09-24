@@ -345,7 +345,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
     let match: RegExpExecArray | null;
     while ((match = attrRegex.exec(source))) {
       const [, key, val1, val2] = match;
-      attrs[key] = val1 ?? val2 ?? "";
+      attrs[key] = val1 ?? val2;
     }
     return attrs;
   }

@@ -244,6 +244,26 @@ describe("pattern test", (it) => {
           { name: "endDocument" },
         ]
       },
+      {
+        name: "tag attrs",
+        input: [
+          `<img src='example.com/.gif' id="test" />`,
+        ],
+        output: [
+          { name: "startDocument", kind: "xml" },
+          {
+            name: "startElement",
+            attrs: {
+              src: "example.com/.gif",
+              id: "test",
+            },
+            tagName: "img",
+            selfClosing: true
+          },
+          { name: "endElement", tagName: "img" },
+          { name: "endDocument" },
+        ]
+      }
     ];
   it.each(entries)(
     `$name`,
