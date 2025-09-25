@@ -1,4 +1,4 @@
-import { assertIsDefined, assertIsTrue } from "../utils";
+import { assertIsDefined } from "../utils";
 import type { SAJEventInterface } from "./event-interface";
 
 type SAJStateFn = (event: SAJEventInterface) => void;
@@ -22,7 +22,7 @@ export class SAJToObjectTransformStreamError extends Error implements Status {
   }
   state: string;
   stackedList: { container: unknown; key?: string | undefined; }[];
-  current: unknown;
+  current: unknown | undefined;
 }
 
 export type SAJToObjectTransformStreamOptions = {
@@ -57,6 +57,11 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
     return new SAJToObjectTransformStreamError(message, status, options);
   }
 
+  get #current(): unknown | undefined {
+    const top = this.#stack.at(-1);
+    return top?.container;
+  }
+
   #status(): Status {
     return {
       state: stateToName(this.#state),
@@ -79,22 +84,22 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   // ========== 状態スタックと構築スタック ==========
   #state: SAJStateFn = this.#startEntry;
   #stack: { container: unknown; key?: string }[] = [];
-  #current: unknown = undefined;
 
   // #region 状態関数
   #startEntry(event: SAJEventInterface): void {
     switch (event.name) {
-      case "startObject":
-        this.#current = {};
-        this.#stack.push({ container: this.#current });
+      case "startObject": {
+        const container: unknown = {};
+        this.#stack.push({ container });
         this.#state = this.#inObject;
         return;
-
-      case "startArray":
-        this.#current = [];
-        this.#stack.push({ container: this.#current });
+      }
+      case "startArray": {
+        const container: unknown[] = [];
+        this.#stack.push({ container });
         this.#state = this.#inArray;
         return;
+      }
 
       case "value":
         this.#endEntry(event.value as T);
@@ -109,8 +114,8 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   }
 
   #inObject(event: SAJEventInterface): void {
-    const top = this.#stack.at(-1)!;
-    assertIsTrue(!!top, "required top");
+    const top = this.#stack.at(-1);
+    assertIsDefined(top, "required top");
 
     switch (event.name) {
       case "key":
@@ -122,17 +127,9 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         this.#stack.pop();
         const obj = top.container;
         if (this.#stack.length > 0) {
-          const parent = this.#stack.at(-1)!.container;
-          // ★ 親が配列なら inArray へ復帰
-          if (Array.isArray(parent)) {
-            this.#state = this.#inArray;
-          } else {
-            // 親がオブジェクトなら inObject へ復帰
-            this.#state = this.#inObject;
-          }
+          this.#attachValue(obj);
           return;
         }
-        // スタックが空 = ルートオブジェクト
         this.#endEntry(obj);
         return;
       }
@@ -153,8 +150,8 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   }
 
   #inObjectExpectingValue(event: SAJEventInterface): void {
-    const top = this.#stack.at(-1)!;
-    assertIsTrue(!!top, "required top");
+    const top = this.#stack.at(-1);
+    assertIsDefined(top, "required top");
     const key = top.key!;
     const obj = top.container as Record<string, unknown>;
 
@@ -195,7 +192,6 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
 
       case "startObject": {
         const newObj: unknown = {};
-        arr.push(newObj);
         this.#stack.push({ container: newObj });
         this.#state = this.#inObject;
         return;
@@ -203,7 +199,6 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
 
       case "startArray": {
         const newArr: unknown[] = [];
-        arr.push(newArr);
         this.#stack.push({ container: newArr });
         this.#state = this.#inArray;
         return;
@@ -213,12 +208,7 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         this.#stack.pop();
         const finished = arr;
         if (this.#stack.length > 0) {
-          const parent = this.#stack.at(-1)!.container;
-          if (Array.isArray(parent)) {
-            this.#state = this.#inArray;
-          } else {
-            this.#state = this.#inObject;
-          }
+          this.#attachValue(finished);
           return;
         }
         this.#endEntry(finished);
@@ -240,6 +230,23 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   #endEntry(finished: unknown) {
     this.#controller.enqueue(finished as T);
     this.#state = this.#multiple ? this.#startEntry : this.#done;
+  }
+
+  #attachValue(value: unknown) {
+    const top = this.#stack.at(-1);
+    assertIsDefined(top, "required top");
+    if (Array.isArray(top.container)) {
+      top.container.push(value);
+      this.#state = this.#inArray;
+      return;
+    }
+    if (top.container && typeof top.container === "object") {
+      const key = top.key!;
+      this.#setPropertyValue(top.container as Record<string, unknown>, key, value);
+      top.key = undefined;
+      this.#state = this.#inObject;
+      return;
+    }
   }
 
   async value(): Promise<T> {
