@@ -118,6 +118,40 @@ describe("pattern", (it) => {
           { ["__proto__"]: "hoge" }
         ]
       },
+      {
+        name: "array in object",
+        input: [
+          { name: "startArray" },
+          { name: "startObject" },
+          { name: "key", key: "value" },
+          { name: "value", type: "string", value: "fuga" },
+          { name: "endObject" },
+          { name: "endArray" },
+        ],
+        output: [
+          [
+            {
+              value: "fuga"
+            }
+          ]
+        ]
+      },
+      {
+        name: "object in array",
+        input: [
+          { name: "startObject" },
+          { name: "key", key: "value" },
+          { name: "startArray" },
+          { name: "value", type: "number", value: 100 },
+          { name: "endArray" },
+          { name: "endObject" }
+        ],
+        output: [
+          {
+            value: [ 100 ]
+          }
+        ]
+      }
     ];
   it.each(entries)("$name", async ({ input, output, options }) => {
     const result = await (() => {

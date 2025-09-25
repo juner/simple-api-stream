@@ -122,9 +122,17 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         this.#stack.pop();
         const obj = top.container;
         if (this.#stack.length > 0) {
-          this.#attachValue(obj);
+          const parent = this.#stack.at(-1)!.container;
+          // ★ 親が配列なら inArray へ復帰
+          if (Array.isArray(parent)) {
+            this.#state = this.#inArray;
+          } else {
+            // 親がオブジェクトなら inObject へ復帰
+            this.#state = this.#inObject;
+          }
           return;
         }
+        // スタックが空 = ルートオブジェクト
         this.#endEntry(obj);
         return;
       }
@@ -205,7 +213,12 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
         this.#stack.pop();
         const finished = arr;
         if (this.#stack.length > 0) {
-          this.#attachValue(finished);
+          const parent = this.#stack.at(-1)!.container;
+          if (Array.isArray(parent)) {
+            this.#state = this.#inArray;
+          } else {
+            this.#state = this.#inObject;
+          }
           return;
         }
         this.#endEntry(finished);
@@ -227,23 +240,6 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   #endEntry(finished: unknown) {
     this.#controller.enqueue(finished as T);
     this.#state = this.#multiple ? this.#startEntry : this.#done;
-  }
-
-  #attachValue(value: unknown) {
-    const top = this.#stack.at(-1);
-    assertIsDefined(top, "required top");
-    if (Array.isArray(top.container)) {
-      top.container.push(value);
-      this.#state = this.#inArray;
-      return;
-    }
-    if (top.container && typeof top.container === "object") {
-      const key = top.key!;
-      this.#setPropertyValue(top.container as Record<string, unknown>, key, value);
-      top.key = undefined;
-      this.#state = this.#inObject;
-      return;
-    }
   }
 
   async value(): Promise<T> {
