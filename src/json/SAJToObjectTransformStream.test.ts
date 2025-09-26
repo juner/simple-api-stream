@@ -148,10 +148,46 @@ describe("pattern", (it) => {
         ],
         output: [
           {
-            value: [ 100 ]
+            value: [100]
           }
         ]
-      }
+      },
+      {
+        name: "array in array",
+        input: [
+          { name: "startArray" },
+          { name: "startArray" },
+          { name: "value", type: "string", value: "fuga" },
+          { name: "endArray" },
+          { name: "endArray" },
+        ],
+        output: [
+          [
+            [
+              "fuga",
+            ]
+          ]
+        ]
+      },
+      {
+        name: "object in object",
+        input: [
+          { name: "startObject" },
+          { name: "key", key: "value" },
+          { name: "startObject" },
+          { name: "key", key: "value2" },
+          { name: "value", type: "number", value: 100 },
+          { name: "endObject" },
+          { name: "endObject" }
+        ],
+        output: [
+          {
+            value: {
+              value2: 100,
+            }
+          }
+        ]
+      },
     ];
   it.each(entries)("$name", async ({ input, output, options }) => {
     const result = await (() => {
@@ -166,5 +202,152 @@ describe("pattern", (it) => {
       return Array.fromAsync(readable);
     })();
     expect(result).toEqual(output);
+  });
+});
+
+describe("error pattern", (it) => {
+  const entries: {
+    name: string;
+    options?: Partial<SAJToObjectTransformStreamOptions>;
+    input: SAJEventInterface[];
+    output:
+    Record<"read" | "write", {
+      error: (string | RegExp | (new (...args: (ConstructorParameters<typeof SAJToObjectTransformStreamError>)) => unknown) | Error | undefined)[];
+    } | {
+      result: unknown[] | undefined;
+    }>;
+  }[] = [
+      {
+        name: "Incomplete JSON structure",
+        input: [
+          { name: "startArray" },
+        ],
+        output: {
+          read: {
+            error: [
+              "Incomplete JSON structure",
+              SAJToObjectTransformStreamError,
+            ]
+          },
+          write: {
+            error: [
+              "Incomplete JSON structure",
+              SAJToObjectTransformStreamError,
+            ]
+          }
+        }
+      },
+      {
+        name: "Unexpected endObject in array",
+        input: [
+          { name: "startArray" },
+          { name: "endObject" },
+        ],
+        output: {
+          read: {
+            error: [
+              "Unexpected endObject in array",
+              SAJToObjectTransformStreamError,
+            ]
+          },
+          write: {
+            error: [
+              "Invalid state: WritableStream is closed",
+              TypeError,
+            ]
+          }
+        }
+      },
+      {
+        name: "Unexpected endObject after key",
+        input: [
+          { name: "startObject" },
+          { name: "key", key: "value" },
+          { name: "endObject" }
+        ],
+        output: {
+          read: {
+            error: [
+              "Unexpected endObject after key",
+              SAJToObjectTransformStreamError,
+            ]
+          },
+          write: {
+            error: [
+              "Invalid state: WritableStream is closed",
+              TypeError,
+            ]
+          }
+        }
+      },
+      {
+        name: "Unexpected endArray at root",
+        input: [
+          { name: "endArray" },
+        ],
+        output: {
+          read: {
+            error: [
+              "Unexpected endArray at root",
+              SAJToObjectTransformStreamError,
+            ]
+          },
+          write: {
+            error: [
+              "Invalid state: WritableStream is closed",
+              TypeError,
+            ]
+          }
+        }
+      },
+      {
+        name: "Unexpected startArray in object",
+        input: [
+          { name: "startObject" },
+          { name: "startArray" },
+        ],
+        output: {
+          read: {
+            error: [
+              "Unexpected startArray in object",
+              SAJToObjectTransformStreamError,
+            ]
+          },
+          write: {
+            error: [
+              "Invalid state: WritableStream is closed",
+              TypeError,
+            ]
+          }
+        }
+      }
+    ];
+  it.each(entries)("$name", async ({ input, output: { read, write }, options }) => {
+    const [readed, writed] = (() => {
+      const { readable, writable } = new SAJToObjectTransformStream(options);
+      const write = (async () => {
+        const writer = writable.getWriter();
+        for (const entry of input) {
+          await writer.write(entry);
+        }
+        await writer.close();
+      })();
+      const read = Array.fromAsync(readable);
+      return [read, write];
+    })();
+    for (const [name, resultType, result] of [
+      ["read", read, readed],
+      ["write", write, writed],
+    ] as const)
+      if ("error" in resultType) {
+        for (const error of resultType.error)
+          await expect(result, `${name} throw`).rejects.toThrowError(error);
+
+      } else {
+        if (resultType.result === undefined)
+          await expect(result, `${name} result`).resolves.toBeUndefined();
+        else
+          await expect(result, `${name} result`).resolves.toEqual(resultType.result);
+      }
   });
 });

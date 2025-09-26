@@ -1,3 +1,4 @@
+import { toErrorMessage } from "../utils";
 import type {
   KeySAJEventInterface,
   SAJEventInterface,
@@ -154,7 +155,8 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
         return this.#value(chunk);
     }
   }
-  #makeError(message: string, options?: ErrorOptions) {
+  #makeError(message: string | Error, options?: ErrorOptions) {
+    ({message, options} = toErrorMessage(message, options));
     return new SAJToJSONTextTransformStreamError(message, this.#status(), options);
   }
 

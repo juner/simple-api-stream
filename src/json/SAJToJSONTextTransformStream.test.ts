@@ -12,18 +12,10 @@ import {
 async function collectChunks(events: SAJEventInterface[]): Promise<string[]> {
   const stream = new SAJToJSONTextTransformStream();
   const writer = stream.writable.getWriter();
-  const reader = stream.readable.getReader();
-
-  const result: string[] = [];
+  const reader = stream.readable;
 
   // 読み出しを並行で回しておく（書き込みがブロックしないように）
-  const readPromise = (async () => {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      result.push(value);
-    }
-  })();
+  const readPromise = Array.fromAsync(reader);
 
   // 書き込み
   for (const evt of events) {
@@ -32,9 +24,7 @@ async function collectChunks(events: SAJEventInterface[]): Promise<string[]> {
   await writer.close();
 
   // 読み出し完了を待つ
-  await readPromise;
-
-  return result;
+  return await readPromise;
 }
 
 // ヘルパー：チャンク列をまとめて JSON.parse して構造を取り出す
@@ -210,8 +200,41 @@ describe.concurrent("pattern", (test) => {
         ],
       },
       {
+        name: "summarize: false (default)",
+        options: { summarize: false },
+        input: [
+          { name: "startArray" },
+          { name: "value", type: "string", value: "🐈" },
+          { name: "endArray" },
+        ],
+        output: [
+          "[",
+          `"🐈"`,
+          "]",
+        ],
+      },
+      {
         name: "summarize: normal",
         options: { summarize: "normal" },
+        input: [
+          { name: "startDocument", kind: "json" },
+          { name: "startArray" },
+          { name: "value", type: "string", value: "🐈" },
+          { name: "endArray" },
+          { name: "startObject" },
+          { name: "key", key: "animal" },
+          { name: "value", type: "string", value: "🐤" },
+          { name: "endObject" },
+          { name: "endDocument" },
+        ],
+        output: [
+          `["🐈"]`,
+          `{"animal":"🐤"}`,
+        ]
+      },
+      {
+        name: "summarize: true (normal)",
+        options: { summarize: true },
         input: [
           { name: "startDocument", kind: "json" },
           { name: "startArray" },

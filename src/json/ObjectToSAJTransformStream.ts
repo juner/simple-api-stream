@@ -1,3 +1,4 @@
+import { toErrorMessage } from "../utils";
 import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
 import type { SAJEventInterface } from "./event-interface";
 
@@ -87,10 +88,7 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
   static readonly unSupoortedToNull = unSupoortedToNull;
   static readonly unSupportedToError = unSupportedToError;
   #makeError(message: string | Error, options?: ErrorOptions) {
-    if (typeof message !== "string") {
-      (options ??= {}).cause ??= message;
-      message = `${message?.message ?? message}`;
-    }
+    ({message, options} = toErrorMessage(message, options));
     return new ObjectToSAJTransformStreamError(message, this.#status(), options);
   }
   async #addChunk(chunk: unknown) {

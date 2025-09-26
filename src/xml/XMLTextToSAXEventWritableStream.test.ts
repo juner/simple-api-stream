@@ -1,5 +1,6 @@
 import { test, vi, describe, expect } from "vitest";
 import { XMLTextToSAXEventWritableStream, xml } from "..";
+import { toErrorMessage } from "../utils";
 
 function makeStringListHandlerAndArray() {
   const events: string[] = [];
@@ -14,7 +15,7 @@ function makeStringListHandlerAndArray() {
       events.push(`text:${text}`);
     },
     onError(err) {
-      events.push(`error:${(err as { message?: string }).message ?? err}`);
+      events.push(`error:${toErrorMessage(err).message}`);
     },
     onComment({ comment }) {
       events.push(`comment:${comment}`);

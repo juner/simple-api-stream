@@ -1,3 +1,4 @@
+import { toErrorMessage } from "../utils";
 import { CdataEvent, CommentEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, ProcessingInstructionEvent, XMLStylesheetDeclarationEvent, XMLDeclarationEvent, StartDocumentEvent, EndDocumentEvent } from "./event";
 import { SAXEventInterface } from "./event-interface";
 import { SAXResolver } from "./interface";
@@ -66,7 +67,8 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
     return {};
   }
 
-  #makeError(message: string, options?: ErrorOptions) {
+  #makeError(message: string | Error, options?: ErrorOptions) {
+    ({message, options} = toErrorMessage(message, options));
     return new ResolveToSAXReadableStreamError(message, this.#status(), options);
   }
   processingInstruction(...args: ConstructorParameters<typeof ProcessingInstructionEvent | typeof XMLDeclarationEvent | typeof XMLStylesheetDeclarationEvent>): void {

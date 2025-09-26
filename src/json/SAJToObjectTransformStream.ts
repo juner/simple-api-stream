@@ -1,4 +1,4 @@
-import { assertIsDefined } from "../utils";
+import { assertIsDefined, functionToName as stateToName, toErrorMessage } from "../utils";
 import type { SAJEventInterface } from "./event-interface";
 
 type SAJStateFn = (event: SAJEventInterface) => void;
@@ -52,7 +52,8 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   }
 
 
-  #makeError(message: string, options?: ErrorOptions) {
+  #makeError(message: string | Error, options?: ErrorOptions) {
+    ({message, options} = toErrorMessage(message, options));
     const status = this.#status();
     return new SAJToObjectTransformStreamError(message, status, options);
   }
@@ -64,15 +65,10 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
 
   #status(): Status {
     return {
-      state: stateToName(this.#state),
+      state: stateToName(this.#state, "#"),
       stackedList: structuredClone(this.#stack),
       current: structuredClone(this.#current),
     };
-    function stateToName(state: SAJStateFn) {
-      if (state.name.startsWith("#"))
-        return state.name.slice(1);
-      return state.name;
-    }
   }
   #next(chunk: SAJEventInterface) {
     try {
@@ -247,14 +243,5 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
       this.#state = this.#inObject;
       return;
     }
-  }
-
-  async value(): Promise<T> {
-    for await (const value of this.readable) return value;
-    throw this.#makeError("No value emitted");
-  }
-  async *values() {
-    for await (const value of this.readable)
-      yield value;
   }
 }

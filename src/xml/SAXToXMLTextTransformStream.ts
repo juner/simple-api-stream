@@ -1,4 +1,4 @@
-import { assertIsTrue } from "../utils";
+import { assertIsTrue, toErrorMessage } from "../utils";
 import type { CdataSAXEventInterface, CommentSAXEventInterface, DoctypeSAXEventInterface, EndElementSAXEventInterface, SAXEventInterface, StartElementSAXEventInterface, TextSAXEventInterface, ProcessingInstructionSAXEventInterface, StartDocumentSAXEventInterface, EndDocumentSAXEventInterface } from "./event-interface";
 import { escape } from "./utils";
 
@@ -129,7 +129,8 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
       parts: structuredClone(this.#parts),
     };
   }
-  #makeError(message: string, options?: ErrorOptions) {
+  #makeError(message: string | Error, options?: ErrorOptions) {
+    ({message, options} = toErrorMessage(message, options));
     return new SAXToXMLTextTransformStreamError(message, this.#status(), options);
   }
   /**

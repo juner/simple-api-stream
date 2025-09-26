@@ -1,5 +1,5 @@
 import type { SimpleApiParser } from "../interface";
-import { assertIsDefined, assertIsTrue } from "../utils";
+import { assertIsDefined, assertIsTrue, toErrorMessage, functionToName as toState } from "../utils";
 import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
 import type { SAJHandler } from "./interface";
 
@@ -65,18 +65,11 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     return {
       buffer: this.#buffer,
       pos: this.#pos,
-      state: toState(this.#state),
+      state: toState(this.#state, "#parse"),
       acc: this.#acc,
       key: this.#key,
       typeStack: this.#stack.slice(),
     };
-    function toState(state: StateFunction) {
-      if (state.name.startsWith("#parse")) {
-        return state.name.slice("#parse".length);
-      } else {
-        return state.name;
-      }
-    }
   }
 
   /**
@@ -85,7 +78,8 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
    * @param options error option
    * @returns
    */
-  #makeError(message: string, options?: ErrorOptions) {
+  #makeError(message: string | Error, options?: ErrorOptions) {
+    ({message, options} = toErrorMessage(message, options));
     return new JSONTextToSAJParserError(message, this.#status(), options);
   }
 

@@ -1,5 +1,5 @@
 import type { SimpleApiParser } from "../interface";
-import { assertIsTrue } from "../utils";
+import { assertIsTrue, toErrorMessage } from "../utils";
 import {
   CdataEvent,
   CommentEvent,
@@ -107,7 +107,8 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
    * @param options error option
    * @returns
    */
-  #makeError(message: string, options?: ConstructorParameters<typeof Error>[1]) {
+  #makeError(message: string | Error, options?: ConstructorParameters<typeof Error>[1]) {
+    ({message, options} = toErrorMessage(message, options));
     return new XMLTextToSAXParserError(message, this.#status(), options);
   }
 
