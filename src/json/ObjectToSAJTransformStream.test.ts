@@ -198,3 +198,68 @@ test("notsupport to error", async ({ expect }) => {
   await expect(writed).rejects.toThrowError(ObjectToSAJTransformStreamError);
   await expect(writed).rejects.toThrowError("not support value 1");
 });
+
+describe.concurrent("status", (it) => {
+  const entries: {
+    name: string;
+    options?: ConstructorParameters<typeof ObjectToSAJTransformStream>[0];
+    status: {
+      makeDocument: InstanceType<typeof ObjectToSAJTransformStream>["status"]["makeDocument"];
+      unSupported: InstanceType<typeof ObjectToSAJTransformStream>["status"]["unSupported"][0];
+    };
+  }[] = [
+      {
+        name: "default",
+        status: {
+          makeDocument: true,
+          unSupported: "ignore",
+        }
+      },
+      {
+        name: "makeDocument false",
+        options: { makeDocument: false },
+        status: {
+          makeDocument: false,
+          unSupported: "ignore",
+        },
+      },
+      {
+        name: "unSupported ignore",
+        options: { unSupported: "ignore" },
+        status: {
+          makeDocument: true,
+          unSupported: "ignore",
+        },
+      },
+      {
+        name: "unSupported error",
+        options: { unSupported: "error" },
+        status: {
+          makeDocument: true,
+          unSupported: "error",
+        },
+      },
+      {
+        name: "unSupported null",
+        options: { unSupported: "null" },
+        status: {
+          makeDocument: true,
+          unSupported: "null",
+        },
+      },
+      {
+        name: "unSupported custom",
+        options: { unSupported: ({ value: _, skip }) => { return skip; } },
+        status: {
+          makeDocument: true,
+          unSupported: "custom",
+        },
+      }
+    ];
+  it.each(entries)("$name", ({ options, status }) => {
+    const stream = new ObjectToSAJTransformStream(options);
+    const status_ = stream.status;
+    expect(status_.makeDocument).toEqual(status.makeDocument);
+    expect(status_.unSupported[0]).toEqual(status.unSupported);
+  });
+});

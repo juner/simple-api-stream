@@ -85,6 +85,9 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
       unSupported: toUnsupported(this.#unSupported)
     };
   }
+  get status() {
+    return this.#status();
+  }
   static readonly unSupoortedToNull = unSupoortedToNull;
   static readonly unSupportedToError = unSupportedToError;
   #makeError(message: string | Error, options?: ErrorOptions) {
