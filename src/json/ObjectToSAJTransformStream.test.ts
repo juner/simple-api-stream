@@ -160,7 +160,28 @@ test("error inner exception", async ({ expect }) => {
   await expect(readed).rejects.toThrowError("iterator user error");
   await expect(writed).rejects.toThrowError("iterator user error");
 });
-
+test("notsupport to custom skip", async ({ expect }) => {
+  const { readable, writable } = new ObjectToSAJTransformStream({
+    unSupported: ({value:_, skip}) => {
+      return skip;
+    }
+  });
+  const readed = Array.fromAsync(readable);
+  const writed = (async (input) => {
+    const writer = writable.getWriter();
+    await writer.write(input);
+    await writer.close();
+  })({
+    value: 1n,
+  });
+  await expect(readed).resolves.toEqual([
+    { name: "startDocument", kind: "json"},
+    { name: "startObject" },
+    { name: "endObject" },
+    { name: "endDocument"}
+  ]);
+  await expect(writed).resolves.toBeUndefined();
+});
 test("notsupport to custom error", async ({ expect }) => {
   const { readable, writable } = new ObjectToSAJTransformStream({
     unSupported: () => {
@@ -179,6 +200,33 @@ test("notsupport to custom error", async ({ expect }) => {
   await expect(readed).rejects.toThrowError("custom error");
   await expect(writed).rejects.toThrowError(ObjectToSAJTransformStreamError);
   await expect(writed).rejects.toThrowError("custom error");
+});
+
+test("notsupport to custom value", async ({ expect }) => {
+  const { readable, writable } = new ObjectToSAJTransformStream({
+    unSupported: () => {
+      return [0];
+    }
+  });
+  const readed = Array.fromAsync(readable);
+  const writed = (async (input) => {
+    const writer = writable.getWriter();
+    await writer.write(input);
+    await writer.close();
+  })({
+    value: 1n,
+  });
+  await expect(readed).resolves.toEqual([
+    { name: "startDocument", kind: "json"},
+    { name: "startObject" },
+    { name: "key", key: "value" },
+    { name: "startArray"},
+    { name: "value", type: "number", value: 0},
+    { name: "endArray" },
+    { name: "endObject" },
+    { name: "endDocument"}
+  ]);
+  await expect(writed).resolves.toBeUndefined();
 });
 
 test("notsupport to error", async ({ expect }) => {

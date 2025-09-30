@@ -126,7 +126,6 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
     }
     if (newValue === skip) return;
     yield* this.#emitValue(newValue);
-
   }
   async *#emitValue(value: unknown): AsyncGenerator<SAJEventInterface, void, void> {
     // #region primitive
