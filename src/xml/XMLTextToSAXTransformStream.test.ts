@@ -66,6 +66,12 @@ test("SimpleSAXTransformStream parses XML stream correctly", async ({ expect }) 
     'end:child',
     'end:root'
   ]);
+  expect(stream.status).toEqual({
+    acc: "",
+    buffer: "",
+    openDocumented: false,
+    state: "text",
+  });
 });
 
 test("SimpleSAXTransformStream handles malformed XML", async ({ expect }) => {

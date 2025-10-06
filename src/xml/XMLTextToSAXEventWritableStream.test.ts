@@ -87,6 +87,12 @@ test("handles malformed XML gracefully", async ({ expect }) => {
   const stream = new XMLTextToSAXEventWritableStream(handler);
   await stream.getWriter().abort(new Error("bad xml"));
   expect(handler.onError).toHaveBeenCalledWith(expect.any(Error));
+  expect(stream.status).toEqual({
+    acc: "",
+    buffer: "",
+    openDocumented: false,
+    state: "text",
+  });
 });
 
 test("handles only text nodes", async ({ expect }) => {

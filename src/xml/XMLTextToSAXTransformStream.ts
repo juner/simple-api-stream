@@ -41,6 +41,7 @@ import { SAXEventInterface } from "./event-interface";
  * @see SAXEventInterface
  */
 export class XMLTextToSAXTransformStream extends TransformStream<string, SAXEventInterface> {
+  #buffer: XMLTextToSAXParser;
   constructor({skipDocument}: {skipDocument?: boolean} = {}) {
     let buffer!: XMLTextToSAXParser;
     super({
@@ -69,6 +70,10 @@ export class XMLTextToSAXTransformStream extends TransformStream<string, SAXEven
         buffer.flush();
       }
     });
+    this.#buffer = buffer;
+  }
+  get status() {
+    return this.#buffer.status;
   }
 }
 

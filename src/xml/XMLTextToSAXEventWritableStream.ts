@@ -35,7 +35,7 @@ import { SAXHandler } from "./interface/SAXHandler";
  * @see SAXHandler
  */
 export class XMLTextToSAXEventWritableStream extends WritableStream<string> {
-
+  #buffer: XMLTextToSAXParser;
   constructor(handler: Partial<SAXHandler>, options?: { skipDocument?: boolean }) {
     const buffer = new XMLTextToSAXParser({ handler, ...(options ?? {}) });
     super({
@@ -64,5 +64,9 @@ export class XMLTextToSAXEventWritableStream extends WritableStream<string> {
         handler.onError?.(reason);
       }
     });
+    this.#buffer = buffer;
+  }
+  get status() {
+    return this.#buffer.status;
   }
 }
