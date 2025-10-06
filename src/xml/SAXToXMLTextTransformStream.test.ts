@@ -48,6 +48,34 @@ describe("pattern test", (it) => {
         ]
       },
       {
+        name: "html sample. summarize:true",
+        options: { summarize: true, },
+        input: [
+          { name: "startDocument", kind: "xml" },
+          { name: "startElement", tagName: "a", attrs: { href: "http://example.com" } },
+          { name: "text", text: "🐈" },
+          { name: "endElement", tagName: "a" },
+          { name: "endDocument" },
+        ],
+        output: [
+          `<a href="http://example.com">🐈</a>`,
+        ]
+      },
+      {
+        name: "html sample. summarize:false",
+        options: { summarize: false, },
+        input: [
+          { name: "startElement", tagName: "a", attrs: { href: "http://example.com" } },
+          { name: "text", text: "🐈" },
+          { name: "endElement", tagName: "a" },
+        ],
+        output: [
+          `<a href="http://example.com">`,
+          "🐈",
+          "</a>",
+        ]
+      },
+      {
         name: "DOCTYPE HTML 4.01 Strict",
         input: [
           { name: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
