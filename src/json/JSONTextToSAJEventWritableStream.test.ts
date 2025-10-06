@@ -161,7 +161,7 @@ describe("pattern", (it) => {
   });
 });
 describe("error onError", (it) => {
-  it.concurrent("", async ({expect}) => {
+  it.concurrent("", async ({ expect }) => {
     const handler: Partial<json.interfaces.SAJHandler> = {
       onError: vi.fn(),
     };
@@ -169,6 +169,14 @@ describe("error onError", (it) => {
     stream.abort(new Error("error"));
     // onError 実行タイミングは queueMicrotask 後
     await (null as unknown as Promise<void>);
+    expect(stream.status).toEqual({
+      acc: "",
+      buffer: "",
+      key: null,
+      pos: 0,
+      state: "#startDocument",
+      typeStack: [],
+    });
     expect(handler.onError).toHaveBeenCalledWith(expect.any(Error));
   });
 });

@@ -4,6 +4,7 @@ import { JSONTextToSAJParser } from "./JSONTextToSAJParser";
 type SAJHandler = Required<ConstructorParameters<typeof JSONTextToSAJParser>[0]["handler"]>
 
 export class JSONTextToSAJTransformStream extends TransformStream<string, SAJEventInterface> {
+  #parser: JSONTextToSAJParser;
   constructor({skipDocument, multiple, ...handler_ }: { skipDocument?: boolean, multiple?:boolean, } & Partial<Pick<SAJHandler, "onParseBefore"|"onParseAfter"|"onParseRoopAfter"|"onParseRoopBefore">> = {}) {
     let buffer!: JSONTextToSAJParser;
     super({
@@ -32,6 +33,10 @@ export class JSONTextToSAJTransformStream extends TransformStream<string, SAJEve
         buffer.flush();
       }
     });
+    this.#parser = buffer;
+  }
+  get status() {
+    return this.#parser.status;
   }
 }
 

@@ -3,7 +3,7 @@ import type { JSONTextToSAJParserAdditionalHandler } from "./JSONTextToSAJParser
 import { JSONTextToSAJParser } from "./JSONTextToSAJParser";
 
 export class JSONTextToSAJEventWritableStream extends WritableStream<string> {
-
+  #parser: JSONTextToSAJParser;
   constructor(handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>) {
     const buffer = new JSONTextToSAJParser({ handler });
     super({
@@ -32,5 +32,9 @@ export class JSONTextToSAJEventWritableStream extends WritableStream<string> {
         handler.onError?.(reason);
       }
     });
+    this.#parser = buffer;
+  }
+  get status() {
+    return this.#parser.status;
   }
 }

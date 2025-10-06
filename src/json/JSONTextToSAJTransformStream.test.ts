@@ -907,7 +907,7 @@ test("debug", async ({ expect }) => {
     onParseRoopAfter: vi.fn(),
     onParseRoopBefore: vi.fn(),
   };
-  const { readable, writable } = new JSONTextToSAJTransformStream(handler);
+  const { readable, writable, status } = new JSONTextToSAJTransformStream(handler);
   const readed = Array.fromAsync(readable);
   const writed = (async () => {
     const writer = writable.getWriter();
@@ -928,6 +928,14 @@ test("debug", async ({ expect }) => {
       name: "endDocument",
     },
   ]);
+  expect(status).toEqual({
+  acc: "",
+  buffer: "",
+  key: null,
+  pos: 0,
+  state: "#startDocument",
+  typeStack: [],
+});
   await expect(writed).resolves.toBeUndefined();
   expect(handler.onParseAfter).toHaveBeenCalledTimes(2);
   expect(handler.onParseBefore).toHaveBeenCalledTimes(2);
