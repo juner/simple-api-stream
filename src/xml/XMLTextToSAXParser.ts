@@ -82,6 +82,10 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
     };
   }
 
+  get status() {
+    return this.#status();
+  }
+
   constructor({ handler, skipDocument }: { handler: Partial<SAXHandler>, skipDocument?: boolean }) {
     this.#handler = handler;
     this.#factor = this.#text;

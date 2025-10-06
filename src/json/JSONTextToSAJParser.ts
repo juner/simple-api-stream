@@ -72,6 +72,10 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     };
   }
 
+  get status() {
+    return this.#status();
+  }
+
   /**
    * make error new SimpleSAXParseXMLBufferError
    * @param message error message

@@ -83,6 +83,10 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
     };
   }
 
+  get status() {
+    return this.#status();
+  }
+
   constructor({ summarize }: Partial<SAJToJSONTextTransformStreamOptions> = {}) {
     let controller_!: TransformStreamDefaultController<string>;
     super({

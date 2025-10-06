@@ -129,6 +129,11 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
       parts: structuredClone(this.#parts),
     };
   }
+
+  get status() {
+    return this.#status();
+  }
+
   #makeError(message: string | Error, options?: ErrorOptions) {
     ({message, options} = toErrorMessage(message, options));
     return new SAXToXMLTextTransformStreamError(message, this.#status(), options);

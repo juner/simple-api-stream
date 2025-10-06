@@ -70,6 +70,11 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
       current: structuredClone(this.#current),
     };
   }
+
+  get status() {
+    return this.#status();
+  }
+
   #next(chunk: SAJEventInterface) {
     try {
       this.#state(chunk);
