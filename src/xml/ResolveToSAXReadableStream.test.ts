@@ -144,6 +144,44 @@ describe("pattern", (it) => {
             name: "endElement",
           },
         ],
+      },
+      {
+        name: "doctype simple",
+        input: [
+          stream => stream.doctype("root"),
+        ],
+        output: [
+          {
+            root: "root",
+            dtdType: undefined,
+            name: "doctype",
+          }
+        ],
+      },
+      {
+        name: "doctype public",
+        input: [
+          stream => stream.doctype("HTML", {
+            dtdType: "PUBLIC",
+            identifer: "-//W3C//DTD HTML 4.01//EN",
+            uri: "http://www.w3.org/TR/html4/strict.dtd",
+          }),
+        ],
+        output: [
+          { name: "doctype", root: "HTML", dtdType: "PUBLIC", identifer: "-//W3C//DTD HTML 4.01//EN", uri: "http://www.w3.org/TR/html4/strict.dtd" }
+        ],
+      },
+      {
+        name: "doctype system",
+        input: [
+          stream => stream.doctype("html", {
+            dtdType: "SYSTEM",
+            uri: "http://www.w3.org/TR/html4/strict.dtd",
+          }),
+        ],
+        output: [
+          { name: "doctype", root: "html", dtdType: "SYSTEM", uri: "http://www.w3.org/TR/html4/strict.dtd" }
+        ],
       }
     ];
   it.each(entries)("$name", async ({ input, output }) => {
