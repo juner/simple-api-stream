@@ -6,7 +6,7 @@ import { SAJToObjectTransformStreamError, SAJToObjectTransformStreamOptions } fr
 type SAJEventInterface = json.eventInterfaces.SAJEventInterface;
 
 test("single error", async ({ expect }) => {
-  const { readable, writable } = new SAJToObjectTransformStream();
+  const { readable, writable, status } = new SAJToObjectTransformStream();
   const wait2 = (async () => {
     const writer = writable.getWriter();
     await writer.write({ name: "value", type: "null", value: null });
@@ -14,6 +14,11 @@ test("single error", async ({ expect }) => {
     await writer.close();
   })();
   const wait = Array.fromAsync(readable);
+  expect(status).toEqual({
+    "current": undefined,
+    "stackedList": [],
+    "state": "startEntry",
+  });
   await expect(wait).rejects.toThrowError(expect.any(SAJToObjectTransformStreamError));
   await expect(wait2).rejects.toThrowError(expect.any(TypeError));
 });
