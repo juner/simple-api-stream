@@ -195,7 +195,6 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
       Object.assign(error as unknown as Record<string, unknown>, { type, top });
       throw error;
     }
-    if (this.#containerStack.length > 0) throw this.#makeError("invalid endDocument");
     if (this.#summarize === summarize.document && this.#parts.length > 0) {
       const parts = this.#parts.splice(0, this.#parts.length).join("");
       this.#controller.enqueue(parts);
