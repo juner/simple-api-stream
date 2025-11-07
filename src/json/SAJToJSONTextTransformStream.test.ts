@@ -284,3 +284,104 @@ describe.concurrent("pattern", (test) => {
   });
 
 });
+
+describe.concurrent("error pattern", (test) => {
+  const entries:{
+    name: string;
+    options?: ConstructorParameters<typeof SAJToJSONTextTransformStream>[0];
+    input: SAJEventInterface[];
+    output:
+      Record<"read" | "write", {
+        error: (string | RegExp | (new (...args: (ConstructorParameters<typeof SAJToJSONTextTransformStreamError>)) => unknown) | Error | undefined)[];
+      } | {
+        result: unknown[] | undefined;
+      }>;
+  }[] = [
+    {
+      name: "endDocument",
+      input: [
+        { name: "endDocument" },
+      ],
+      output:{
+        read: {
+          error: [
+            "Mismatched enddocument, expected to close undefined",
+            SAJToJSONTextTransformStreamError
+          ],
+        },
+        write: {
+          error: [
+            "Invalid state: WritableStream is closed",
+            TypeError,
+          ],
+        }
+      }
+    },
+    {
+      name: "endDocument haveContainer",
+      input: [
+        { name: "startDocument", kind:"json"},
+        { name: "startObject" },
+        { name: "endDocument" },
+      ],
+      output:{
+        read: {
+          error: [
+            "Mismatched enddocument, expected to close object",
+            SAJToJSONTextTransformStreamError
+          ],
+        },
+        write: {
+          error: [
+            "Invalid state: WritableStream is closed",
+            TypeError,
+          ],
+        }
+      }
+    },
+    {
+      name: "startDocument",
+      input: [
+        { name: "startDocument", kind: "json"},
+        { name: "startDocument", kind: "json"},
+      ],
+      output:{
+        read: {
+          error: [
+            "invalid startDocument",
+            SAJToJSONTextTransformStreamError
+          ],
+        },
+        write: {
+          error: [
+            "Invalid state: WritableStream is closed",
+            TypeError,
+          ],
+        }
+      }
+    },
+  ];
+  test.each(entries)("$name", async ({ options, input, output: {read, write} }) => {
+    const { readable, writable } = new SAJToJSONTextTransformStream(options);
+    const readed = Array.fromAsync(readable);
+    const writed = (async () => {
+      const writer = writable.getWriter();
+      for (const i of input)
+        await writer.write(i);
+      await writer.close();
+    })();
+    for (const [name, resultType, result] of [
+      ["read", read, readed],
+      ["write", write, writed],
+    ] as const)
+      if ("error" in resultType) {
+        for (const error of resultType.error)
+          await expect(result, `${name} throw`).rejects.toThrowError(error);
+      } else {
+        if (resultType.result === undefined)
+          await expect(result, `${name} result`).resolves.toBeUndefined();
+        else
+          await expect(result, `${name} result`).resolves.toEqual(result);
+      }
+  });
+});
