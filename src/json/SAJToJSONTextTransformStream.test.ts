@@ -137,7 +137,13 @@ describe("SAJToJSONTextTransformStream - error handling", () => {
     const stream = new SAJToJSONTextTransformStream();
     const writer = stream.writable.getWriter();
     const reader = stream.readable.getReader();
-
+    expect(stream.status).toEqual({
+      "containerStack": [],
+      "firstItemStack": [],
+      "parts": [],
+      "pendingValueForKey": false,
+      "summarize": "default",
+    });
     const readPromise = (async () => {
       while (true) {
         const { done } = await reader.read();
@@ -152,9 +158,16 @@ describe("SAJToJSONTextTransformStream - error handling", () => {
       await writer.write({ name: "endObject" });
       await writer.close();
     })();
-
     await expect(readPromise).rejects.toThrowError(expect.any(SAJToJSONTextTransformStreamError));
     await expect(writePromise).rejects.toThrowError(expect.any(TypeError));
+
+    expect(stream.status).toEqual({
+      "containerStack": [],
+      "firstItemStack": [],
+      "parts": [],
+      "pendingValueForKey": false,
+      "summarize": "default",
+    });
   });
 
   it("throws if key appears outside object", async () => {
