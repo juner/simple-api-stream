@@ -15,9 +15,9 @@ test("single error", async ({ expect }) => {
   })();
   const wait = Array.fromAsync(readable);
   expect(status).toEqual({
-    "current": undefined,
-    "stackedList": [],
-    "state": "startEntry",
+    current: undefined,
+    stackedList: [],
+    state: "startEntry",
   });
   await expect(wait).rejects.toThrowError(expect.any(SAJToObjectTransformStreamError));
   await expect(wait2).rejects.toThrowError(expect.any(TypeError));

@@ -138,11 +138,11 @@ describe("SAJToJSONTextTransformStream - error handling", () => {
     const writer = stream.writable.getWriter();
     const reader = stream.readable.getReader();
     expect(stream.status).toEqual({
-      "containerStack": [],
-      "firstItemStack": [],
-      "parts": [],
-      "pendingValueForKey": false,
-      "summarize": "default",
+      containerStack: [],
+      firstItemStack: [],
+      parts: [],
+      pendingValueForKey: false,
+      summarize: "default",
     });
     const readPromise = (async () => {
       while (true) {
@@ -162,11 +162,11 @@ describe("SAJToJSONTextTransformStream - error handling", () => {
     await expect(writePromise).rejects.toThrowError(expect.any(TypeError));
 
     expect(stream.status).toEqual({
-      "containerStack": [],
-      "firstItemStack": [],
-      "parts": [],
-      "pendingValueForKey": false,
-      "summarize": "default",
+      containerStack: [],
+      firstItemStack: [],
+      parts: [],
+      pendingValueForKey: false,
+      summarize: "default",
     });
   });
 
