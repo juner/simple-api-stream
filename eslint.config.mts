@@ -34,9 +34,16 @@ export default defineConfig([
   { files: ["**/*.json"], ignores: ["**/tsconfig.json", "package-lock.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
   {
     files: [
-      "**/tsconfig.json",
-      "**/*.code-workspace"
-    ], plugins: { json }, language: "json/jsonc", extends: ["json/recommended"]
+      `**/tsconfig.json`,
+      `**/*.code-workspace`,
+      `**/.vscode/*.json`,
+    ], 
+    plugins: {json},
+    language: "json/jsonc", 
+    languageOptions: {
+      allowTrailingCommas: true,
+    },
+    extends: ["json/recommended"],
   },
   { files: ["**/*.md"], plugins: { markdown }, language: "markdown/gfm", extends: ["markdown/recommended"] },
 ]);
