@@ -10,15 +10,15 @@ import type { ProcessingInstructionSAXEventInterface } from "./ProcessingInstruc
 import type { StartDocumentSAXEventInterface } from "./StartDocumentSAXEventInterface";
 import type { EndDocumentSAXEventInterface } from "./EndDocumentSAXEventInterface";
 
-export type SAXEventInterface =
-  DoctypeSAXEventInterface
-  | StartElementSAXEventInterface
-  | EndElementSAXEventInterface
-  | TextSAXEventInterface
-  | CommentSAXEventInterface
-  | CdataSAXEventInterface
-  | XMLdeclarationSAXEventInterface
-  | XMLStylesheetDeclarationSAXEventInterface
-  | ProcessingInstructionSAXEventInterface
-  | StartDocumentSAXEventInterface
-  | EndDocumentSAXEventInterface;
+export type SAXEventInterface
+  = DoctypeSAXEventInterface
+    | StartElementSAXEventInterface
+    | EndElementSAXEventInterface
+    | TextSAXEventInterface
+    | CommentSAXEventInterface
+    | CdataSAXEventInterface
+    | XMLdeclarationSAXEventInterface
+    | XMLStylesheetDeclarationSAXEventInterface
+    | ProcessingInstructionSAXEventInterface
+    | StartDocumentSAXEventInterface
+    | EndDocumentSAXEventInterface;

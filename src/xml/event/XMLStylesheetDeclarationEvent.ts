@@ -10,6 +10,7 @@ export class XMLStylesheetDeclarationEvent extends ProcessingInstructionEvent<ty
     this.type = contentType;
     this.href = href;
   }
+
   static #makeData(contentType: string, href: string) {
     const joins: string[] = [];
     if (contentType)

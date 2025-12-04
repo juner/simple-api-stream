@@ -4,13 +4,13 @@ import type { SAJEventInterface } from "./event-interface";
 type SAJStateFn = (event: SAJEventInterface) => void;
 
 type Status = {
-  get state(): string;
+  get state(): string
   get stackedList(): {
-    get container(): unknown;
-    key?: string | undefined;
-  }[];
-  get current(): unknown;
-}
+    get container(): unknown
+    key?: string | undefined
+  }[]
+  get current(): unknown
+};
 
 export class SAJToObjectTransformStreamError extends Error implements Status {
   constructor(message: string, status: Status, options?: ErrorOptions) {
@@ -20,14 +20,15 @@ export class SAJToObjectTransformStreamError extends Error implements Status {
     this.stackedList = status.stackedList;
     this.current = status.current;
   }
+
   state: string;
-  stackedList: { container: unknown; key?: string | undefined; }[];
+  stackedList: { container: unknown, key?: string | undefined }[];
   current: unknown | undefined;
 }
 
 export type SAJToObjectTransformStreamOptions = {
-  multiple: boolean;
-}
+  multiple: boolean
+};
 
 export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInterface, T> {
   #controller!: TransformStreamDefaultController<T>;
@@ -45,15 +46,14 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
       flush: () => {
         if (this.#stack.length === 0) return;
         throw this.#makeError("Incomplete JSON structure");
-      }
+      },
     });
     ({ multiple: this.#multiple = false } = options ?? {});
     this.#controller = controller_;
   }
 
-
   #makeError(message: string | Error, options?: ErrorOptions) {
-    ({message, options} = toErrorMessage(message, options));
+    ({ message, options } = toErrorMessage(message, options));
     const status = this.#status();
     return new SAJToObjectTransformStreamError(message, status, options);
   }
@@ -78,13 +78,15 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
   #next(chunk: SAJEventInterface) {
     try {
       this.#state(chunk);
-    } catch (e: unknown) {
+    }
+    catch (e: unknown) {
       this.#controller.error(e);
     }
   }
+
   // ========== 状態スタックと構築スタック ==========
   #state: SAJStateFn = this.#startEntry;
-  #stack: { container: unknown; key?: string }[] = [];
+  #stack: { container: unknown, key?: string }[] = [];
 
   // #region 状態関数
   #startEntry(event: SAJEventInterface): void {
@@ -110,7 +112,7 @@ export class SAJToObjectTransformStream<T> extends TransformStream<SAJEventInter
     throw this.#makeError(`Unexpected ${event.name} at root`, {
       cause: {
         name: event.name,
-      }
+      },
     });
   }
 

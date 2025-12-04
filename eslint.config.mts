@@ -9,41 +9,48 @@ import stylistic from "@stylistic/eslint-plugin";
 export default defineConfig([
   {
     ignores: [
-      "dist/"
-    ]
+      `dist/**.*`,
+    ],
   },
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], plugins: { js }, extends: ["js/recommended"] },
-  { files: ["**/*.{js,mjs,cjs,ts,mts,cts}"], languageOptions: { globals: { ...globals.browser, ...globals.node } } },
-  tseslint.configs.recommended as unknown as Parameters<typeof defineConfig>,
+  { files: [`**/*.{js,mjs,cjs,ts,mts,cts}`], plugins: { js }, extends: [`js/recommended`] },
+  { files: [`**/*.{js,mjs,cjs,ts,mts,cts}`], languageOptions: { globals: { ...globals.browser, ...globals.node } } },
   {
+    files: [`**/*.{js,mjs,cjs,ts,mts,cts}`],
     plugins: {
-      '@stylistic': stylistic
+      "@stylistic": stylistic,
+      "tseslint": tseslint,
     },
+    extends: [
+      "@stylistic/recommended",
+      "tseslint/recommended",
+    ],
     rules: {
-      semi: "error",
-      "@typescript-eslint/no-unused-vars": ["error", {
-        argsIgnorePattern: "^_",
+      "semi": [`error`],
+      "@stylistic/semi": ["error", "always"],
+      "no-unused-vars": [`off`],
+      "@typescript-eslint/no-unused-vars": [`error`, {
+        argsIgnorePattern: `^_`,
         // catch も同様のルール
-        caughtErrorsIgnorePattern: "^_",
-        destructuredArrayIgnorePattern: "^_",
-        varsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: `^_`,
+        destructuredArrayIgnorePattern: `^_`,
+        varsIgnorePattern: `^_`,
       }],
-      "@stylistic/quote-props": ["error", "as-needed"]
-    }
+      "@stylistic/quotes": [`error`, "double", { allowTemplateLiterals: "always" }],
+    },
   },
-  { files: ["**/*.json"], ignores: ["**/tsconfig.json", "package-lock.json"], plugins: { json }, language: "json/json", extends: ["json/recommended"] },
+  { files: [`**/*.json`], ignores: [`**/tsconfig.json`, `package-lock.json`, `**/.vscode/*.json`], plugins: { json }, language: `json/json`, extends: [`json/recommended`] },
   {
     files: [
       `**/tsconfig.json`,
       `**/*.code-workspace`,
       `**/.vscode/*.json`,
-    ], 
-    plugins: {json},
-    language: "json/jsonc", 
+    ],
+    plugins: { json },
+    language: "json/jsonc",
     languageOptions: {
       allowTrailingCommas: true,
     },
     extends: ["json/recommended"],
   },
-  { files: ["**/*.md"], plugins: { markdown }, language: "markdown/gfm", extends: ["markdown/recommended"] },
+  { files: [`**/*.md`], plugins: { markdown }, language: `markdown/gfm`, extends: [`markdown/recommended`] },
 ]);

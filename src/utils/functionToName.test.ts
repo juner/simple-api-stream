@@ -12,11 +12,12 @@ describe.concurrent("functionToName", (test) => {
     expect(functionToName(value2), `value2 function name is value2`)
       .toEqual("value2");
   });
-  test("private #func function name is func", ({expect}) => {
+  test("private #func function name is func", ({ expect }) => {
     class Class {
       static #func() {
 
       }
+
       static getFunc() {
         return this.#func;
       }
@@ -24,6 +25,5 @@ describe.concurrent("functionToName", (test) => {
     const value3 = Class.getFunc();
     expect(functionToName(value3, "#"), `value3 function name is func`)
       .toEqual("func");
-
   });
 });

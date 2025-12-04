@@ -1,11 +1,11 @@
 import { SAJEventInterface } from "./event-interface";
 import { JSONTextToSAJParser } from "./JSONTextToSAJParser";
 
-type SAJHandler = Required<ConstructorParameters<typeof JSONTextToSAJParser>[0]["handler"]>
+type SAJHandler = Required<ConstructorParameters<typeof JSONTextToSAJParser>[0]["handler"]>;
 
 export class JSONTextToSAJTransformStream extends TransformStream<string, SAJEventInterface> {
   #parser: JSONTextToSAJParser;
-  constructor({skipDocument, multiple, ...handler_ }: { skipDocument?: boolean, multiple?:boolean, } & Partial<Pick<SAJHandler, "onParseBefore"|"onParseAfter"|"onParseRoopAfter"|"onParseRoopBefore">> = {}) {
+  constructor({ skipDocument, multiple, ...handler_ }: { skipDocument?: boolean, multiple?: boolean } & Partial<Pick<SAJHandler, "onParseBefore" | "onParseAfter" | "onParseRoopAfter" | "onParseRoopBefore">> = {}) {
     let buffer!: JSONTextToSAJParser;
     super({
 
@@ -15,7 +15,7 @@ export class JSONTextToSAJTransformStream extends TransformStream<string, SAJEve
        */
       start(controller) {
         const handler = toHandler(controller, handler_);
-        buffer = new JSONTextToSAJParser({ handler, ...{skipDocument, multiple} });
+        buffer = new JSONTextToSAJParser({ handler, ...{ skipDocument, multiple } });
       },
 
       /**
@@ -31,10 +31,11 @@ export class JSONTextToSAJTransformStream extends TransformStream<string, SAJEve
        */
       flush() {
         buffer.flush();
-      }
+      },
     });
     this.#parser = buffer;
   }
+
   get status() {
     return this.#parser.status;
   }
@@ -45,7 +46,7 @@ export class JSONTextToSAJTransformStream extends TransformStream<string, SAJEve
  * @param controller
  * @returns
  */
-function toHandler(controller: TransformStreamDefaultController<SAJEventInterface>, handler: Partial<Pick<SAJHandler, "onParseBefore"|"onParseAfter"|"onParseRoopAfter"|"onParseRoopBefore">>): Partial<SAJHandler> {
+function toHandler(controller: TransformStreamDefaultController<SAJEventInterface>, handler: Partial<Pick<SAJHandler, "onParseBefore" | "onParseAfter" | "onParseRoopAfter" | "onParseRoopBefore">>): Partial<SAJHandler> {
   const enqueue = controller.enqueue.bind(controller) as typeof controller.enqueue;
   const error = controller.error.bind(controller) as typeof controller.error;
   const iterable = [
@@ -58,12 +59,13 @@ function toHandler(controller: TransformStreamDefaultController<SAJEventInterfac
     makeEntry("onStartDocument", enqueue),
     makeEntry("onEndDocument", enqueue),
     makeEntry("onError", error),
-    ...(handler.onParseAfter ? [makeEntry("onParseAfter", (arg) => handler.onParseAfter!(arg))] : []),
-    ...(handler.onParseBefore ? [makeEntry("onParseBefore", (arg) => handler.onParseBefore!(arg))] : []),
-    ...(handler.onParseRoopAfter ? [makeEntry("onParseRoopAfter", (arg) => handler.onParseRoopAfter!(arg))] : []),
-    ...(handler.onParseRoopBefore ? [makeEntry("onParseRoopBefore", (arg) => handler.onParseRoopBefore!(arg))] : []),
+    ...(handler.onParseAfter ? [makeEntry("onParseAfter", arg => handler.onParseAfter!(arg))] : []),
+    ...(handler.onParseBefore ? [makeEntry("onParseBefore", arg => handler.onParseBefore!(arg))] : []),
+    ...(handler.onParseRoopAfter ? [makeEntry("onParseRoopAfter", arg => handler.onParseRoopAfter!(arg))] : []),
+    ...(handler.onParseRoopBefore ? [makeEntry("onParseRoopBefore", arg => handler.onParseRoopBefore!(arg))] : []),
   ] as const;
   return Object.fromEntries(iterable);
-  function makeEntry<T extends keyof SAJHandler>(key: T, func: SAJHandler[T] ) { return [key, func] as const; };
+  function makeEntry<T extends keyof SAJHandler>(key: T, func: SAJHandler[T]) {
+    return [key, func] as const;
+  };
 }
-

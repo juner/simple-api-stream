@@ -21,41 +21,40 @@ export class JSONTextToSAJParserError extends Error implements Status {
       key: this.key,
       typeStack: this.typeStack,
     } = status);
-
   }
 }
 
 type StateFunction = (ch: Ch) => void;
 type Status = {
-  get buffer(): string;
-  get pos(): number;
-  get state(): string;
-  get acc(): string;
-  get key(): string | null;
-  get typeStack(): ("object" | "array")[];
+  get buffer(): string
+  get pos(): number
+  get state(): string
+  get acc(): string
+  get key(): string | null
+  get typeStack(): ("object" | "array")[]
 };
 
 export type JSONTextToSAJParserAdditionalHandler = {
-  onParseBefore(arg: Status): void;
-  onParseRoopBefore(arg: Status): void;
-  onParseRoopAfter(arg: Status): void;
-  onParseAfter(arg: Status): void;
-}
+  onParseBefore(arg: Status): void
+  onParseRoopBefore(arg: Status): void
+  onParseRoopAfter(arg: Status): void
+  onParseAfter(arg: Status): void
+};
 const EOL = Symbol.for("JSONTextToSAJParser.EOL");
 
 type Ch = string | typeof EOL;
 
 export class JSONTextToSAJParser implements SimpleApiParser<string> {
   /** text buffer */
-  #buffer = '';
+  #buffer = "";
   /** read position */
   #pos = 0;
   /** read state */
   #state: StateFunction = this.#startDocument;
 
-  #acc = '';
+  #acc = "";
   #key: string | null = null;
-  #stack: ('object' | 'array')[] = [];
+  #stack: ("object" | "array")[] = [];
   #handler: Partial<SAJHandler & JSONTextToSAJParserAdditionalHandler>;
   #skipDocument: boolean;
   #startDocumented: boolean = false;
@@ -83,7 +82,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
    * @returns
    */
   #makeError(message: string | Error, options?: ErrorOptions) {
-    ({message, options} = toErrorMessage(message, options));
+    ({ message, options } = toErrorMessage(message, options));
     return new JSONTextToSAJParserError(message, this.#status(), options);
   }
 
@@ -140,9 +139,11 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       if (isFlush) {
         assertIsTrue(this.#state === this.#startDocument, `finish state is startDocument`);
       }
-    } catch (e: unknown) {
+    }
+    catch (e: unknown) {
       this.#handler.onError?.(e);
-    } finally {
+    }
+    finally {
       this.#handler.onParseAfter?.(this.#status());
     }
   }
@@ -161,6 +162,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     }
     this.#state = this.#startDocument;
   }
+
   #closedDocument() {
     throw this.#makeError("is closed document");
   }
@@ -175,37 +177,37 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       this.#startDocumented = true;
     }
     switch (ch) {
-      case '{':
+      case "{":
         this.#handler.onStartObject?.(new StartObjectEvent());
-        this.#stack.push('object');
+        this.#stack.push("object");
         this.#state = this.#parseKeyOrEndObject;
         return;
-      case '[':
+      case "[":
         this.#handler.onStartArray?.(new StartArrayEvent());
-        this.#stack.push('array');
+        this.#stack.push("array");
         this.#state = this.#parseValueOrEndArray;
         return;
-      case '"':
-        this.#acc = '';
+      case "\"":
+        this.#acc = "";
         this.#state = this.#parseString(this.#handleStandaloneValue);
         return;
-      case 't':
-      case 'f':
-      case 'n':
+      case "t":
+      case "f":
+      case "n":
         this.#acc = ch;
         this.#state = this.#parseLiteral(this.#handleStandaloneValue);
         return;
-      case '-':
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
+      case "-":
+      case "0":
+      case "1":
+      case "2":
+      case "3":
+      case "4":
+      case "5":
+      case "6":
+      case "7":
+      case "8":
+      case "9":
         this.#acc = ch;
         this.#state = this.#parseNumber(this.#handleStandaloneValue);
         return;
@@ -219,22 +221,23 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   };
 
   #wrapValue<T extends number | string | boolean | null>(val: T) {
-    if (typeof val === 'string') return new ValueStringEvent("string", val);
-    if (typeof val === 'number') return new ValueNumberEvent("number", val);
-    if (typeof val === 'boolean') return new ValueBooleanEvent("boolean", val);
+    if (typeof val === "string") return new ValueStringEvent("string", val);
+    if (typeof val === "number") return new ValueNumberEvent("number", val);
+    if (typeof val === "boolean") return new ValueBooleanEvent("boolean", val);
     return new ValueNullEvent("null");
   }
 
   #parseKeyOrEndObject(ch: Ch) {
     if (ch === EOL) throw this.#makeNotCompleteError();
     if (/\s/.test(ch)) return;
-    if (ch === '}') {
+    if (ch === "}") {
       this.#handler.onEndObject?.(new EndObjectEvent());
       this.#stack.pop();
       this.#state = this.#parseAfterValue;
       return;
-    } else if (ch === '"') {
-      this.#acc = '';
+    }
+    else if (ch === "\"") {
+      this.#acc = "";
       this.#state = this.#parseString((key) => {
         this.#key = key;
         this.#handler.onKey?.(new KeyEvent(key));
@@ -248,7 +251,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   #parseColon(ch: Ch) {
     if (ch === EOL) throw this.#makeNotCompleteError();
     if (/\s/.test(ch)) return;
-    if (ch === ':') {
+    if (ch === ":") {
       this.#state = this.#parseValue;
       return;
     }
@@ -260,28 +263,28 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     if (/\s/.test(ch)) return;
 
     switch (ch) {
-      case '"':
-        this.#acc = '';
+      case "\"":
+        this.#acc = "";
         this.#state = this.#parseString(this.#emitKeyValue);
         return;
-      case '{':
+      case "{":
         this.#handler.onStartObject?.(new StartObjectEvent());
-        this.#stack.push('object');
+        this.#stack.push("object");
         this.#state = this.#parseKeyOrEndObject;
         return;
-      case '[':
+      case "[":
         this.#handler.onStartArray?.(new StartArrayEvent());
-        this.#stack.push('array');
+        this.#stack.push("array");
         this.#state = this.#parseValueOrEndArray;
         return;
-      case 't':
-      case 'f':
-      case 'n':
+      case "t":
+      case "f":
+      case "n":
         this.#acc = ch;
         this.#state = this.#parseLiteral(this.#emitKeyValue);
         return;
       default:
-        if (ch === '-' || /\d/.test(ch)) {
+        if (ch === "-" || /\d/.test(ch)) {
           this.#acc = ch;
           this.#state = this.#parseNumber(this.#emitKeyValue);
           return;
@@ -304,10 +307,11 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   #parseCommaOrEndObject(ch: Ch) {
     if (ch === EOL) throw this.#makeNotCompleteError();
     if (/\s/.test(ch)) return;
-    if (ch === ',') {
+    if (ch === ",") {
       this.#state = this.#parseKeyOrEndObject;
       return;
-    } else if (ch === '}') {
+    }
+    else if (ch === "}") {
       this.#handler.onEndObject?.(new EndObjectEvent());
       this.#stack.pop();
       this.#state = this.#parseAfterValue;
@@ -319,7 +323,7 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   #parseValueOrEndArray(ch: Ch) {
     if (ch === EOL) throw this.#makeNotCompleteError();
     if (/\s/.test(ch)) return;
-    if (ch === ']') {
+    if (ch === "]") {
       this.#handler.onEndArray?.(new EndArrayEvent());
       this.#stack.pop();
       this.#state = this.#parseAfterValue;
@@ -338,10 +342,11 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
   #parseCommaOrEndArray(ch: Ch) {
     if (ch === EOL) throw this.#makeNotCompleteError();
     if (/\s/.test(ch)) return;
-    if (ch === ',') {
+    if (ch === ",") {
       this.#state = this.#parseValueInArray;
       return;
-    } else if (ch === ']') {
+    }
+    else if (ch === "]") {
       this.#handler.onEndArray?.(new EndArrayEvent());
       this.#stack.pop();
       this.#state = this.#parseAfterValue;
@@ -361,12 +366,12 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     if (/\s/.test(ch)) return;
     const parent = this.#stack.at(-1);
     assertIsDefined(parent, "not have parent");
-    if (parent === 'object') {
+    if (parent === "object") {
       this.#pos--;
       this.#state = this.#parseCommaOrEndObject;
       return;
     }
-    if (parent === 'array') {
+    if (parent === "array") {
       this.#pos--;
       this.#state = this.#parseCommaOrEndArray;
       return;
@@ -390,23 +395,28 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
             unicode = null;
             escape = false;
           }
-        } else if (ch === 'u') {
+        }
+        else if (ch === "u") {
           // unicode エスケープ開始
-          unicode = '';
-        } else {
+          unicode = "";
+        }
+        else {
           const esc = {
-            '"': '"', '\\': '\\', '/': '/',
-            b: '\b', f: '\f', n: '\n', r: '\r', t: '\t'
+            "\"": "\"", "\\": "\\", "/": "/",
+            "b": "\b", "f": "\f", "n": "\n", "r": "\r", "t": "\t",
           }[ch];
           if (esc === undefined) throw this.#makeSyntaxError(`Invalid escape: \\${ch}`, ch);
           this.#acc += esc;
           escape = false;
         }
-      } else if (ch === '\\') {
+      }
+      else if (ch === "\\") {
         escape = true;
-      } else if (ch === '"') {
+      }
+      else if (ch === "\"") {
         onEnd.call(this, this.#acc);
-      } else {
+      }
+      else {
         this.#acc += ch;
       }
     };
@@ -418,11 +428,13 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
       if (ch === EOL) throw this.#makeNotCompleteError();
       this.#acc += ch;
       if (/^(true|false|null)$/.test(this.#acc)) {
-        const val = this.#acc === 'true' ? true :
-          this.#acc === 'false' ? false : null;
+        const val = this.#acc === "true"
+          ? true
+          : this.#acc === "false" ? false : null;
         this.#state = this.#endDocument;
         onEnd.call(this, val);
-      } else if (!["true", "false", "null"].some(prefix => prefix.startsWith(this.#acc))) {
+      }
+      else if (!["true", "false", "null"].some(prefix => prefix.startsWith(this.#acc))) {
         throw this.#makeSyntaxError(`Invalid literal`, this.#acc);
       }
     };
@@ -433,7 +445,8 @@ export class JSONTextToSAJParser implements SimpleApiParser<string> {
     const parseNumberHandler: StateFunction = (ch) => {
       if (ch !== EOL && /[0-9eE+.-]/.test(ch)) {
         this.#acc += ch;
-      } else {
+      }
+      else {
         if (ch !== EOL)
           this.#pos--; // unread
         const num = Number(this.#acc);

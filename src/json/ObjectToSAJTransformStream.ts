@@ -13,13 +13,13 @@ const skip = Symbol.for("ObjectToSAJTransformStream.skip");
 type UnSupportedFunction = (arg: { value: unknown, skip: typeof skip }) => unknown;
 
 type Status = {
-  get makeDocument(): boolean;
-  get unSupported(): ReturnType<typeof toUnsupported>;
-}
+  get makeDocument(): boolean
+  get unSupported(): ReturnType<typeof toUnsupported>
+};
 
 export type ObjectToSAJTransformStreamOptions = {
   makeDocument?: boolean
-  unSupported?: UnSupporteds | UnSupportedFunction;
+  unSupported?: UnSupporteds | UnSupportedFunction
 };
 
 export class ObjectToSAJTransformStreamError extends Error implements Status {
@@ -29,6 +29,7 @@ export class ObjectToSAJTransformStreamError extends Error implements Status {
     this.makeDocument = status.makeDocument;
     this.unSupported = status.unSupported;
   }
+
   makeDocument: boolean;
   unSupported: ReturnType<typeof toUnsupported>;
 }
@@ -63,12 +64,13 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
       },
       transform: async (chunk) => {
         await this.#addChunk(chunk);
-      }
+      },
     });
     this.#controller = controller_;
     this.#makeDocument = makeDocument ?? true;
     this.#unSupported = this.#toUnspported(unSupported);
   }
+
   #toUnspported(unSupported?: UnSupporteds | UnSupportedFunction): UnSupportedFunction | typeof skip {
     unSupported ??= unSupporteds.ignore;
     if (unSupported === unSupporteds.ignore)
@@ -79,21 +81,25 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
       return unSupoortedToNull;
     return unSupported;
   }
+
   #status(): Status {
     return {
       makeDocument: this.#makeDocument,
-      unSupported: toUnsupported(this.#unSupported)
+      unSupported: toUnsupported(this.#unSupported),
     };
   }
+
   get status() {
     return this.#status();
   }
+
   static readonly unSupoortedToNull = unSupoortedToNull;
   static readonly unSupportedToError = unSupportedToError;
   #makeError(message: string | Error, options?: ErrorOptions) {
-    ({message, options} = toErrorMessage(message, options));
+    ({ message, options } = toErrorMessage(message, options));
     return new ObjectToSAJTransformStreamError(message, this.#status(), options);
   }
+
   async #addChunk(chunk: unknown) {
     try {
       let makeDocument = false;
@@ -109,25 +115,29 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
         if (this.#makeDocument)
           this.#controller.enqueue(new EndDocumentEvent());
       }
-    } catch (e: unknown) {
+    }
+    catch (e: unknown) {
       this.#controller.error(e);
       throw e;
     }
   }
-  async *#emitUnsupported(value: unknown): AsyncGenerator<SAJEventInterface, void, void> {
+
+  async* #emitUnsupported(value: unknown): AsyncGenerator<SAJEventInterface, void, void> {
     if (this.#unSupported === skip)
       return;
 
     let newValue: unknown;
     try {
       newValue = this.#unSupported({ value, skip });
-    } catch (e: unknown) {
+    }
+    catch (e: unknown) {
       throw this.#makeError(e as Error);
     }
     if (newValue === skip) return;
     yield* this.#emitValue(newValue);
   }
-  async *#emitValue(value: unknown): AsyncGenerator<SAJEventInterface, void, void> {
+
+  async* #emitValue(value: unknown): AsyncGenerator<SAJEventInterface, void, void> {
     // #region primitive
     if (value === null || typeof value !== "object") {
       switch (typeof value) {
@@ -157,7 +167,8 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
       }
       yield new EndArrayEvent();
       return;
-    } else if ("next" in value && typeof value["next"] === "function") {
+    }
+    else if ("next" in value && typeof value["next"] === "function") {
       if (Symbol.asyncIterator in value && typeof value[Symbol.asyncIterator] === "function") {
         yield new StartArrayEvent();
         for await (const item of value as AsyncGenerator) {
@@ -165,7 +176,8 @@ export class ObjectToSAJTransformStream<T = unknown> extends TransformStream<T, 
         }
         yield new EndArrayEvent();
         return;
-      } else if (Symbol.iterator in value && typeof value[Symbol.iterator] === "function") {
+      }
+      else if (Symbol.iterator in value && typeof value[Symbol.iterator] === "function") {
         yield new StartArrayEvent();
         for (const item of value as Iterable<unknown, void, void>) {
           yield* this.#emitValue(item);

@@ -30,10 +30,11 @@ export class JSONTextToSAJEventWritableStream extends WritableStream<string> {
        */
       abort: (reason: unknown) => {
         handler.onError?.(reason);
-      }
+      },
     });
     this.#parser = buffer;
   }
+
   get status() {
     return this.#parser.status;
   }

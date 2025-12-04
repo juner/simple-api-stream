@@ -193,96 +193,96 @@ describe("SAJToJSONTextTransformStream - error handling", () => {
 });
 describe.concurrent("pattern", (test) => {
   const entries: {
-    name: string;
-    options?: ConstructorParameters<typeof SAJToJSONTextTransformStream>[0];
-    input: SAJEventInterface[];
-    output: string[];
+    name: string
+    options?: ConstructorParameters<typeof SAJToJSONTextTransformStream>[0]
+    input: SAJEventInterface[]
+    output: string[]
   }[] = [
-      {
-        name: "summarize: default",
-        options: { summarize: "default" },
-        input: [
-          { name: "startArray" },
-          { name: "value", type: "string", value: "🐈" },
-          { name: "endArray" },
-        ],
-        output: [
-          "[",
-          `"🐈"`,
-          "]",
-        ],
-      },
-      {
-        name: "summarize: false (default)",
-        options: { summarize: false },
-        input: [
-          { name: "startArray" },
-          { name: "value", type: "string", value: "🐈" },
-          { name: "endArray" },
-        ],
-        output: [
-          "[",
-          `"🐈"`,
-          "]",
-        ],
-      },
-      {
-        name: "summarize: normal",
-        options: { summarize: "normal" },
-        input: [
-          { name: "startDocument", kind: "json" },
-          { name: "startArray" },
-          { name: "value", type: "string", value: "🐈" },
-          { name: "endArray" },
-          { name: "startObject" },
-          { name: "key", key: "animal" },
-          { name: "value", type: "string", value: "🐤" },
-          { name: "endObject" },
-          { name: "endDocument" },
-        ],
-        output: [
-          `["🐈"]`,
-          `{"animal":"🐤"}`,
-        ]
-      },
-      {
-        name: "summarize: true (normal)",
-        options: { summarize: true },
-        input: [
-          { name: "startDocument", kind: "json" },
-          { name: "startArray" },
-          { name: "value", type: "string", value: "🐈" },
-          { name: "endArray" },
-          { name: "startObject" },
-          { name: "key", key: "animal" },
-          { name: "value", type: "string", value: "🐤" },
-          { name: "endObject" },
-          { name: "endDocument" },
-        ],
-        output: [
-          `["🐈"]`,
-          `{"animal":"🐤"}`,
-        ]
-      },
-      {
-        name: "summarize: doument",
-        options: { summarize: "document" },
-        input: [
-          { name: "startDocument", kind: "json" },
-          { name: "startArray" },
-          { name: "value", type: "string", value: "🐈" },
-          { name: "endArray" },
-          { name: "startObject" },
-          { name: "key", key: "animal" },
-          { name: "value", type: "string", value: "🐤" },
-          { name: "endObject" },
-          { name: "endDocument" },
-        ],
-        output: [
-          `["🐈"]{"animal":"🐤"}`,
-        ]
-      }
-    ];
+    {
+      name: "summarize: default",
+      options: { summarize: "default" },
+      input: [
+        { name: "startArray" },
+        { name: "value", type: "string", value: "🐈" },
+        { name: "endArray" },
+      ],
+      output: [
+        "[",
+        `"🐈"`,
+        "]",
+      ],
+    },
+    {
+      name: "summarize: false (default)",
+      options: { summarize: false },
+      input: [
+        { name: "startArray" },
+        { name: "value", type: "string", value: "🐈" },
+        { name: "endArray" },
+      ],
+      output: [
+        "[",
+        `"🐈"`,
+        "]",
+      ],
+    },
+    {
+      name: "summarize: normal",
+      options: { summarize: "normal" },
+      input: [
+        { name: "startDocument", kind: "json" },
+        { name: "startArray" },
+        { name: "value", type: "string", value: "🐈" },
+        { name: "endArray" },
+        { name: "startObject" },
+        { name: "key", key: "animal" },
+        { name: "value", type: "string", value: "🐤" },
+        { name: "endObject" },
+        { name: "endDocument" },
+      ],
+      output: [
+        `["🐈"]`,
+        `{"animal":"🐤"}`,
+      ],
+    },
+    {
+      name: "summarize: true (normal)",
+      options: { summarize: true },
+      input: [
+        { name: "startDocument", kind: "json" },
+        { name: "startArray" },
+        { name: "value", type: "string", value: "🐈" },
+        { name: "endArray" },
+        { name: "startObject" },
+        { name: "key", key: "animal" },
+        { name: "value", type: "string", value: "🐤" },
+        { name: "endObject" },
+        { name: "endDocument" },
+      ],
+      output: [
+        `["🐈"]`,
+        `{"animal":"🐤"}`,
+      ],
+    },
+    {
+      name: "summarize: doument",
+      options: { summarize: "document" },
+      input: [
+        { name: "startDocument", kind: "json" },
+        { name: "startArray" },
+        { name: "value", type: "string", value: "🐈" },
+        { name: "endArray" },
+        { name: "startObject" },
+        { name: "key", key: "animal" },
+        { name: "value", type: "string", value: "🐤" },
+        { name: "endObject" },
+        { name: "endDocument" },
+      ],
+      output: [
+        `["🐈"]{"animal":"🐤"}`,
+      ],
+    },
+  ];
   test.each(entries)("$name", async ({ options, input, output }) => {
     const { readable, writable } = new SAJToJSONTextTransformStream(options);
     const readed = Array.fromAsync(readable);
@@ -295,31 +295,30 @@ describe.concurrent("pattern", (test) => {
     await expect(writed).resolves.toBeUndefined();
     await expect(readed).resolves.toEqual(output);
   });
-
 });
 
 describe.concurrent("error pattern", (test) => {
-  const entries:{
-    name: string;
-    options?: ConstructorParameters<typeof SAJToJSONTextTransformStream>[0];
-    input: SAJEventInterface[];
+  const entries: {
+    name: string
+    options?: ConstructorParameters<typeof SAJToJSONTextTransformStream>[0]
+    input: SAJEventInterface[]
     output:
-      Record<"read" | "write", {
-        error: (string | RegExp | (new (...args: (ConstructorParameters<typeof SAJToJSONTextTransformStreamError>)) => unknown) | Error | undefined)[];
-      } | {
-        result: unknown[] | undefined;
-      }>;
+    Record<"read" | "write", {
+      error: (string | RegExp | (new (...args: (ConstructorParameters<typeof SAJToJSONTextTransformStreamError>)) => unknown) | Error | undefined)[]
+    } | {
+      result: unknown[] | undefined
+    }>
   }[] = [
     {
       name: "endDocument",
       input: [
         { name: "endDocument" },
       ],
-      output:{
+      output: {
         read: {
           error: [
             "Mismatched enddocument, expected to close undefined",
-            SAJToJSONTextTransformStreamError
+            SAJToJSONTextTransformStreamError,
           ],
         },
         write: {
@@ -327,21 +326,21 @@ describe.concurrent("error pattern", (test) => {
             "Invalid state: WritableStream is closed",
             TypeError,
           ],
-        }
-      }
+        },
+      },
     },
     {
       name: "endDocument haveContainer",
       input: [
-        { name: "startDocument", kind:"json"},
+        { name: "startDocument", kind: "json" },
         { name: "startObject" },
         { name: "endDocument" },
       ],
-      output:{
+      output: {
         read: {
           error: [
             "Mismatched enddocument, expected to close object",
-            SAJToJSONTextTransformStreamError
+            SAJToJSONTextTransformStreamError,
           ],
         },
         write: {
@@ -349,20 +348,20 @@ describe.concurrent("error pattern", (test) => {
             "Invalid state: WritableStream is closed",
             TypeError,
           ],
-        }
-      }
+        },
+      },
     },
     {
       name: "startDocument",
       input: [
-        { name: "startDocument", kind: "json"},
-        { name: "startDocument", kind: "json"},
+        { name: "startDocument", kind: "json" },
+        { name: "startDocument", kind: "json" },
       ],
-      output:{
+      output: {
         read: {
           error: [
             "invalid startDocument",
-            SAJToJSONTextTransformStreamError
+            SAJToJSONTextTransformStreamError,
           ],
         },
         write: {
@@ -370,11 +369,11 @@ describe.concurrent("error pattern", (test) => {
             "Invalid state: WritableStream is closed",
             TypeError,
           ],
-        }
-      }
+        },
+      },
     },
   ];
-  test.each(entries)("$name", async ({ options, input, output: {read, write} }) => {
+  test.each(entries)("$name", async ({ options, input, output: { read, write } }) => {
     const { readable, writable } = new SAJToJSONTextTransformStream(options);
     const readed = Array.fromAsync(readable);
     const writed = (async () => {
@@ -390,7 +389,8 @@ describe.concurrent("error pattern", (test) => {
       if ("error" in resultType) {
         for (const error of resultType.error)
           await expect(result, `${name} throw`).rejects.toThrowError(error);
-      } else {
+      }
+      else {
         if (resultType.result === undefined)
           await expect(result, `${name} result`).resolves.toBeUndefined();
         else

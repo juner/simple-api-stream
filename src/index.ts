@@ -1,6 +1,6 @@
 export * as interfaces from "./interface";
 
-//#region xml
+// #region xml
 import * as xml from "./xml";
 export {
   xml as xml,

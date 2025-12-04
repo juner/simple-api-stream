@@ -31,10 +31,10 @@ const COMMENT_PREFIX = "<!--";
 const COMMENT_SUFFIX = "-->";
 
 type Status = {
-  get buffer(): string;
-  get state(): string;
-  get acc(): string;
-  get openDocumented(): boolean;
+  get buffer(): string
+  get state(): string
+  get acc(): string
+  get openDocumented(): boolean
 };
 
 export class XMLTextToSAXParserError extends Error implements Status {
@@ -46,6 +46,7 @@ export class XMLTextToSAXParserError extends Error implements Status {
     this.acc = status.acc;
     this.openDocumented = status.openDocumented;
   }
+
   buffer: string;
   state: string;
   acc: string;
@@ -112,7 +113,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
    * @returns
    */
   #makeError(message: string | Error, options?: ConstructorParameters<typeof Error>[1]) {
-    ({message, options} = toErrorMessage(message, options));
+    ({ message, options } = toErrorMessage(message, options));
     return new XMLTextToSAXParserError(message, this.#status(), options);
   }
 
@@ -123,12 +124,14 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
   #makeNotCompleteError() {
     return this.#makeError(`not complete syntax error. buffer:${this.#buffer}`);
   }
+
   #startDocument() {
     if (this.#openDocumented) return;
     if (!this.#skipDocument)
       this.#handler.onStartDocument?.(new StartDocumentEvent());
     this.#openDocumented = true;
   }
+
   #endDocument() {
     if (!this.#openDocumented) return;
     if (!this.#skipDocument)
@@ -147,6 +150,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
     (error as unknown as Record<string, unknown>).syntax = source;
     return error;
   }
+
   #parseBuffer(flush: boolean = false): void {
     try {
       this.#cursor = 0;
@@ -164,14 +168,16 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
       if (flush) this.#endDocument();
       this.#buffer = "";
       return;
-    } catch (err: unknown) {
+    }
+    catch (err: unknown) {
       this.#handler.onError?.(err instanceof Error
         ? err
-        : this.#makeError(String(err), { cause: err })
+        : this.#makeError(String(err), { cause: err }),
       );
       return;
     }
   }
+
   // #region factors
   #text(): { required?: true } {
     const nextOpen = this.#buffer.indexOf(BLOCK_PREFIX, this.#cursor);
@@ -194,25 +200,31 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
 
     if (remaining.startsWith(COMMENT_PREFIX)) {
       this.#factor = this.#comment;
-    } else if (remaining.startsWith(CDATA_PREFIX)) {
+    }
+    else if (remaining.startsWith(CDATA_PREFIX)) {
       this.#factor = this.#cdata;
-    } else if (remaingin_upper.startsWith(DOCTYPE_PREFIX)) {
+    }
+    else if (remaingin_upper.startsWith(DOCTYPE_PREFIX)) {
       this.#factor = this.#doctype;
-    } else if (remaining.startsWith(PROCESSING_INSTRUCTION_PREFIX)) {
+    }
+    else if (remaining.startsWith(PROCESSING_INSTRUCTION_PREFIX)) {
       this.#factor = this.#processingInstruction;
-    } else if (
-      CDATA_PREFIX.startsWith(remaining) ||
-      DOCTYPE_PREFIX.startsWith(remaingin_upper) ||
-      COMMENT_PREFIX.startsWith(remaining) ||
-      PROCESSING_INSTRUCTION_PREFIX.startsWith(remaining)
+    }
+    else if (
+      CDATA_PREFIX.startsWith(remaining)
+      || DOCTYPE_PREFIX.startsWith(remaingin_upper)
+      || COMMENT_PREFIX.startsWith(remaining)
+      || PROCESSING_INSTRUCTION_PREFIX.startsWith(remaining)
     ) {
       this.#buffer = this.#buffer.slice(this.#cursor); // 不完全トークン
       return { required: true };
-    } else {
+    }
+    else {
       this.#factor = this.#tag;
     }
     return {};
   }
+
   #comment(): { required?: true } {
     const end = this.#buffer.indexOf(COMMENT_SUFFIX, this.#cursor);
     if (end < 0) {
@@ -225,6 +237,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
     this.#factor = this.#text;
     return {};
   }
+
   #cdata(): { required?: true } {
     const end = this.#buffer.indexOf(CDATA_SUFFIX, this.#cursor);
     if (end < 0) {
@@ -237,6 +250,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
     this.#factor = this.#text;
     return {};
   }
+
   #doctype(): { required?: true } {
     const endBracket = this.#buffer.indexOf(DOCTYPE_BLOCK_SUFFIX, this.#cursor);
     const blockStart = this.#buffer.indexOf(DOCTYPE_BLOCK_START, this.#cursor);
@@ -267,6 +281,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
     this.#buffer = this.#buffer.slice(this.#cursor);
     return { required: true };
   }
+
   #processingInstruction(): { required?: true } {
     const end = this.#buffer.indexOf(PROCESSING_INSTRUCTION_SUFFIX, this.#cursor);
     if (end === -1) {
@@ -294,7 +309,8 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
             encoding,
             standalone,
           });
-        } else {
+        }
+        else {
           const contentType = attrs.type as string;
           const href = attrs.href as string;
           if (contentType && href) {
@@ -306,7 +322,8 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
           }
           throw this.#makeSyntaxError(`Invalid xml-stylesheet declaration: ${this.#acc}`, this.#acc);
         }
-      } else {
+      }
+      else {
         return new ProcessingInstructionEvent(
           target,
           data,
@@ -316,12 +333,13 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
 
     this.#startDocument();
     this.#handler.onProcessingInstruction?.(
-      event
+      event,
     );
     this.#cursor = end + PROCESSING_INSTRUCTION_SUFFIX.length;
     this.#factor = this.#text;
     return {};
   }
+
   #tag(): { required?: true } {
     const end = this.#buffer.indexOf(BLOCK_SUFFIX, this.#cursor);
     if (end === -1) {
@@ -395,8 +413,8 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
 
     const [, tagName, attrStrRaw] = tagMatch;
     const isClosing = source.startsWith("</");
-    const isSelfClosing =
-      source.endsWith("/>") || attrStrRaw.trimEnd().endsWith("/");
+    const isSelfClosing
+      = source.endsWith("/>") || attrStrRaw.trimEnd().endsWith("/");
 
     if (isClosing) {
       const end = new EndElementEvent(tagName);
@@ -417,7 +435,7 @@ export class XMLTextToSAXParser implements SimpleApiParser<string> {
 
     const remaining = attrStr.slice(prevIndex).trim();
     if (remaining.length > 0) {
-      throw this.#makeSyntaxError("Invalid or unquoted attribute syntax near",remaining);
+      throw this.#makeSyntaxError("Invalid or unquoted attribute syntax near", remaining);
     }
 
     const start = new StartElementEvent(tagName, attrs, isSelfClosing);

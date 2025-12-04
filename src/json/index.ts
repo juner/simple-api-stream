@@ -1,4 +1,3 @@
-
 export * as events from "./event";
 
 export type * as eventInterfaces from "./event-interface";

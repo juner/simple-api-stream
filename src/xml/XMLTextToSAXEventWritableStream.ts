@@ -62,10 +62,11 @@ export class XMLTextToSAXEventWritableStream extends WritableStream<string> {
        */
       abort: (reason: unknown) => {
         handler.onError?.(reason);
-      }
+      },
     });
     this.#buffer = buffer;
   }
+
   get status() {
     return this.#buffer.status;
   }

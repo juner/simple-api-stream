@@ -1,9 +1,9 @@
 import type { DoctypeSAXEventBaseInterface } from "./DoctypeSAXEventBaseInterface";
 
 export interface DoctypeSAXEventPublicInterface extends DoctypeSAXEventBaseInterface {
-  dtdType: "PUBLIC";
+  dtdType: "PUBLIC"
   /** public identifer */
-  identifer: string;
+  identifer: string
   /** uri reference */
-  uri?: string;
+  uri?: string
 }

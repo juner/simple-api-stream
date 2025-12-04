@@ -8,19 +8,19 @@ import type {
   ValueStringSAJEventInterface,
 } from "./event-interface";
 
-type ValueSAJEventInterface =
-  | ValueNumberSAJEventInterface
-  | ValueBooleanSAJEventInterface
-  | ValueNullSAJEventInterface
-  | ValueStringSAJEventInterface;
+type ValueSAJEventInterface
+  = | ValueNumberSAJEventInterface
+    | ValueBooleanSAJEventInterface
+    | ValueNullSAJEventInterface
+    | ValueStringSAJEventInterface;
 
 type Status = {
-  get containerStack(): Stacks[];
-  get firstItemStack(): boolean[];
-  get pendingValueForKey(): boolean;
-  get summarize(): Summarize;
-  get parts(): string[];
-}
+  get containerStack(): Stacks[]
+  get firstItemStack(): boolean[]
+  get pendingValueForKey(): boolean
+  get summarize(): Summarize
+  get parts(): string[]
+};
 
 export class SAJToJSONTextTransformStreamError extends Error implements Status {
   constructor(message: string, status: Status, options?: ErrorOptions) {
@@ -32,6 +32,7 @@ export class SAJToJSONTextTransformStreamError extends Error implements Status {
     this.summarize = status.summarize;
     this.parts = status.parts;
   }
+
   containerStack: Stacks[];
   firstItemStack: boolean[];
   pendingValueForKey: boolean;
@@ -41,8 +42,8 @@ export class SAJToJSONTextTransformStreamError extends Error implements Status {
 
 export type SAJToJSONTextTransformStreamOptions = {
   /** json text is document summarize */
-  summarize: boolean | Summarize;
-}
+  summarize: boolean | Summarize
+};
 const stacks = Object.freeze({
   object: "object",
   array: "array",
@@ -65,7 +66,7 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
 
   /** The type of container currently nested（"object" | "array" | "document"） */
   #containerStack: Stacks[] = [];
-  /** Whether it is the first element for each container (true = no element has appeared yet)*/
+  /** Whether it is the first element for each container (true = no element has appeared yet) */
   #firstItemStack: boolean[] = [];
   /** Flag to suppress commas in the value/structure immediately following the key */
   #pendingValueForKey = false;
@@ -103,6 +104,7 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
     this.#controller = controller_;
     this.#summarize = this.#toSummarize(summarize);
   }
+
   #toSummarize(value?: SAJToJSONTextTransformStreamOptions["summarize"]): Summarize {
     if (typeof value === "boolean")
       return value ? summarize.normal : summarize.default;
@@ -118,7 +120,8 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
         for (const part of parts) {
           this.#controller.enqueue(part);
         }
-      } else {
+      }
+      else {
         this.#parts.push(...parts);
       }
       if (this.#summarize === summarize.normal) {
@@ -134,7 +137,8 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
           this.#controller.enqueue(json);
         }
       }
-    } catch (e: unknown) {
+    }
+    catch (e: unknown) {
       this.#controller.error(e);
     }
   }
@@ -159,8 +163,9 @@ export class SAJToJSONTextTransformStream extends TransformStream<SAJEventInterf
         return this.#value(chunk);
     }
   }
+
   #makeError(message: string | Error, options?: ErrorOptions) {
-    ({message, options} = toErrorMessage(message, options));
+    ({ message, options } = toErrorMessage(message, options));
     return new SAJToJSONTextTransformStreamError(message, this.#status(), options);
   }
 

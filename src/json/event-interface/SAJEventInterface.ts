@@ -10,15 +10,15 @@ import type { ValueStringSAJEventInterface } from "./ValueStringSAJEventInterfac
 import type { StartDocumentSAJEventInterface } from "./StartDocumentSAJEventInterface";
 import type { EndDocumentSAJEventInterface } from "./EndDocumentSAJEventInterface";
 
-export type SAJEventInterface =
-  StartArraySAJEventInterface
-  | EndArraySAJEventInterface
-  | StartObjectSAJEventInterface
-  | EndObjectSAJEventInterface
-  | KeySAJEventInterface
-  | ValueBooleanSAJEventInterface
-  | ValueNullSAJEventInterface
-  | ValueNumberSAJEventInterface
-  | ValueStringSAJEventInterface
-  | StartDocumentSAJEventInterface
-  | EndDocumentSAJEventInterface;
+export type SAJEventInterface
+  = StartArraySAJEventInterface
+    | EndArraySAJEventInterface
+    | StartObjectSAJEventInterface
+    | EndObjectSAJEventInterface
+    | KeySAJEventInterface
+    | ValueBooleanSAJEventInterface
+    | ValueNullSAJEventInterface
+    | ValueNumberSAJEventInterface
+    | ValueStringSAJEventInterface
+    | StartDocumentSAJEventInterface
+    | EndDocumentSAJEventInterface;

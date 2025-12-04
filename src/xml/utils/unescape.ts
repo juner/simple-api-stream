@@ -1,7 +1,6 @@
-
 const unescapeRegexp = /&(?:#x([A-z0-9]+)|#([A-z0-9]+)|([A-z0-9]+));/gmu;
 
-export function unescape(s?: string|null): string {
+export function unescape(s?: string | null): string {
   if (!s || s.length <= 0) return s ?? "";
   return s.replaceAll(unescapeRegexp, replacer);
 }
@@ -9,7 +8,7 @@ export function unescape(s?: string|null): string {
 function replacer(...[full, x16, x10, alpha]: string[]): string {
   if (x16 !== undefined) return String.fromCodePoint(parseInt(x16, 16));
   if (x10 !== undefined) return String.fromCodePoint(parseInt(x10));
-  if (alpha !== undefined && alpha in s2c) return (s2c as Record<string,string>)[alpha];
+  if (alpha !== undefined && alpha in s2c) return (s2c as Record<string, string>)[alpha];
   return full;
 }
 

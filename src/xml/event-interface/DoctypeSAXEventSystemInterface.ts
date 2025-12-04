@@ -1,7 +1,7 @@
 import type { DoctypeSAXEventBaseInterface } from "./DoctypeSAXEventBaseInterface";
 
 export interface DoctypeSAXEventSystemInterface extends DoctypeSAXEventBaseInterface {
-  dtdType: "SYSTEM";
+  dtdType: "SYSTEM"
   /** uri reference */
-  uri: string;
+  uri: string
 }

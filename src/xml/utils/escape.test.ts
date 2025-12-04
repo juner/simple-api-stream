@@ -2,19 +2,19 @@ import { describe } from "vitest";
 import { escape } from ".";
 
 describe.concurrent("escape", (test) => {
-  test("null", ({expect}) => {
+  test("null", ({ expect }) => {
     const value = null;
     expect(escape(value)).toEqual("");
   });
-  test("undefined", ({expect}) => {
+  test("undefined", ({ expect }) => {
     const value = undefined;
     expect(escape(value)).toEqual("");
   });
-  test("empty", ({expect}) => {
+  test("empty", ({ expect }) => {
     const value = "";
     expect(escape(value)).toEqual("");
   });
-  test("& -> &amp;", ({expect}) => {
+  test("& -> &amp;", ({ expect }) => {
     const value = "&";
     expect(escape(value)).toEqual("&amp;");
   });

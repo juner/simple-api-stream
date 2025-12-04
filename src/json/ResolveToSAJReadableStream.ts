@@ -11,50 +11,60 @@ export class ResolveToSAJReadableStream extends ReadableStream<SAJEventInterface
     super({
       start: (controller) => {
         controller_ = controller;
-      }
+      },
     });
     this.#controller = controller_;
   }
+
   startObject(): void {
     this.#controller.enqueue(new StartObjectEvent());
   }
+
   endObject(): void {
     this.#controller.enqueue(new EndObjectEvent());
   }
+
   startArray(): void {
     this.#controller.enqueue(new StartArrayEvent());
   }
+
   endArray(): void {
     this.#controller.enqueue(new EndArrayEvent());
   }
+
   key(key: string): void {
     this.#controller.enqueue(new KeyEvent(key));
   }
-  value<T extends "string" | "number" | "null" | "boolean">(type: T, value: { number: number; string: string; null: null; boolean: boolean; }[T]): void {
+
+  value<T extends "string" | "number" | "null" | "boolean">(type: T, value: { number: number, string: string, null: null, boolean: boolean }[T]): void {
     if (type === "boolean") {
       this.#controller.enqueue(new ValueBooleanEvent(type, value as boolean));
       return;
-    } else if (type === "string") {
+    }
+    else if (type === "string") {
       this.#controller.enqueue(new ValueStringEvent(type, value as string));
       return;
-    } else if (type === "number") {
+    }
+    else if (type === "number") {
       this.#controller.enqueue(new ValueNumberEvent(type, value as number));
       return;
     }
     this.#controller.enqueue(new ValueNullEvent(type));
   }
+
   startDocument(): void {
     this.#controller.enqueue(new StartDocumentEvent());
   }
+
   endDocument(): void {
     this.#controller.enqueue(new EndDocumentEvent());
   }
+
   close() {
     this.#controller.close();
   }
+
   [Symbol.dispose]() {
     this.close();
   }
 }
-
-

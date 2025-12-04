@@ -28,19 +28,19 @@ export type SAXToXMLTextTransformOptions = {
   /**
    * indent size or indent character
    */
-  indent: number | string;
-  lineBreak: string;
-  summarize: boolean | Summarize;
-}
+  indent: number | string
+  lineBreak: string
+  summarize: boolean | Summarize
+};
 
 type Status = {
-  get options(): Partial<SAXToXMLTextTransformOptions> | undefined;
-  get starts(): (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[];
-  get prefix(): string;
-  get suffix(): string;
-  get summarize(): Summarize;
-  get parts(): string[];
-}
+  get options(): Partial<SAXToXMLTextTransformOptions> | undefined
+  get starts(): (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[]
+  get prefix(): string
+  get suffix(): string
+  get summarize(): Summarize
+  get parts(): string[]
+};
 
 export class SAXToXMLTextTransformStreamError extends Error implements Status {
   constructor(message: string, status: Status, options?: ErrorOptions) {
@@ -53,6 +53,7 @@ export class SAXToXMLTextTransformStreamError extends Error implements Status {
     this.summarize = status.summarize;
     this.parts = status.parts;
   }
+
   options: Partial<SAXToXMLTextTransformOptions> | undefined;
   starts: (StartElementSAXEventInterface | StartDocumentSAXEventInterface)[];
   prefix: string;
@@ -114,11 +115,13 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     this.#summarize = this.#toSummarize(options?.summarize);
     this.#controller = controller_;
   }
+
   #toSummarize(value?: SAXToXMLTextTransformOptions["summarize"]): Summarize {
     if (typeof value === "boolean") return value ? summarize.document : summarize.default;
     if (!value) return summarize.default;
     return value;
   }
+
   #status(): Status {
     return {
       options: structuredClone(this.#options),
@@ -135,9 +138,10 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
   }
 
   #makeError(message: string | Error, options?: ErrorOptions) {
-    ({message, options} = toErrorMessage(message, options));
+    ({ message, options } = toErrorMessage(message, options));
     return new SAXToXMLTextTransformStreamError(message, this.#status(), options);
   }
+
   /**
    * make not complete error
    * @returns
@@ -145,6 +149,7 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
   #makeNotCompleteError() {
     return this.#makeError(`not complete error.`);
   }
+
   #makeIndent(num: number = 0) {
     assertIsTrue(num >= 0, "num is required 0 or later");
     const indent = this.#options?.indent;
@@ -154,10 +159,12 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
       : Array.from({ length: indent + num }, () => " ")
     ).join("");
   }
+
   #flush() {
     if (this.#starts.length === 0 && this.#parts.length === 0) return;
     throw this.#makeNotCompleteError();
   }
+
   #enqueue(chunk: SAXEventInterface): void {
     try {
       const str = this.#next(chunk);
@@ -168,18 +175,21 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
         while (this.#parts.length > 0) {
           this.#controller.enqueue(this.#parts.shift()!);
         }
-      } else if (this.#summarize === summarize.element) {
+      }
+      else if (this.#summarize === summarize.element) {
         if (chunk.name === "endElement"
           && this.#starts.filter(v => v.name === "startElement").length === 0
         )
           this.#flushParts();
-      } else if (this.#summarize === summarize.document) {
+      }
+      else if (this.#summarize === summarize.document) {
         if (chunk.name === "endDocument"
           && this.#starts.filter(v => v.name === "startDocument").length === 0
         )
           this.#flushParts();
       }
-    } catch (e) {
+    }
+    catch (e) {
       this.#controller.error(e);
     }
   }
@@ -214,12 +224,15 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
         return this.#endDocument(chunk);
     }
   }
+
   #cdata(chunk: CdataSAXEventInterface) {
     return `${this.#prefix}${CDATA_PREFIX}${chunk.cdata}${CDATA_SUFFIX}${this.#suffix}`;
   }
+
   #comment(chunk: CommentSAXEventInterface) {
     return `${this.#prefix}${COMMENT_PREFIX}${chunk.comment}${COMMENT_SUFFIX}${this.#suffix}`;
   }
+
   #doctype(chunk: DoctypeSAXEventInterface) {
     const joins: string[] = [];
     joins.push(DOCTYPE_PREFIX);
@@ -228,7 +241,8 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
       joins.push("PUBLIC");
       joins.push(`"${chunk.identifer}"`);
       joins.push(`"${chunk.uri}"`);
-    } else if (chunk.dtdType === "SYSTEM") {
+    }
+    else if (chunk.dtdType === "SYSTEM") {
       joins.push("SYSTEM");
       joins.push(`"${chunk.uri}"`);
     }
@@ -240,9 +254,11 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     }
     return `${this.#prefix}${joins.join(" ")}${BLOCK_SUFFIX}${this.#suffix}`;
   }
+
   #text(chunk: TextSAXEventInterface) {
     return `${this.#prefix}${escape(chunk.text)}${this.#suffix}`;
   }
+
   #processingInstruction(chunk: ProcessingInstructionSAXEventInterface) {
     const joins: string[] = [];
     joins.push(`${PROCESSING_INSTRUCTION_PREFIX}${chunk.target}`);
@@ -250,6 +266,7 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     joins.push(PROCESSING_INSTRUCTION_SUFFIX);
     return `${this.#prefix}${joins.join(" ")}${this.#suffix}`;
   }
+
   #startElement(chunk: StartElementSAXEventInterface) {
     const joins: string[] = [];
     joins.push(`${BLOCK_PREFIX}${chunk.tagName}`);
@@ -264,6 +281,7 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     this.#prefix = this.#makeIndent();
     return `${indent}${joins.join(" ")}${BLOCK_SUFFIX}${this.#suffix}`;
   }
+
   #endElement(chunk: EndElementSAXEventInterface) {
     const endTagName = chunk.tagName;
     const start = this.#starts.pop();
@@ -290,10 +308,12 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     if (start.selfClosing) return undefined;
     return `${this.#prefix}${BLOCK_PREFIX}/${chunk.tagName}${BLOCK_SUFFIX}${this.#suffix}`;
   }
+
   #startDocument(chunk: StartDocumentSAXEventInterface) {
     this.#starts.push(chunk);
     return undefined;
   }
+
   #endDocument(chunk: EndDocumentSAXEventInterface) {
     const start = this.#starts.pop();
     if (!start || start.name === "startElement") {
@@ -306,4 +326,3 @@ export class SAXToXMLTextTransformStream extends TransformStream<SAXEventInterfa
     return undefined;
   }
 }
-

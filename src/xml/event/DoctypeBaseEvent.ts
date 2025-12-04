@@ -7,7 +7,7 @@ export class DoctypeBaseEvent extends SAXEvent<typeof SAX_DOCTYPE_EVENT_TYPE> im
   root: string;
   declarations?: string[];
   constructor(root: string, options?: {
-    declarations?: string[];
+    declarations?: string[]
   }) {
     super(SAX_DOCTYPE_EVENT_TYPE);
     this.root = root;

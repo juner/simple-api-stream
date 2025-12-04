@@ -6,14 +6,15 @@ export class XMLDeclarationEvent extends ProcessingInstructionEvent<typeof SAX_X
   version: string;
   encoding: string;
   standalone: "yes" | "no";
-  constructor({target, version = "1.0", encoding = "UTF-8", standalone = "yes"}:{target: typeof SAX_XML_DECLARATION_TARGET_TYPE, version?: string, encoding?: string, standalone?: "yes" | "no"}) {
+  constructor({ target, version = "1.0", encoding = "UTF-8", standalone = "yes"}: { target: typeof SAX_XML_DECLARATION_TARGET_TYPE, version?: string, encoding?: string, standalone?: "yes" | "no" }) {
     super(target, XMLDeclarationEvent.#makeData(version, encoding, standalone));
     this.version = version;
     this.encoding = encoding;
     this.standalone = standalone;
   }
-  static #makeData(version: string, encoding: string, standalone: "yes"|"no" = "yes") {
-    const joins:string[] = [];
+
+  static #makeData(version: string, encoding: string, standalone: "yes" | "no" = "yes") {
+    const joins: string[] = [];
     if (version)
       joins.push(`version="${version}"`);
     if (encoding)

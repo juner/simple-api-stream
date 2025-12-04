@@ -59,18 +59,20 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
     super({
       start: (controller) => {
         controller_ = controller;
-      }
+      },
     });
     this.#controller = controller_;
   }
+
   #status(): Status {
     return {};
   }
 
   #makeError(message: string | Error, options?: ErrorOptions) {
-    ({message, options} = toErrorMessage(message, options));
+    ({ message, options } = toErrorMessage(message, options));
     return new ResolveToSAXReadableStreamError(message, this.#status(), options);
   }
+
   processingInstruction(...args: ConstructorParameters<typeof ProcessingInstructionEvent | typeof XMLDeclarationEvent | typeof XMLStylesheetDeclarationEvent>): void {
     if (typeof args[0] === "string") {
       this.#controller.enqueue(new ProcessingInstructionEvent(...args as ConstructorParameters<typeof ProcessingInstructionEvent>));
@@ -80,7 +82,8 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
     if (options.target === "xml") {
       this.#controller.enqueue(new XMLDeclarationEvent(options));
       return;
-    } else if (options.target === "xml-stylesheet") {
+    }
+    else if (options.target === "xml-stylesheet") {
       this.#controller.enqueue(new XMLStylesheetDeclarationEvent(options));
       return;
     }
@@ -103,9 +106,11 @@ export class ResolveToSAXReadableStream extends ReadableStream<SAXEventInterface
   doctype(...args: ConstructorParameters<typeof DoctypeSimpleEvent | typeof DoctypeSystemEvent | typeof DoctypePublicEvent>): void {
     if (args[1]?.dtdType === "PUBLIC") {
       this.#controller.enqueue(new DoctypePublicEvent(...args as ConstructorParameters<typeof DoctypePublicEvent>));
-    } else if (args[1]?.dtdType === "SYSTEM") {
+    }
+    else if (args[1]?.dtdType === "SYSTEM") {
       this.#controller.enqueue(new DoctypeSystemEvent(...args as ConstructorParameters<typeof DoctypeSystemEvent>));
-    } else {
+    }
+    else {
       this.#controller.enqueue(new DoctypeSimpleEvent(...args as ConstructorParameters<typeof DoctypeSimpleEvent>));
     }
   }

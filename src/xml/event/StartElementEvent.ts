@@ -13,4 +13,3 @@ export class StartElementEvent extends SAXEvent<typeof SAX_START_ELEMENT_EVENT_T
     this.selfClosing = selfClosing;
   }
 }
-
