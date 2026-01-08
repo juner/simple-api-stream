@@ -11,15 +11,16 @@ export default defineConfig([
     ignores: [
       `dist/**/**.*`,
     ],
-    files: [`**/*.{mjs,cjs,ts,mts,cts}`],
+  },
+  { files: [`**/*.{js,mjs,cjs,ts,mts,cts}`], plugins: { js }, extends: [`js/recommended`] },
+  { files: [`**/*.{js,mjs,cjs,ts,mts,cts}`], languageOptions: { globals: { ...globals.browser, ...globals.node } } },
+  {
+    files: [`**/*.{js,mjs,cjs,ts,mts,cts}`],
     plugins: {
-      js,
       "@stylistic": stylistic,
       "tseslint": tseslint,
     },
-    languageOptions: { globals: { ...globals.browser, ...globals.node } },
     extends: [
-      `js/recommended`,
       "@stylistic/recommended",
       "tseslint/recommended",
     ],
