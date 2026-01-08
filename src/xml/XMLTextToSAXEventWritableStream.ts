@@ -1,5 +1,5 @@
 import { XMLTextToSAXParser } from "./XMLTextToSAXParser";
-import { SAXHandler } from "./interface/SAXHandler";
+import type { SAXHandler } from "./interface/SAXHandler";
 
 /**
  * A `WritableStream` that accepts XML text chunks and emits SAX-style events

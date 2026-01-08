@@ -1,4 +1,4 @@
-import { SAJEventInterface } from "./event-interface";
+import type { SAJEventInterface } from "./event-interface";
 import { JSONTextToSAJParser } from "./JSONTextToSAJParser";
 
 type SAJHandler = Required<ConstructorParameters<typeof JSONTextToSAJParser>[0]["handler"]>;

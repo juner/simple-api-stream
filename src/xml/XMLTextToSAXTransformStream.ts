@@ -1,6 +1,6 @@
 import { XMLTextToSAXParser } from "./XMLTextToSAXParser";
-import { SAXHandler } from "./interface";
-import { SAXEventInterface } from "./event-interface";
+import type { SAXHandler } from "./interface";
+import type { SAXEventInterface } from "./event-interface";
 
 /**
  * A `TransformStream` that converts streamed XML text chunks into SAX-style event objects.

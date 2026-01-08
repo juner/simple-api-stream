@@ -1,6 +1,6 @@
 import { EndArrayEvent, EndDocumentEvent, EndObjectEvent, KeyEvent, StartArrayEvent, StartDocumentEvent, StartObjectEvent, ValueBooleanEvent, ValueNullEvent, ValueNumberEvent, ValueStringEvent } from "./event";
-import { SAJEventInterface } from "./event-interface";
-import { SAJResolver } from "./interface/SAJResolver";
+import type { SAJEventInterface } from "./event-interface";
+import type { SAJResolver } from "./interface/SAJResolver";
 
 export class ResolveToSAJReadableStream extends ReadableStream<SAJEventInterface> implements SAJResolver {
   #controller!: ReadableStreamDefaultController<SAJEventInterface>;

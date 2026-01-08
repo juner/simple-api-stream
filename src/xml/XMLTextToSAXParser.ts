@@ -15,7 +15,7 @@ import {
   StartDocumentEvent,
   EndDocumentEvent,
 } from "./event";
-import { SAXHandler } from "./interface";
+import type { SAXHandler } from "./interface";
 import { unescape } from "./utils";
 
 const CDATA_PREFIX = "<![CDATA[";

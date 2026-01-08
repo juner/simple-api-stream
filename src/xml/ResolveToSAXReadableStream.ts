@@ -1,7 +1,7 @@
 import { toErrorMessage } from "../utils";
 import { CdataEvent, CommentEvent, DoctypePublicEvent, DoctypeSimpleEvent, DoctypeSystemEvent, EndElementEvent, StartElementEvent, TextEvent, ProcessingInstructionEvent, XMLStylesheetDeclarationEvent, XMLDeclarationEvent, StartDocumentEvent, EndDocumentEvent } from "./event";
-import { SAXEventInterface } from "./event-interface";
-import { SAXResolver } from "./interface";
+import type { SAXEventInterface } from "./event-interface";
+import type { SAXResolver } from "./interface";
 
 type Status = object;
 
