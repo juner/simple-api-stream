@@ -1,0 +1,1 @@
+export { EndDocumentEvent } from "../../event";

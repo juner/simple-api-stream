@@ -1,9 +1,21 @@
-export * from "./EndElementSAXEventInterface";
-export * from "./event/SAXEvent";
-export * from "./SimpleSAXHandler";
-export * from "./StartElementSAXEventInterface";
-export * from "./TextSAXEventInterface";
+export * as events from "./event";
 
-export * from "./SimpleSAXWritableStream";
-export * from "./SimpleSAXTransformStream";
-export * from "./SimpleXMLWritableReadableStream";
+export type * as eventInterfaces from "./event-interface";
+export type * as interfaces from "./interface";
+
+import * as XMLTextToSAXEventWritableStreamModule from "./XMLTextToSAXEventWritableStream";
+import * as XMLTextToSAXTransformStreamModule from "./XMLTextToSAXTransformStream";
+import * as ResolveToSAXReadableStreamModule from "./ResolveToSAXReadableStream";
+import * as SAXToXMLTextTransformModule from "./SAXToXMLTextTransformStream";
+import * as XMLTextToSAXParserModule from "./XMLTextToSAXParser";
+export const streams = {
+  ...XMLTextToSAXEventWritableStreamModule,
+  ...XMLTextToSAXTransformStreamModule,
+  ...ResolveToSAXReadableStreamModule,
+  ...SAXToXMLTextTransformModule,
+  ...XMLTextToSAXParserModule,
+};
+export const XMLTextToSAXEventWritableStream = XMLTextToSAXEventWritableStreamModule.XMLTextToSAXEventWritableStream;
+export const XMLTextToSAXTransformStream = XMLTextToSAXTransformStreamModule.XMLTextToSAXTransformStream;
+export const ResolveToSAXReadableStream = ResolveToSAXReadableStreamModule.ResolveToSAXReadableStream;
+export const SAXToXMLTextTransform = SAXToXMLTextTransformModule.SAXToXMLTextTransformStream;

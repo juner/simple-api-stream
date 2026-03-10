@@ -1,6 +1,3 @@
-export class SAXEvent<T extends string> {
-  name: T;
-  constructor(name: T) {
-    this.name = name;
-  }
-}
+import { SAEvent } from "../../event";
+
+export const SAXEvent = SAEvent;

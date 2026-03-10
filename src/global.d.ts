@@ -4,14 +4,14 @@ interface RegExpConstructor {
    * @param str The string to escape.
    * @see https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/escape
    */
-  escape(str: string): string;
+  escape(str: string): string
 }
 
 interface ReadableStream<R> {
-  values(param?: { preventCancel?: boolean }): AsyncGenerator<R, void, undefined>;
-  [Symbol.asyncIterator](): AsyncGenerator<R, void, undefined>;
+  values(param?: { preventCancel?: boolean }): AsyncGenerator<R, void, undefined>
+  [Symbol.asyncIterator](): AsyncGenerator<R, void, undefined>
 }
 
 interface RegExpExecArray {
-  lastIndex: number;
+  lastIndex: number
 }
